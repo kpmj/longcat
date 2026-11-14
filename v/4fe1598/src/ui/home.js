@@ -1,4 +1,4 @@
-/* Home: the judge where it is now, wearing what has been sung, the cushion on the next step. The picture fills the
+/* Home: the judge where it is now, wearing what has been sung. The picture fills the
    whole screen (full-screen home board, 2026-11-14, the designer chose 丁); the controls float on it in one paper surface:
    place and time, music and settings at the top, and a small row of three cats' progress on the sheet that also
    holds the bottom row. Sing itself is the middle button of that bottom row, on every tab (app.js renderDock).
@@ -117,7 +117,7 @@ export function renderHome(root) {
   setTimeout(() => homeTips(root, nt, unread), 450);
 }
 
-/* the home's one-time tips: the first step, the cushion on a later day, the first letter */
+/* the home's one-time tips: the first step, the first letter */
 function homeTips(root, nt, unread) {
   if (app.screen !== "home" || document.querySelector("#sheet-root:not([hidden])")) return;
   const S = app.S, scene = $("#home-scene", root);
@@ -131,12 +131,7 @@ function homeTips(root, nt, unread) {
     if (tip("step", scene, { text: `That’s one step. ${left === 11 ? "Eleven" : left} more and the ${name} is done.`, at: "below", x: p.x, y: p.y + 24 })) return;
   }
   const lb = $("[data-act=letter]", root);
-  if (lb && unread.length && tip("letter", lb, { at: "below", x: 0.3 })) return;
-  const cushion = St.cushionFor(S, S.here, app.real());
-  if (cushion && S.journal.length > 0) {
-    const p = at(cushion.zone, cushion.step);
-    tip("cushion", scene, { at: "below", x: p.x, y: p.y + 20 });
-  }
+  if (lb && unread.length) tip("letter", lb, { at: "below", x: 0.3 });
 }
 
 /* Which garment next: the player chooses (decided 2026-11-11). Colours come with the garment.

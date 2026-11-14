@@ -271,13 +271,6 @@ export function basketsFor(S, place) {
   }));
 }
 
-/* The daily cushion: on the next step, every day nothing has been sung yet. Derived, never stored. */
-export function cushionFor(S, place, real) {
-  if (S.journal.includes(todayKey(S, real))) return null;
-  const nt = nextTake(S, place);
-  return nt ? { zone: nt.zone, step: nt.step, label: nt.step } : null;
-}
-
 export function homeScene(S, place = S.here, real, extra = {}) {
   const cur = currentTime(S, place) || "night";
   const garments = ZONE_IDS.map((z) => garmentSpec(S, place, cur, z));
@@ -285,7 +278,9 @@ export function homeScene(S, place = S.here, real, extra = {}) {
     /* no baskets of sleeping cats here: with them the home page was too full (the designer, 2026-11-14). The cats still run to
        their basket in the reset beat (ui/beat.js), which asks basketsFor itself; after that they are out of sight */
     place, time: cur, face: extra.face || "neutral", garments, baskets: [],
-    cushion: cushionFor(S, place, real), special: specialFor(place), animate: true, seed: takesAt(S, place),
+    /* no daily cushion on the next step any more: a red block with a number on the judge read as a puzzle, and the
+       bottom row already says which step is next (the designer, 2026-11-14: "把它完全拿掉"). The art can still draw one. */
+    cushion: null, special: specialFor(place), animate: true, seed: takesAt(S, place),
     landscape: true, // the place's full landscape, as on the postcards (the designer, 2026-11-14)
     ...extra,
   };
