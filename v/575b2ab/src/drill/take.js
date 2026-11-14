@@ -5,13 +5,14 @@
    once the singer is past it. */
 import { gradeTake, heardShare } from "./grade.js";
 import { NoteMatcher } from "./match.js";
+import { createOctaveGuard, guardOctave } from "./octave.js";
 
 export const DEMO_LEAD = 0.5;
 export const DEMO_TAIL = 0.45;
 export const SING_TAIL = 0.55; // keep listening after the last note so a late singer is not cut off
 
 export function createTake(plan) {
-  return { plan, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(plan.notes), live: [], grade: null };
+  return { plan, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(plan.notes), octave: createOctaveGuard(), live: [], grade: null };
 }
 
 export function skipDemo(T) {
@@ -65,8 +66,10 @@ export function stepTake(T, dt, frame = null) {
     return ev;
   }
   /* sing */
-  const midi = frame && Number.isFinite(frame.midi) ? frame.midi : null;
+  let midi = frame && Number.isFinite(frame.midi) ? frame.midi : null;
   const conf = frame ? frame.conf ?? 1 : 0;
+  /* a frame read an octave off from where the singer clearly is goes back to that octave (octave.js) */
+  if (midi !== null && conf >= 0.5) midi = guardOctave(T.octave, midi, T.t, P.notes, T.matcher.latency);
   T.frames.push({ t: T.t, midi, conf });
   for (let i = T.singIdx + 1; i < P.notes.length && T.t >= P.notes[i].s; i++) { T.singIdx = i; ev.push({ type: "note-start", i }); }
   const ended = (list) => {

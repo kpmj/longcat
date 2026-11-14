@@ -15,6 +15,7 @@ import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
 import { sing, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
+import { keepTake } from "../drill/pitchlog.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
@@ -88,7 +89,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1 };
+  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [] };
   R.geo = geometry(plan);
   R.headY = yOf(plan.notes[0].midi);
   const grid = laneGrid(plan);
@@ -353,8 +354,10 @@ export function frame(dt) {
   const T = R.T, P = R.plan;
   const i = currentIndex(T);
   let v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
+  const heard = v;
   /* the microphone also hears the phone's own bells: a frame that is one of them is not the singer */
   if (v && app.S.dev.voice === "mic" && heardItself(v.midi, notesNear(P.notes, T.t, T.matcher.latency))) v = null;
+  if (T.phase === "sing") R.raw.push([T.t, heard ? heard.midi : null, heard ? heard.conf : 0, heard ? heard.rms : null, !!heard && !v]);
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
   for (const e of evs) {
@@ -462,6 +465,7 @@ function resultLine(grade, mood) {
 
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);

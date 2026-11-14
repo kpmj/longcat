@@ -2,6 +2,7 @@
    key, hear the first note), the microphone (and a test), sound and letters, help. Cat kinds moved to the
    Wardrobe. The dev tools the designer uses to walk the whole month stay at the very bottom, marked as testing only. */
 import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
+import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
 import { ZONES, timeById, garmentName } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
@@ -133,8 +134,19 @@ export function openDev() {
       <button class="btn small" data-a="today">Back to today</button>
       <button class="btn small" data-a="range">Measure range</button>
     </div>
+    <h4>Last take's pitch numbers</h4>
+    <p class="muted small">What the tracker read, frame by frame. Numbers only, no sound. Copy them and paste them into the chat to debug.</p>
+    <button class="btn small" data-a="pitchlog">Copy the numbers</button>
+    <textarea class="pitchlog" readonly hidden></textarea>
     <h4>Last five takes</h4>
     <p class="muted small mono">${last || "none yet"}</p>`, { tall: true });
+  const pl = el.querySelector("[data-a=pitchlog]"), ta = el.querySelector(".pitchlog");
+  pl.onclick = async () => {
+    const text = lastTakeText();
+    if (!text) return toast("Sing a take first.");
+    try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into the chat."); }
+    catch { ta.hidden = false; ta.value = text; ta.focus(); ta.select(); toast("Select all and copy."); }
+  };
   $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.shortBody = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=voice]", el).forEach((i) => (i.onchange = () => { S.dev.voice = i.value; app.save(); toast(`Voice source: ${VOICE_MODES.find((v) => v.id === i.value).name}`); }));
   const done = (out, name = "") => {

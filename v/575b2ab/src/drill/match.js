@@ -216,7 +216,9 @@ export class NoteMatcher {
 
   _ingest(note) {
     this.allNotes.push(note);
-    for (const piece of splitHeldRepeats(this.targets, note, this.latency)) this.available.push(piece);
+    /* The latency is updated before a held note is split, not after (overnight sweep, 2026-11-14): when the
+       very first sung note held through two written notes of the same pitch, it was split with no latency
+       known yet, so the second half started a whole delay early and a late singer's second note was red. */
     if (this.fixedLatency === null && this.offsets.length < LATENCY_LOCK_COUNT) {
       const nearby = this.targets.filter((t) => Math.abs(note.start - t.s) <= 2 * MATCH_WINDOW_SECONDS && Math.abs(note.midi - t.midi) <= 1.0);
       if (nearby.length) {
@@ -224,6 +226,7 @@ export class NoteMatcher {
         this.offsets.push(note.start - closest.s);
       }
     }
+    for (const piece of splitHeldRepeats(this.targets, note, this.latency)) this.available.push(piece);
   }
 
   _finalizeDue(final) {
