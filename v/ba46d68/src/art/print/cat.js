@@ -3,6 +3,7 @@
    key-lined tube whose edge turns into round tufts as the fur grows (short, mid, long). */
 import { f, num } from "../util.js";
 import { coatMarkup, foldSpots, straight } from "../cat.js";
+import { kindParts } from "../palettes.js";
 
 export { coatMarkup, foldSpots, straight };
 export const KEY = "#262122";
@@ -21,12 +22,19 @@ const both = m => `<g>${m}</g><g transform="scale(-1 1)">${m}</g>`;
 /* animated ears: `anim` is a number of seconds that puts this cat out of step with the others */
 const bothAnim = (m, anim) => `<g class="lc-ear" style="animation-delay:${f(-anim)}s">${m}</g><g transform="scale(-1 1)"><g class="lc-ear" style="animation-delay:${f(-anim - 3.4)}s;animation-duration:9s">${m}</g></g>`;
 
-/* ears of the four kinds, in head space */
-export function catEars(kind, pal, anim = null) {
+/* ears of the seven shapes, in head space (`kind` may carry a charm, "fold+bow": only the shape matters here) */
+export function catEars(kindIn, pal, anim = null) {
+  const kind = kindParts(kindIn).shape;
   const pair = m => (anim == null ? both(m) : bothAnim(m, anim));
   const one = (outer, inner, extra = "") => pair(`<path d="${outer}" fill="${pal.fur}" ${key(LWC)}/>${inner ? `<path d="${inner}" fill="${pal.inner}"/>` : ""}${extra}`);
   if (kind === "big") return one("M-18.5 -5L-25 -31Q-24.5 -34.5 -20.5 -33L-3.5 -15Z", "M-18 -11L-21.6 -27.6L-9.6 -16Z");
   if (kind === "small") return one("M-18 -7Q-21.5 -21 -14 -22.5Q-8.5 -22 -5 -15Z", "");
+  /* folded: a low ear whose tip is bent forward and down, with the crease drawn */
+  if (kind === "fold") return one("M-19 -6.5Q-22 -17.5 -15.5 -19.5Q-9 -20 -4.5 -15Z", "", `<path d="M-20.4 -13.2Q-15.6 -20.4 -7.6 -17.2Q-11 -10.6 -17.6 -9.4Z" fill="${pal.fur}" ${key(LWC * .8)}/>`);
+  /* curled: a tall ear that arcs back and out at the tip */
+  if (kind === "curl") return one("M-18 -6Q-18.5 -20 -22.5 -26.5Q-24.5 -31 -19.5 -30Q-10.5 -26.5 -3.5 -15.2Z", "M-16 -11.5Q-16.2 -20 -19 -25.6Q-12.6 -22.6 -8.4 -15.6Z");
+  /* round: a small round ear, set wide */
+  if (kind === "round") return one("M-20.2 -8.6A8.2 8.2 0 1 1 -6.4 -15.8Z", "M-17.2 -12.6A4.6 4.6 0 1 1 -10.4 -16.4Z");
   const tuft = kind === "tuft" ? ln("M-16.6 -26l-2 -4.2M-15.4 -27.2l.1 -4.8M-14.2 -26.8l2.3 -3.6", LWC * .7) : "";
   return one("M-18 -6L-17 -26Q-16.4 -29 -13.4 -26.8L-3.5 -15.2Z", "M-15.8 -11.4L-15.2 -22.6L-8.4 -15.4Z", tuft);
 }
@@ -56,6 +64,21 @@ export function catFace(mood, pal, dy = 0, sung = null) {
   return `${eye(-8.4)}${eye(8.4)}<path d="M-2 ${f(3.6 + dy)}h4l-2 2.4z" fill="${pal.nose}" stroke="${pal.nose}" stroke-width=".9" stroke-linejoin="round"/>${mouth}`;
 }
 const HEAD = "M-20.5 1C-21 -11.5 -12 -17 0 -17C12 -17 21 -11.5 20.5 1C20 10.5 10.5 15.5 0 15.5C-10.5 15.5 -20 10.5 -20.5 1Z";
+/* A charm: one small thing worn by the ear on the cat's own right (drawn at the left of the head space), flat and
+   key-lined like everything else. It sits beside the ear, not on the crown, so the judge's fruit can still rest on
+   a hat cat's head. Colours are the print's own red, green, indigo and ochre, the same on every coat. */
+const CH = { red: "#bf452d", green: "#5d8a63", indigo: "#33517a", gold: "#ebb229", pink: "#f0c4bd", paper: "#f8f2e2" };
+const leafShape = (rot, c = CH.green) => `<path transform="rotate(${rot})" d="M0 0Q4.4 -4.6 10 -.6Q5 4 0 0Z" fill="${c}" ${key(LWC * .5)}/>`;
+const CHARM = {
+  camellia: () => leafShape(-150) + leafShape(-40) + `<circle r="5.2" fill="${CH.red}" ${key(LWC * .6)}/><path d="M-3.6 -1.4q3.6 -3 7.2 0M-2.6 2.4q2.6 2 5.2 0" fill="none" ${key(LWC * .34)} opacity=".6"/><circle r="1.9" fill="${CH.gold}" ${key(LWC * .34)}/>`,
+  plum: () => [0, 72, 144, 216, 288].map(a => `<circle transform="rotate(${a})" cy="-3.5" r="2.7" fill="${CH.pink}" ${key(LWC * .45)}/>`).join("") + `<circle r="1.7" fill="${CH.red}"/>`,
+  leaf: () => `<path transform="rotate(-28)" d="M-8 1Q-2 -8 9 -3Q3 7 -8 1Z" fill="${CH.green}" ${key(LWC * .6)}/><path transform="rotate(-28)" d="M-6.4 .8Q0 -1.6 7 -2.6" fill="none" ${key(LWC * .36)}/>`,
+  bow: () => `<path d="M0 0L-7.4 -4.6Q-9.4 0 -7.4 4.6ZM0 0L7.4 -4.6Q9.4 0 7.4 4.6Z" fill="${CH.indigo}" ${key(LWC * .6)}/><rect x="-2.1" y="-2.3" width="4.2" height="4.6" rx="1.2" fill="${CH.indigo}" ${key(LWC * .6)}/>`,
+  bell: () => `<path d="M-5 -5.4Q0 -8.6 5 -5.4" fill="none" stroke="${CH.red}" stroke-width="2.2" stroke-linecap="round"/><circle cy=".8" r="4.8" fill="${CH.gold}" ${key(LWC * .6)}/><path d="M-4.2 .2h8.4M0 1.2v3" fill="none" ${key(LWC * .42)}/>`,
+  berry: () => leafShape(-160) + leafShape(-110) + [[-1.6, 1.8], [3.4, -.6], [1.8, 4.4]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.7" fill="${CH.red}" ${key(LWC * .45)}/>`).join(""),
+};
+/* the charm in head space; nothing for a kind without one */
+export const charmMarkup = kind => { const c = kindParts(kind).charm; return c && CHARM[c] ? `<g transform="translate(-13.6 -14.4)">${CHARM[c]()}</g>` : ""; };
 /* the cat's head at (x, y), facing dir (1 = right), scale sc */
 /* anim (optional, seconds): the ears twitch and the open eyes blink, out of step by that much. Leave it out for the
    lane cat, which is redrawn every frame. mouth (optional): the shape of a sung sound, see catFace */
@@ -67,7 +90,7 @@ export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim =
   const blinks = anim != null && (mood === "normal" || mood === "wide");
   const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal, 0, mouth)}</g>` : catFace(mood, pal, 0, mouth);
   const face = anim != null && mood !== "sleep" ? `<g class="lc-face">${face0}</g><g class="lc-face-pet">${catFace("smug", pal)}</g>` : face0;
-  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}</g>`;
+  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}${charmMarkup(kind)}</g>`;
 }
 
 /* a key-lined tube: the line under, the fur over */
@@ -75,19 +98,27 @@ const pipe = (d, c, w, lw = LWC * .9) => `<path d="${d}" fill="none" stroke="${K
 const blob = (cx, cy, r, c, lw = LWC * .9) => `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="${c}" ${key(lw)}/>`;
 
 /* tails start at (x, y) and grow away from dir (the way the cat faces). w = the tail's base thickness */
-export function catTail(kind, x, y, dir, w = 8, pal = C) {
+export function catTail(kindIn, x, y, dir, w = 8, pal = C) {
+  const kind = kindParts(kindIn).shape;
   const P = (dx, dy) => `${f(x + dx * dir)} ${f(y + dy)}`;
   const d = `M${P(0, 0)} Q${P(-14, -1)} ${P(-15, -13)} Q${P(-16, -22)} ${P(-8, -24)}`;
   if (kind === "big") return pipe(`M${P(0, 0)} Q${P(-17, 0)} ${P(-17, -15)} Q${P(-17, -28)} ${P(-8, -29)}`, pal.fur, w * .55);
   if (kind === "tuft") return pipe(d, pal.fur, w * 1.35) + blob(x - 8 * dir, y - 25, w * 1.1, pal.fur) + `<path d="M${P(-13, -27)} q${f(4 * dir)} -5 ${f(9 * dir)} -1" stroke="${pal.stripe}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
   if (kind === "small") return blob(x - 4 * dir, y - 5, w * .9, pal.fur);
+  /* folded: short and thick, held low */
+  if (kind === "fold") return pipe(`M${P(0, 0)} Q${P(-12, -1)} ${P(-13, -12)}`, pal.fur, w * 1.15);
+  /* curled: a plume that rolls over at the tip */
+  if (kind === "curl") return pipe(`M${P(0, 0)} Q${P(-16, 0)} ${P(-16, -14)} Q${P(-16, -25)} ${P(-7, -23)} Q${P(-1.5, -21)} ${P(-5.5, -15.5)}`, pal.fur, w * .8);
+  /* round: long and thin with two rings near the tip */
+  if (kind === "round") return pipe(d, pal.fur, w * .72) + `<path d="M${P(-15.6, -15.5)}h${f(4.6 * dir)}M${P(-13.4, -21.6)}l${f(3.6 * dir)} 2.6" stroke="${pal.stripe}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
   return pipe(d, pal.fur, w * .9);
 }
 /* the tail tucked along the body (asleep) */
-export function catTailTucked(kind, x, y, dir, w = 8, pal = C) {
+export function catTailTucked(kindIn, x, y, dir, w = 8, pal = C) {
+  const kind = kindParts(kindIn).shape;
   const P = (dx, dy) => `${f(x + dx * dir)} ${f(y + dy)}`;
   if (kind === "small") return blob(x - 2 * dir, y + 4, w * .85, pal.fur);
-  const sw = kind === "tuft" ? w * 1.3 : kind === "big" ? w * .55 : w * .9;
+  const sw = kind === "tuft" ? w * 1.3 : kind === "big" ? w * .55 : kind === "fold" ? w * 1.15 : kind === "round" ? w * .72 : kind === "curl" ? w * .8 : w * .9;
   return pipe(`M${P(0, 0)} Q${P(-8, 10)} ${P(8, 10)} T${P(26, 7)}`, pal.fur, sw);
 }
 

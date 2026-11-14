@@ -53,7 +53,17 @@ export const ONSEN_LOOKS = {
 /* safe lookups: unknown ids fall back to something sensible instead of throwing or printing undefined */
 export const timeId = t => (TIME_IDS.includes(t) ? t : "morning");
 export const zoneId = z => (ZONE_IDS.includes(z) ? z : null);
-export const kindId = k => (KINDS.includes(k) ? k : "point");
+/* A cat is a shape (ears and tail) and, since 2026-11-14, maybe a charm worn by one ear (the designer: "多畫幾個貓種 也不一定
+   用貓種分辨 也可以放一些裝飾品在貓的頭上來創造出不同的貓"). Its id is still one string, the `kind` every drawing
+   already takes: "fold", or "fold+bow". The first four shapes are the old KINDS; the woodblock art draws all seven
+   and the charms (print/cat.js), the first art draws anything it does not know as "point". */
+export const CAT_SHAPES = ["point", "big", "tuft", "small", "fold", "curl", "round"];
+export const CAT_CHARMS = ["camellia", "plum", "leaf", "bow", "bell", "berry"];
+export const kindParts = k => {
+  const [shape, charm] = String(k == null ? "" : k).split("+");
+  return { shape: CAT_SHAPES.includes(shape) ? shape : "point", charm: CAT_CHARMS.includes(charm) ? charm : null };
+};
+export const kindId = k => { const p = kindParts(k); return p.charm ? `${p.shape}+${p.charm}` : p.shape; };
 export const animalId = a => (ANIMALS.includes(a) ? a : "cat");
 export function lookOf(look, zone = "bottom", time = "morning") {
   const d = ONSEN_LOOKS[timeId(time)][zoneId(zone) || "bottom"];

@@ -5,7 +5,7 @@
 import { app, show, esc, $, $$, sheet, closeSheet, wireTaps, hopCat } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, nappingSvg, loaf } from "../art/index.js";
-import { ZONES, TIMES, STEPS, CAT_KINDS, PATTERNS, PALETTE_NAMES, garmentName, placeById, timeById, kindFor } from "../content.js";
+import { ZONES, TIMES, STEPS, PATTERNS, PALETTE_NAMES, garmentName, placeById, timeById, kindFor, catWords } from "../content.js";
 import { openCard } from "./album.js";
 
 let pick = null, mode = "outfit";
@@ -34,11 +34,12 @@ function cats(root) {
   const coats = St.collectedCoats(S, place);
   /* the cats that have finished and gone to sleep: off the home page (it was too full), kept here (the designer, 2026-11-14) */
   const asleep = St.basketsFor(S, place);
-  const kindName = (z) => (CAT_KINDS.find((k) => k.id === kindFor(place, z)) || CAT_KINDS[0]).short;
+  /* who this cat is, under the garment's name: its shape, and its charm when it wears one */
+  const who = (z) => { const w = catWords(kindFor(place, z)); return `<i>${esc(w.shape)}</i>${w.charm ? `<i>${esc(w.charm.replace(/^a /, ""))}</i>` : ""}`; };
   const row = (z) => {
     const own = St.coatKey(time, z.id), worn = St.coatOf(S, place, time, z.id);
     const opts = [{ key: own, label: "Its own", name: "its own coat" }, ...coats.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: garmentName(c.time, c.zone), name: coatName(place, c) }))];
-    return `<div class="coat-row"><span class="wlab">${z.name}<i>${esc(kindName(z.id))}</i></span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-coat="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${esc(c.name)}">${catIcon(place, time, z.id, c.key)}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
+    return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-coat="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${esc(c.name)}">${catIcon(place, time, z.id, c.key)}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
   };
   root.innerHTML = `
     <header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(place).name)}</span></div></header>

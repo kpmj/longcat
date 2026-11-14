@@ -34,16 +34,30 @@ export const PATTERNS = [
 ];
 export const PALETTE_NAMES = { grey: "grey", ginger: "ginger", cream: "cream" };
 
-/* The four cat kinds: ears and a tail. Until 2026-11-14 they were a free setting per body part. Now they are cast,
-   not chosen (the designer, 2026-11-14: "每個月有三個不同的貓種 … 玩家沒辦法選哪隻貓是哪個部位 我們可以自己決定 貓的部分沒有
-   解鎖或選擇自由"): every month has three different kinds, one per garment, set in KIND_CAST below. What the player
-   chooses is the coat (state.js, coats). */
+/* The cats. Until 2026-11-14 the kind was a free setting per body part. Now the cats are cast, not chosen (the designer,
+   2026-11-14: "每個月有三個不同的貓種 … 玩家沒辦法選哪隻貓是哪個部位 我們可以自己決定 貓的部分沒有解鎖或選擇自由"):
+   every month has its own three, one per garment, set in KIND_CAST below. What the player chooses is the coat
+   (state.js, coats).
+   A cat is a shape (ears and a tail) and maybe a charm by one ear (the designer, the same day: "多畫幾個貓種 也不一定用貓種
+   分辨 也可以放一些裝飾品在貓的頭上來創造出不同的貓"). Its id is "shape" or "shape+charm", the `kind` the art takes. */
 export const CAT_KINDS = [
   { id: "point", name: "Pointy ears · long tail", short: "Pointy", note: "a long tail curled at the tip" },
   { id: "big", name: "Big ears · thin tail", short: "Big ears", note: "ears set wide" },
   { id: "tuft", name: "Tufted ears · bushy tail", short: "Tufted", note: "a tuft on each ear tip" },
   { id: "small", name: "Small ears · stub tail", short: "Small", note: "the tail is a ball" },
+  { id: "fold", name: "Folded ears · short thick tail", short: "Folded", note: "the ear tips fold forward" },
+  { id: "curl", name: "Curled ears · rolled tail", short: "Curled", note: "the ears arc back, the tail rolls over" },
+  { id: "round", name: "Round ears · ringed tail", short: "Round", note: "two rings near the tail's tip" },
 ];
+export const CAT_CHARMS = [
+  { id: "camellia", name: "a camellia" }, { id: "plum", name: "a plum blossom" }, { id: "leaf", name: "a leaf" },
+  { id: "bow", name: "a bow" }, { id: "bell", name: "a bell" }, { id: "berry", name: "red berries" },
+];
+/* a cat in words: { shape: "Folded", charm: "a bow" | "" } */
+export function catWords(kind) {
+  const [shape, charm] = String(kind || "").split("+");
+  return { shape: (CAT_KINDS.find((k) => k.id === shape) || CAT_KINDS[0]).short, charm: (CAT_CHARMS.find((c) => c.id === charm) || { name: "" }).name };
+}
 
 export const GUESTS = {
   dachshund: { name: "Dachshund", mark: "floppy ears" },
@@ -267,12 +281,23 @@ export function garmentLook(placeId, timeId, zoneId) {
   return { fur, pattern, palette };
 }
 
-/* Each month's three cats, in the order of PLACE_IDS: [scarf, top, hat]. Three different kinds every month, a
-   different one left out from month to month, and no two months with the same cast in the same places. */
+/* Each month's three cats, in the order of PLACE_IDS: [scarf, top, hat]. Thirty-six different cats in a year: no cat
+   comes twice, the three of a month have three different shapes and never the same charm, and the shapes run on from
+   month to month so each of the seven comes round about five times. The first month keeps the three shapes the game
+   began with, one of them plain. */
 const KIND_CAST = [
-  ["point", "big", "tuft"], ["small", "point", "big"], ["tuft", "small", "point"], ["big", "tuft", "small"],
-  ["big", "tuft", "point"], ["point", "small", "big"], ["point", "tuft", "small"], ["small", "big", "tuft"],
-  ["tuft", "point", "big"], ["big", "small", "point"], ["small", "point", "tuft"], ["tuft", "small", "big"],
+  ["point", "big+bell", "tuft+leaf"],             // onsen
+  ["small+camellia", "fold+berry", "curl+bow"],   // livingroom
+  ["round+plum", "point+leaf", "big+camellia"],   // nightmarket
+  ["tuft+berry", "small+bow", "fold+plum"],       // train
+  ["curl", "round+bell", "point+berry"],          // beach
+  ["big+bow", "tuft+plum", "small"],              // library
+  ["fold+bell", "curl+leaf", "round+camellia"],   // camping
+  ["point+plum", "big", "tuft+bell"],             // cinema
+  ["small+leaf", "fold+camellia", "curl+berry"],  // bus
+  ["round+bow", "point+bell", "big+leaf"],        // museum
+  ["tuft+camellia", "small+berry", "fold+bow"],   // rooftop
+  ["curl+plum", "round+leaf", "point+camellia"],  // skilift
 ];
 export function kindFor(placeId, zoneId) {
   const cast = KIND_CAST[Math.max(0, PLACE_IDS.indexOf(placeId)) % KIND_CAST.length];

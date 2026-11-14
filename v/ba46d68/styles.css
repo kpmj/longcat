@@ -303,7 +303,7 @@ button.time-chip:focus-visible { outline: 2px solid var(--brand); outline-offset
 .kind.on { border-color: var(--brand); background: var(--soft); }
 /* the Cats tab: one row of coats per garment, drawn on that garment's own cat; the row scrolls sideways when the
    month's coats no longer fit */
-.coat-row { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 6px; align-items: center; }
+.coat-row { display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 6px; align-items: center; }
 .coat-row .wlab i { display: block; font-style: normal; font-weight: 600; font-size: 10px; opacity: .85; }
 .coats { display: flex; gap: 6px; overflow-x: auto; padding: 3px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .coats::-webkit-scrollbar { display: none; }
