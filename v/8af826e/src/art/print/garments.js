@@ -139,15 +139,15 @@ export function garmentLayers(g, ctx = {}) {
     const star = (x, y, k, i) => `<g transform="translate(${f(x)} ${f(y)})"><path class="lc-new-spark" style="animation-delay:${f(.25 + i * .18)}s" d="M0 ${f(-7 * k)}Q${f(1.2 * k)} ${f(-1.2 * k)} ${f(7 * k)} 0Q${f(1.2 * k)} ${f(1.2 * k)} 0 ${f(7 * k)}Q${f(-1.2 * k)} ${f(1.2 * k)} ${f(-7 * k)} 0Q${f(-1.2 * k)} ${f(-1.2 * k)} 0 ${f(-7 * k)}Z" fill="#efe6d2" stroke="${KEY}" stroke-width="1.3" stroke-linejoin="round"/></g>`;
     if (ctx.animate) mark = star(hx + (b.x - a.x) / T * 29, hy - 15, 1, 0) + star(a.x - hd * 6, a.y - w * .5 - 14, .8, 1) + star(mid.x, mid.y - w * .5 - 20, 1.15, 2);
   }
-  const hop = s => (newSeg && ctx.animate ? `<g class="lc-hop">${s}</g>` : s);
+  const hop = s => (newSeg && ctx.animate ? `<g class="lc-new-hop">${s}</g>` : s);
   const beat = { hat: 1.5, top: 7, scarf: 12.5 }[zone];
   const headM = cat ? catHead(hx, hy, hd, face, .95, pal, kind, ctx.animate ? beat : null) : headFor(animal, kind, hx, hy, hd, face, .95, pal, ctx.animate ? beat : null);
   const head0 = pawPair(end.x + hd * 3, end.y + 12, hd, 1, pal) + headM;
   /* animated: an awake cat stretches now and then (each garment at its own moment); a sleeping one breathes */
   /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */
-  const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${hop(`<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>`)}${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
+  const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(`<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>`)}${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
   const artAll = trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills;
-  return { under: hop(under), art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy } };
+  return { under: hop(under), art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy } };
 }
 
 /* a dashed guide over the steps not yet worn (from `from` to 12) */

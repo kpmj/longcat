@@ -15,8 +15,9 @@ export function loaf(x, y, dir, c = {}, mood = "sleep", sc = 1, zone = "bottom",
   const body = `${tufts ? `<g fill="${KEY}" transform="translate(0 -${f(lw)})">${tufts}</g>` : ""}<ellipse rx="${rx}" ry="${ry}" fill="${pal.fur}" stroke="${KEY}" stroke-width="${f(lw)}"/>${tufts ? `<g fill="${pal.fur}">${tufts}</g>` : ""}`;
   const head = cat ? catHead(-12, -6, 1, mood, .55, pal, kind, asleep ? null : anim) : headFor(animal, kind, -12, -6, 1, mood, .55, pal, asleep ? null : anim);
   const inner = `${asleep ? "" : tail}${body}${coat}<ellipse cy="5" rx="12" ry="4.2" fill="${pal.belly}"/>${asleep ? tail : ""}${head}`;
-  /* animated: a sleeping loaf breathes; an awake one twitches its ears and blinks (in catHead) */
-  return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(dir * sc * 100) / 100 || .01} ${f(sc * 100) / 100 || .01})">${anim == null ? inner : `<g data-tap="cat"><g class="lc-nuzzle">${asleep ? `<g class="lc-snooze" style="animation-delay:${f(-anim)}s">${inner}</g>` : inner}</g>${petHearts(-10, -26, .8)}</g>`}</g>`;
+  /* animated: a sleeping loaf breathes; an awake one twitches its ears and blinks (in catHead). c.mark: the garment
+     this cat is waiting to become (data-zone), so the page can make it hop when that garment is chosen */
+  return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(dir * sc * 100) / 100 || .01} ${f(sc * 100) / 100 || .01})">${anim == null ? inner : `<g data-tap="cat"${c.mark ? ` data-zone="${c.mark}"` : ""}><g class="lc-nuzzle">${asleep ? `<g class="lc-snooze" style="animation-delay:${f(-anim)}s">${inner}</g>` : inner}</g>${petHearts(-10, -26, .8)}</g>`}</g>`;
 }
 /* three loaves stacked: two below, one on top. PILE gives each one's place, so a runner can aim at it.
    `arrive` (seconds per cat, or null): each loaf pops in at that moment, for the reset beat */

@@ -2,6 +2,7 @@
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
 import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen } from "../state.js";
 import { tapSound } from "../audio/ambient.js";
+import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
@@ -144,6 +145,21 @@ export function readVoice(t, note, T) {
     case "silent": return null;
     case "touch": return touchVoice.down && touchVoice.midi != null ? { midi: touchVoice.midi + Math.sin(t * 29) * 0.03, conf: 0.95 } : null;
     default: return readMic();
+  }
+}
+
+/* The cat of one garment hops once: the garment whose card was tapped on the home page, or the one just put on.
+   Nothing stays on the picture (the designer, 2026-11-14). The art marks the cat's pieces with data-zone; with reduced
+   motion nothing moves. */
+export function hopCat(el, zone) {
+  const z = drawZone(zone);
+  if (!el || !z) return;
+  for (const x of el.querySelectorAll(`[data-zone="${z}"]`)) {
+    x.classList.remove("lc-picked");
+    x.getBoundingClientRect(); // restart the hop when picked again
+    x.classList.add("lc-picked");
+    clearTimeout(x._lcPick);
+    x._lcPick = setTimeout(() => x.classList.remove("lc-picked"), 900);
   }
 }
 

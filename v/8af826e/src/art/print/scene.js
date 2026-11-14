@@ -104,7 +104,7 @@ export function sceneParts(o = {}) {
   /* the cats that are waiting sit on the judge's lap, not on a shelf at the side, so they do not cover the
      background (the designer, 2026-11-14). The lap is free now that the lap garment is a hat. `arriving`: they pop onto the
      lap one after another */
-  const waitingArt = waiting.length ? pile(200, 437, waiting, "normal", time, 1.15, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null) : "";
+  const waitingArt = waiting.length ? pile(200, 437, waiting.map(w => ({ ...w, mark: drawZone(w.zone) })), "normal", time, 1.15, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null) : "";
   /* a small breeze crosses in front of the judge: two lines of wind and a leaf */
   const breeze = animate && o.react === "shiver" ? `<g class="lc-breeze"><path d="M0 300q22 -9 44 0t44 0M30 324q18 -7 36 0t36 0" fill="none" stroke="#f8f2e2" stroke-width="2.4" stroke-linecap="round" opacity=".85"/><path transform="translate(104 300) rotate(30)" d="M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z" fill="#bf452d" stroke="${KEY}" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
   const cushion0 = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";

@@ -1,7 +1,7 @@
 /* Home: the judge where it is now, wearing what has been sung, the cushion on the next step (the baskets of
    earlier cats are no longer shown here, see state.js homeScene); one button to sing, one line under it. The three progress chips open the Garment sheet.
    Settings is the gear in the top bar. Nothing here counts streaks or shows a score. */
-import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps } from "./app.js";
+import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } from "./app.js";
 import { startMusic, stopMusic } from "../audio/ambient.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
@@ -85,7 +85,10 @@ export function renderHome(root) {
   const pick = $("[data-act=pick]", root);
   if (pick) pick.onclick = () => openPicker();
   $$("[data-go]", root).forEach((b) => (b.onclick = () => show(b.dataset.go)));
-  $$(".gchip", root).forEach((b) => (b.onclick = () => openGarment(b.dataset.zone)));
+  /* a card says which cat it is about: that cat hops once as its sheet opens */
+  $$(".gchip", root).forEach((b) => (b.onclick = () => { hopCat($("#home-scene", root), b.dataset.zone); openGarment(b.dataset.zone); }));
+  /* the garment just put on (Wear this one, the picker): its cat hops once */
+  if (app.props.picked) setTimeout(() => app.screen === "home" && hopCat(document.getElementById("home-scene"), app.props.picked), 250);
   const tc = $("[data-act=times]", root);
   if (tc) tc.onclick = () => openTimes();
   const lb = $("[data-act=letter]", root);
@@ -135,7 +138,7 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
     St.chooseZone(S, place, b.dataset.zone);
     app.save();
     closeSheet(true);
-    show("home", { noAutoPick: true });
+    show("home", { noAutoPick: true, picked: b.dataset.zone });
   }));
   if (tipText) setTimeout(() => tip("garment", el.querySelector("h3"), { text: tipText, at: "above" }), 380);
 }
@@ -185,7 +188,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe"); });
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });
-  on("wear", () => { St.chooseZone(S, place, zone); app.save(); closeSheet(true); show("home", { noAutoPick: true }); });
+  on("wear", () => { St.chooseZone(S, place, zone); app.save(); closeSheet(true); show("home", { noAutoPick: true, picked: zone }); });
   el.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { closeSheet(true); askRedo(place, time, zone, Number(b.dataset.step)); }));
 }
 
