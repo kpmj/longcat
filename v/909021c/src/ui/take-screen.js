@@ -6,12 +6,13 @@
    Notes that land in a row build a combo; the judge gets happier and the sky around it fills up (stars, music,
    a rainbow, confetti). An off note ends the run quietly; nothing is lost. */
 import { app, show, sheet, closeSheet, esc, $, readVoice, prepareVoice, touchVoice } from "./app.js";
+import { openMic, closeMic, micReady, micGranted } from "../audio/mic.js";
 import * as St from "../state.js";
 import { planTake } from "../drill/drills.js";
 import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from "../drill/take.js";
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { laneShape } from "./lane-body.js";
+import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
 import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
@@ -124,9 +125,18 @@ function render(root, { ctx, retake = false, outcome = null }) {
 /* LATER (decision 5, fix 4 of the list): the judge humming along under the singer is not built; the
    take stays "hear it once, then sing with only the metronome". See docs/later.md. */
 async function start() {
-  const ok = await prepareVoice();
+  /* The microphone is open only from the count-in to the end of singing: while it is open an iPhone plays
+     everything quietly (see audio/mic.js). The first time in a visit it is opened here, so the permission
+     question comes before the demo, then closed again so the demo is heard at full volume. */
+  const mic = app.S.dev.voice === "mic";
+  if (mic && micReady()) closeMic(); // left open by the range finder or the microphone test
+  if (mic && !micGranted()) {
+    const ok = await prepareVoice();
+    if (!R) return;
+    if (!ok) return micProblem();
+    closeMic();
+  } else if (!mic) await prepareVoice();
   if (!R) return;
-  if (!ok) return micProblem();
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
   R.plan.notes.forEach((n) => R.nodes.push(hum(t0 + n.s, n.midi, n.e - n.s)));
@@ -145,10 +155,13 @@ function stop() {
   if (!R) return;
   cancelAnimationFrame(R.raf);
   stopNodes();
+  closeMic();
   R = null;
 }
 
 function onCount() {
+  /* open the microphone for the count-in and the singing; the count-in gives it time to start */
+  if (app.S.dev.voice === "mic" && !micReady()) openMic().then((ok) => { if (!ok && R) { stop(); micProblem(); } });
   const b = R.plan.beat, t = clock() - (R.T.t + b * R.plan.countBeats); // when the count-in began, on the beat
   for (let k = 0; k < R.plan.countBeats; k++) click(Math.max(clock(), t + k * b), k === R.plan.countBeats - 1);
   const skip = document.querySelector("[data-act=skip]");
@@ -341,6 +354,18 @@ function markGrid(midi) {
   R.gridOn = hit;
 }
 
+/* The head follows the voice, but a jump far from the phrase has to last before the head goes there: a
+   voice starting a note is often read far too low or too high for a moment. */
+function steadyVoice(v, t, notes, lat) {
+  if (!v || v.midi == null) { R.jump = null; return null; }
+  const near = notes.filter((n) => t - lat >= n.s - 0.5 && t - lat <= n.e + 0.5).map((n) => n.midi);
+  const far = near.length && near.every((m) => Math.abs(v.midi - m) > FAR_DRAW);
+  if (!far) { R.jump = null; R.headMidi = v.midi; return v.midi; }
+  if (!R.jump || Math.abs(R.jump.midi - v.midi) > 1.5) R.jump = { midi: v.midi, since: t };
+  if (t - R.jump.since >= OUTLIER_SECONDS) { R.headMidi = v.midi; return v.midi; }
+  return R.headMidi ?? null;
+}
+
 function draw(v, dt = 1 / 60) {
   const T = R.T, P = R.plan;
   const shift = PLAY_X - T.t * PXS;
@@ -351,8 +376,9 @@ function draw(v, dt = 1 / 60) {
   const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
   else {
-    const want = v ? yOf(v.midi) : guideY(T.t);
-    const k = dt > 0 ? 1 - Math.exp(-dt / (v ? FOLLOW : 0.08)) : 1;
+    const hv = steadyVoice(v, T.t, P.notes, T.matcher.latency);
+    const want = hv != null ? yOf(hv) : guideY(T.t);
+    const k = dt > 0 ? 1 - Math.exp(-dt / (hv != null ? FOLLOW : 0.08)) : 1;
     R.headY += (want - R.headY) * k;
   }
   markGrid(v ? v.midi : null);
@@ -392,6 +418,7 @@ function resultLine(grade, mood) {
 }
 
 function finish(grade) {
+  closeMic(); // the singing is over: the result sounds play at full volume
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);

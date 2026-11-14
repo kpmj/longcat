@@ -103,10 +103,31 @@ function smooth(frames, on) {
 
 /* ---------- what the lane draws ---------- */
 
-/* A pitch tracker now and then reports a wild pitch for a frame or two (an octave slip, or the phone's own
-   sounds). A leap that comes straight back within SPIKE frames is not the voice: it is drawn as the pitch
-   around it. Only for drawing; grading still sees every raw frame. */
+/* A pitch tracker now and then reports a wild pitch for a moment (an octave slip, the start of a note, the
+   phone's own sounds). Only for drawing; grading still sees every frame.
+   1. A stretch further than FAR_DRAW from every note of the phrase near it, shorter than OUTLIER_SECONDS,
+      is not drawn (play-test, 2026-11-14: lines dropping from the body to the bottom of the lane at the
+      start of notes). A singer who really stays that far off for longer is drawn as sung.
+   2. A leap that comes straight back within SPIKE frames is drawn as the pitch around it. */
 export const SPIKE = 4;
+export const FAR_DRAW = 5; // semitones
+export const OUTLIER_SECONDS = 0.25;
+export function dropFarBlips(frames, notes, lat = 0) {
+  const out = frames.map((f) => ({ t: f.t, midi: f.midi }));
+  const far = out.map((f) => {
+    if (f.midi == null) return false;
+    const near = notes.filter((n) => f.t - lat >= n.s - 0.5 && f.t - lat <= n.e + 0.5);
+    return near.length > 0 && near.every((n) => Math.abs(f.midi - n.midi) > FAR_DRAW);
+  });
+  for (let i = 0; i < out.length; i++) {
+    if (!far[i]) continue;
+    let j = i;
+    while (j < out.length && far[j]) j++;
+    if (out[j - 1].t - out[i].t < OUTLIER_SECONDS) for (let m = i; m < j; m++) out[m].midi = null;
+    i = j;
+  }
+  return out;
+}
 export function despike(frames) {
   const out = frames.map((f) => ({ t: f.t, midi: f.midi }));
   for (let i = 1; i < out.length; i++) {
@@ -158,7 +179,7 @@ export const isShort = (notes) => notes.length > 1 && notes[0].e - notes[0].s < 
    head (so the caller can join the two). */
 export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, xOf, yOf, cull = -30 }) {
   const m = !isShort(notes) ? "trace" : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
-  const clean = despike(frames), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : clean;
+  const clean = despike(dropFarBlips(frames, notes, lat)), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : clean;
   const threads = [[]], subs = [[]];
   const cut = (list) => { if (list[list.length - 1].length) list.push([]); };
   let tail = null, headJoins = false;
