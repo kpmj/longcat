@@ -64,6 +64,8 @@ if (typeof addEventListener === "function" && typeof document !== "undefined") {
 }
 export const audioState = () => (ac ? ac.state : "none");
 export const audioRunning = () => !!ac && ac.state === "running";
+/* seconds between booking a sound and hearing it, as far as the browser says: [inside the browser, the device] */
+export const audioDelay = () => (ac ? [ac.baseLatency ?? null, ac.outputLatency ?? null].map((x) => (x == null ? null : Math.round(x * 1000) / 1000)) : null);
 /* true once the sound runs; false if it still does not after `ms` (the caller then asks for a tap) */
 export async function wakeAudio(ms = 700) {
   if (!audioContext()) return true; // a browser with no sound at all: nothing to wait for

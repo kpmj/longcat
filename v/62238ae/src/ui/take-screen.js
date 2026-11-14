@@ -13,7 +13,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState } from "../audio/synth.js";
+import { demoNote, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { demoVoice } from "../audio/demo-voices.js";
@@ -258,10 +258,11 @@ function stop() {
 }
 
 function onCount() {
-  /* open the microphone for the count-in and the singing; the count-in gives it time to start */
+  /* open the microphone for the count-in and the singing. The first count beat ("Ready") is silent on purpose:
+     a phone switches its sound to call mode when the microphone opens and can stumble for a moment, and that
+     moment should not fall on a click (see bookTicks for the clicks). */
   if (app.S.dev.voice === "mic" && !micReady()) openMic().then((ok) => { if (!ok && R) { stop(); micProblem(); } });
-  const b = R.plan.beat, t = clock() - (R.T.t + b * R.plan.countBeats); // when the count-in began, on the beat
-  for (let k = 0; k < R.plan.countBeats; k++) click(Math.max(clock(), t + k * b), k === R.plan.countBeats - 1);
+  R.clicked = 0;
   const skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
   hideTip();
@@ -276,7 +277,7 @@ function laneTip(id, ms, laneY = null) {
   tip(id, lane, { at: "below", x: PLAY_X / W, y: (laneY ?? R.headY + 18) * k + 12, ms });
 }
 
-/* 3, 2, 1, Breathe on the four count-in beats; the first note is the beat after, with nothing popping up at it.
+/* Ready, 3, 2, 1, Breathe on the five count-in beats; the first note is the beat after, with nothing popping up at it.
    the designer, 2026-11-14: "the player has to sing the first note the instant GO appears ... it feels rushed". GO used
    to appear on the first note itself, so it worked as a starting gun: the singer waited for it and was late.
    Now the last count beat is the breath a singer takes anyway, and it says so; the note arrives one beat
@@ -402,6 +403,21 @@ function onNoteEnd(i, r) {
 const TICK_AHEAD = 0.12;
 function bookTicks() {
   const T = R.T, at = clock();
+  /* The count-in: di, di, Di on 3, 2, 1 and a soft tick on the breath. the designer, 2026-11-14: "the di di Di with
+     3, 2, 1 is not synced". All four clicks used to be booked at once when the count began, at fixed moments of
+     the audio clock; the microphone opens at that same moment, and when the phone's sound stumbled then, the
+     clicks slid away from the numbers and stayed away. Now each click is booked just before its own beat, from
+     where the take's clock is, like the metronome: a stumble can no longer shift the ones after it. */
+  if (T.phase === "count") {
+    const P = R.plan, n = P.countBeats;
+    for (let k = (R.clicked || 0) + 1; k < n; k++) {
+      const tk = -P.beat * (n - k);
+      if (tk >= T.t + TICK_AHEAD) break;
+      const when = Math.max(at, at + (tk - T.t));
+      if (k === n - 1) tick(when, false); else click(when, k === n - 2);
+      R.clicked = k;
+    }
+  }
   for (const k of ticksIn(T, T.t, T.t + TICK_AHEAD)) {
     const when = at + (k.t - T.t);
     if (when <= R.ticked + 0.02) continue;
@@ -440,7 +456,7 @@ export function frame(dt) {
   for (const e of evs) {
     if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
-    else if (e.type === "beat") { const last = e.k === P.countBeats - 1; countdown(["3", "2", "1", "Breathe"][e.k - (P.countBeats - 4)] || "", last); hint("", last ? "the first note is the next beat" : "sing as the notes reach the line"); }
+    else if (e.type === "beat") { const last = e.k === P.countBeats - 1; countdown(["Ready", "3", "2", "1", "Breathe"][e.k - (P.countBeats - 5)] || "", last); hint("", last ? "the first note is the next beat" : "sing as the notes reach the line"); }
     else if (e.type === "phase" && e.phase === "sing") { hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
@@ -546,7 +562,7 @@ function resultLine(grade, mood) {
 
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
