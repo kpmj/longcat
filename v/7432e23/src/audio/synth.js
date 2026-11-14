@@ -75,6 +75,18 @@ export async function wakeAudio(ms = 700) {
   while (ac.state !== "running" && Date.now() < end) await new Promise((r) => setTimeout(r, 40));
   return ac.state === "running";
 }
+/* After the microphone opens or is let go, a phone's sound stops for a moment. Resolves true once the sound's clock
+   has moved `need` seconds, false if it has not within `ms`. */
+export async function audioSettled(need = 0.1, ms = 1200) {
+  const c = ac;
+  if (!c) return true;
+  const a0 = c.currentTime, end = Date.now() + ms;
+  while (Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 30));
+    if (c !== ac || c.currentTime - a0 >= need) return true;
+  }
+  return false;
+}
 /* Throw the context away and make a new one. Only inside a touch, where a phone lets sound start. The old one is
    closed a moment later, so a chime still ringing is not cut off. Whoever keeps nodes of their own (the home
    music) hears about it through the "longcat-audio" event. */

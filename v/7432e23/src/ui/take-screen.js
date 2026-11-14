@@ -13,7 +13,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale } from "../audio/synth.js";
+import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { demoVoice } from "../audio/demo-voices.js";
@@ -179,6 +179,8 @@ async function start() {
     if (!R) return;
     if (!ok) return micProblem();
     closeMic();
+    await audioSettled(); // letting the microphone go switches the phone's sound back: wait until it runs again
+    if (!R) return;
     hint("Listen first", "");
   } else if (!mic) await prepareVoice();
   if (!R) return;
@@ -269,11 +271,22 @@ function stop() {
 }
 
 function onCount() {
-  /* open the microphone for the count-in and the singing. The first count beat ("Ready") is silent on purpose:
-     a phone switches its sound to call mode when the microphone opens and can stumble for a moment, and that
-     moment should not fall on a click (see bookTicks for the clicks). */
-  if (app.S.dev.voice === "mic" && !micReady()) openMic().then((ok) => { if (!ok && R) { stop(); micProblem(); } });
+  /* Open the microphone for the count-in and the singing, and hold the take still until it is really open.
+     the designer, 2026-11-14: "I'm not sure if it's delayed by the microphone access notification, but sometimes the
+     drill feels unsynced after that event". Opening the microphone switches a phone's sound to call mode: the
+     sound stops for a moment, and some browsers ask their question again first. The count used to run on through
+     all of that, so afterwards sound and picture could be apart. Now the take's clock stands at the first count
+     beat, showing Ready, until the microphone is open and the sound's clock is moving again (loop); only then
+     does the count go Ready, 3, 2, 1. However long the phone takes, nothing is counted during it. */
   R.clicked = 0;
+  if (app.S.dev.voice === "mic" && !micReady()) {
+    R.hold = { since: wall(), ready: false, a0: 0, w0: 0, told: false };
+    openMic().then((ok) => {
+      if (!R) return;
+      if (!ok) { stop(); micProblem(); return; }
+      if (R.hold) { R.hold.ready = true; R.hold.a0 = clock(); R.hold.w0 = wall(); }
+    });
+  }
   const skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
   hideTip();
@@ -446,8 +459,21 @@ function loop() {
   let d = t - R.last;
   R.stall = d > 0 ? 0 : R.stall + dw;
   if (R.stall > 0.25 || !audioRunning()) d = dw;
-  const dt = Math.max(0, Math.min(0.1, d));
+  let dt = Math.max(0, Math.min(0.1, d));
   R.last = t; R.lastW = w;
+  if (R.hold) {
+    /* waiting for the microphone (onCount): released once it is open and the sound's clock has run a little
+       since, or after a second and a half if that clock will not move (the wall clock then drives the take) */
+    const h = R.hold;
+    if (h.ready && (t - h.a0 >= 0.12 || w - h.w0 > 1.5)) {
+      R.hold = null; R.stall = 0;
+      R.micDelay = audioDelay();
+      countdown("Ready"); hint("", "sing as the notes reach the line");
+    } else {
+      if (!h.told && w - h.since > 0.8) { h.told = true; hint("", "waiting for the microphone…"); }
+      dt = 0;
+    }
+  }
   frame(dt);
   if (R && R.T.phase !== "done") R.raf = requestAnimationFrame(loop);
 }
@@ -574,7 +600,7 @@ function resultLine(grade, mood) {
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
   holdAudio(false); markAudioStale();
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
