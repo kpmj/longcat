@@ -10,7 +10,9 @@
    sceneParts and loaf from art/index.js. Until that is committed, this reads the two print modules directly and
    falls back to working the same things out from the layers, so it runs on either. */
 import { sceneParts } from "../art/print/scene.js";
-import { loaf } from "../art/print/loaf.js";
+import { catHead } from "../art/print/cat.js";
+import { headFor, palFor } from "../art/print/guests.js";
+import { lookOf, animalId, kindId } from "../art/palettes.js";
 
 const JUDGE_TOP = 51, JUDGE_FEET = 475; // the judge with the fruit on a bare head, in the print's own 400 x 500
 const MARGIN = 22; // clear space above the fruit and under the feet, at the least
@@ -60,7 +62,14 @@ ${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : 
   return { svg, layout: L };
 }
 
-/* The cat of a garment, small: it stands for the garment's name in the progress row. g: state.js garmentSpec. */
+/* The cat of a garment, small: it stands for the garment's name in the progress row. g: state.js garmentSpec.
+   Only the face (the designer, 2026-11-14: "instead of showing the whole cat we can just show their face. It's cleaner and
+   it's not touching the progress bar"): the whole loaf's tail reached over the ticks beside it. The same head the
+   loaf has, in the cat's own coat and ears; the box holds the widest ears and the whiskers, so nothing spills. */
+export const CAT_ICON_BOX = "-26 -34.5 52 51"; // measured: the four ear kinds reach from y = -33.5 to 15.5, whiskers to x = 25
+const GUEST_ICON_BOX = "-29 -54 71 75"; // a guest's head can be much taller (the rabbit's ears)
 export function catIconSvg(g, zone, time) {
-  return `<svg class="cat-ico" viewBox="-27 -29 54 43" aria-hidden="true">${loaf(0, 0, 1, { zone, look: g.look, kind: g.kind, animal: g.animal }, "normal", 1, zone, time)}</svg>`;
+  const look = lookOf(g.look, zone, time), animal = animalId(g.animal), kind = kindId(g.kind), pal = palFor(animal, look);
+  const head = animal === "cat" ? catHead(0, 0, 1, "normal", 1, pal, kind) : headFor(animal, kind, 0, 0, 1, "normal", 1, pal);
+  return `<svg class="cat-ico" viewBox="${animal === "cat" ? CAT_ICON_BOX : GUEST_ICON_BOX}" aria-hidden="true">${head}</svg>`;
 }

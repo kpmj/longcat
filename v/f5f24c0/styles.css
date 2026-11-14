@@ -524,7 +524,7 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .home-cell { position: relative; height: 40px; border-radius: 12px; border: 1.5px solid rgba(62, 42, 60, .2); display: flex; align-items: center; gap: 5px; padding: 0 9px 0 3px; min-width: 0; color: var(--hi); }
 .home-cell::after { content: ""; position: absolute; inset: -5px -3px; } /* a finger's worth of room around it */
 .home-cell.on { border-color: var(--hi); background: var(--hp2); box-shadow: 0 2px 0 rgba(62, 42, 60, .38); }
-.home-cell .cat-ico { width: 34px; height: 27px; flex: none; overflow: visible; }
+.home-cell .cat-ico { width: 30px; height: 30px; flex: none; margin-left: 3px; } /* the face only: nothing reaches the ticks */
 .home-ticks { flex: 1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5px; min-width: 0; }
 .home-ticks i { height: 6px; border-radius: 2px; background: rgba(62, 42, 60, .17); }
 .home-ticks i.on { background: var(--hred); }
