@@ -101,6 +101,13 @@ export const VOICES = {
   wobbly: (t, n) => (n ? { midi: n.midi + Math.sin(t * 9) * 0.95, conf: 0.9 } : null),
   /* a little flat and a little shaky, the way a real voice is: still on the note */
   human: (t, n) => (n ? { midi: n.midi - 0.3 + Math.sin(t * 31) * 0.2, conf: 0.85 } : null),
+  /* in tune, but slides into every note from the one before, the way a real voice changes note */
+  slide: (t, n, T) => {
+    if (!n) return null;
+    const notes = T ? T.plan.notes : [], before = notes[notes.indexOf(n) - 1];
+    const a = before ? Math.min(1, (t - n.s) / 0.14) : 1, u = a * a * (3 - 2 * a);
+    return { midi: (before ? before.midi + (n.midi - before.midi) * u : n.midi) - 0.1 + Math.sin(t * 31) * 0.08, conf: 0.9 };
+  },
   /* sings the first half of the phrase, then stops */
   half: (t, n, T) => (n && T && T.plan.notes.indexOf(n) < T.plan.notes.length / 2 ? { midi: n.midi, conf: 0.9 } : null),
 };

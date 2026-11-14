@@ -31,22 +31,31 @@ export function laneCatSvg(o = {}) {
   const sc = Math.max(.1, num(o.scale, 1)), w = 17 * FURK[look.fur] * sc, mood = MOODS.includes(o.mood) ? o.mood : "listen";
   let d = "", len = 0, firstDir = 1;
   const subs = Array.isArray(o.subs) ? o.subs : [];
-  for (const s of subs) {
-    if (!Array.isArray(s) || s.length < 2) continue;
-    let px = null, py = null;
-    for (let i = 0; i < s.length; i++) {
-      const p = s[i];
-      if (!p) continue;
-      const x = num(p.x), y = num(p.y);
-      d += `${px === null ? "M" : "L"}${f(x)} ${f(y)}`;
-      if (px !== null) len += Math.hypot(x - px, y - py);
-      px = x; py = y;
+  const pathOf = (lines, measure) => {
+    let d = "";
+    for (const s of lines) {
+      if (!Array.isArray(s) || s.length < 2) continue;
+      let px = null, py = null;
+      for (let i = 0; i < s.length; i++) {
+        const p = s[i];
+        if (!p) continue;
+        const x = num(p.x), y = num(p.y);
+        d += `${px === null ? "M" : "L"}${f(x)} ${f(y)}`;
+        if (measure && px !== null) len += Math.hypot(x - px, y - py);
+        px = x; py = y;
+      }
     }
-  }
+    return d;
+  };
+  d = pathOf(subs, true);
+  const td = pathOf(Array.isArray(o.threads) ? o.threads : [], false);
   const head = o.head && typeof o.head === "object" ? o.head : null;
   const dir = head ? (num(head.dir, 1) < 0 ? -1 : 1) : firstDir;
   let out = "";
   if (o.tail && typeof o.tail === "object") out += tailFor(animal, kind, num(o.tail.x), num(o.tail.y), dir, w * .45, pal, mood === "sleep");
+  /* the thread: the sung line where the voice is between notes, drawn under the body */
+  if (td) out += `<path d="${td}" stroke="${pal.furDk}" stroke-width="${f(w * .4)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5"/>`
+    + `<path d="${td}" stroke="${pal.fur}" stroke-width="${f(w * .26)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
   if (d) {
     out += `<path d="${d}" stroke="${pal.furDk}" stroke-width="${f(w + 5)}" stroke-dasharray="0 ${f(w * .42)}" stroke-linecap="round" fill="none" opacity=".45"/>`
       + `<path d="${d}" stroke="${pal.fur}" stroke-width="${f(w + 3)}" stroke-dasharray="0 ${f(w * .42)}" stroke-linecap="round" fill="none"/>`

@@ -82,7 +82,7 @@ function rangeRender(root, { from = "onboard" } = {}) {
 
 function simVoice(t) {
   const v = app.S.dev.voice;
-  if (["god", "tufty", "human", "half"].includes(v)) return { midi: SIM[RF.phase] + Math.sin(t * 7) * 0.08, conf: 0.95 };
+  if (["god", "tufty", "human", "slide", "half"].includes(v)) return { midi: SIM[RF.phase] + Math.sin(t * 7) * 0.08, conf: 0.95 };
   /* a voice that keeps slipping between the note and the semitone above: must still land the hold */
   if (v === "wobbly") return { midi: SIM[RF.phase] + (Math.sin(t * 5) > 0.2 ? 1 : 0) + Math.sin(t * 23) * 0.15, conf: 0.9 };
   return readVoice(t, null, null);

@@ -11,6 +11,7 @@ import { planTake } from "../drill/drills.js";
 import { createTake, stepTake, skipDemo, currentIndex, DEMO_LEAD } from "../drill/take.js";
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
+import { onNote, leapt } from "./lane-body.js";
 import { hum, click, placeSfx, noteCue, chime, audioContext, now } from "../audio/synth.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
@@ -318,16 +319,23 @@ function draw(v, dt = 1 / 60) {
   const shift = PLAY_X - T.t * PXS;
   const notes = document.getElementById("lane-notes");
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
-  const subs = [[]];
-  let tail = null;
-  for (const f of T.frames) {
+  /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
+  const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
+  const on = onNote(voiced, P.notes, T.matcher.latency);
+  const threads = [[]], subs = [[]];
+  let tail = null, firstOn = true, prev = null;
+  voiced.forEach((f, i) => {
     const x = PLAY_X - (T.t - f.t) * PXS;
-    if (x < -30) continue;
-    if (f.midi == null || f.conf < 0.5) { if (subs[subs.length - 1].length) subs.push([]); continue; }
+    if (f.midi == null) { if (threads[threads.length - 1].length) threads.push([]); if (subs[subs.length - 1].length) subs.push([]); return; }
+    if (x < -30) { if (on[i]) firstOn = false; return; }
     const p = { x, y: yOf(f.midi) };
-    if (!tail) tail = { x: p.x, y: p.y };
+    threads[threads.length - 1].push(p);
+    if (!on[i] || (prev != null && leapt(prev, f.midi))) { if (subs[subs.length - 1].length) subs.push([]); }
+    prev = on[i] ? f.midi : null;
+    if (!on[i]) return;
+    if (firstOn) { tail = p; firstOn = false; } // the tail belongs to where the cat began, not to every piece
     subs[subs.length - 1].push(p);
-  }
+  });
   if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
   else {
     const want = v ? yOf(v.midi) : guideY(T.t);
@@ -335,14 +343,15 @@ function draw(v, dt = 1 / 60) {
     R.headY += (want - R.headY) * k;
   }
   markGrid(v ? v.midi : null);
-  const last = subs[subs.length - 1];
-  if (v && last.length) last.push({ x: PLAY_X, y: R.headY });
+  const lastThread = threads[threads.length - 1], last = subs[subs.length - 1];
+  if (v && lastThread.length) lastThread.push({ x: PLAY_X, y: R.headY });
+  if (v && last.length && on[on.length - 1]) last.push({ x: PLAY_X, y: R.headY });
   let mood = R.mood;
   if (T.t > R.moodUntil) mood = T.phase === "sing" && v ? "sing" : "listen";
   const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
   const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 1.5 : 0;
   const el = document.getElementById("lane-cat");
-  if (el) el.innerHTML = laneCatSvg({ subs: subs.filter((s) => s.length > 1), head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
+  if (el) el.innerHTML = laneCatSvg({ subs: subs.filter((s) => s.length > 1), threads: threads.filter((s) => s.length > 1), head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
 }
 
 function wireTouch(root) {

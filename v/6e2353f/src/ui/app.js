@@ -101,6 +101,7 @@ export const VOICE_MODES = [
   { id: "mic", name: "Microphone" },
   { id: "god", name: "Auto-singer, in tune" },
   { id: "human", name: "Auto-singer, a little flat" },
+  { id: "slide", name: "Auto-singer, slides between notes" },
   { id: "wobbly", name: "Auto-singer, drifting (close)" },
   { id: "tufty", name: "Auto-singer, one wrong note" },
   { id: "half", name: "Auto-singer, stops halfway" },
@@ -119,6 +120,7 @@ export function readVoice(t, note, T) {
     case "god": return VOICES.good(t, note, T);
     case "tufty": return VOICES.tufty(t, note, T);
     case "human": return VOICES.human(t, note, T);
+    case "slide": return VOICES.slide(t, note, T);
     case "wobbly": return VOICES.wobbly(t, note, T);
     case "half": return VOICES.half(t, note, T);
     case "silent": return null;
