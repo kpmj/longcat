@@ -198,7 +198,7 @@ async function sayOnce() {
   app.save();
   const el = document.getElementById("say"), skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
-  const cat = demoVoice(S.dev.demoVoice).id === "cat"; // the other demo voices have no words: the word is shown, the note is played
+  const cat = !!demoVoice(S.dev.demoVoice).words; // a voice with no words cannot say it: the word is shown, the note is played
   if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>${cat ? "the cat says it once" : "the sound to sing"}</span>`; el.hidden = false; }
   hint("", "");
   R.saying = true;

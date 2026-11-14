@@ -12,6 +12,9 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 [data-tap] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* the reset beat (docs/art-style.md): a runner is hidden except while it runs */
 .lc-run-x, .lc-breeze { opacity: 0; }
+/* a sparkle beside the step just sung shows only while it twinkles; with reduced motion only the seal is there */
+.lc-new-spark { transform-box: fill-box; transform-origin: 50% 50%; transform: scale(0); }
+.lc-new-seal { transform-box: fill-box; transform-origin: 50% 50%; }
 @media (prefers-reduced-motion: no-preference) {
   .lc-tapped .lc-nuzzle { transform-box: fill-box; transform-origin: 50% 90%; animation: lc-nuzzle .55s ease-in-out 2; }
   .lc-tapped .lc-heart { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-heart 1.2s ease-out both; }
@@ -31,6 +34,10 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-steam { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-steam 7s ease-in-out infinite; }
   .lc-steam:nth-of-type(2n) { animation-duration: 9s; animation-delay: -3s; }
   .lc-glow { animation: lc-glow 1.8s ease-in-out infinite; }
+  /* the step just sung: the cat hops once, three sparkles twinkle and go, a red seal is stamped beside it */
+  .lc-hop { animation: lc-hop .6s cubic-bezier(.3, 0, .3, 1) .2s both; }
+  .lc-new-spark { animation: lc-new-spark 2s ease-in-out both; }
+  .lc-new-seal { animation: lc-new-seal .45s ease-out .8s both; }
   .lc-ear { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-ear 7.5s ease-in-out infinite; }
   .lc-shake { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-shake 17s ease-in-out infinite; }
   .lc-yawn-head { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-yawn-head 23s ease-in-out infinite; }
@@ -87,6 +94,9 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
 @keyframes lc-tail { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
 @keyframes lc-steam { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-7px) scale(1.06, 1.1); } }
+@keyframes lc-hop { 0%, 100% { transform: translateY(0); } 38% { transform: translateY(-7px); } 68% { transform: translateY(1.2px); } }
+@keyframes lc-new-spark { 0% { transform: scale(0) rotate(-30deg); } 20% { transform: scale(1.15) rotate(0deg); } 42% { transform: scale(.7); } 64% { transform: scale(1); } 100% { transform: scale(0) rotate(30deg); } }
+@keyframes lc-new-seal { 0% { transform: scale(1.9); opacity: 0; } 65% { transform: scale(.92); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes lc-glow { 0%, 100% { opacity: .75; } 50% { opacity: .35; } }
 @keyframes lc-ear { 0%, 84%, 100% { transform: rotate(0deg); } 87% { transform: rotate(-16deg); } 90% { transform: rotate(7deg); } 93% { transform: rotate(-8deg); } 96% { transform: rotate(0deg); } }
 @keyframes lc-shake { 0%, 70%, 82%, 100% { transform: rotate(0deg); } 73% { transform: rotate(-3.5deg); } 76% { transform: rotate(3.5deg); } 79% { transform: rotate(-2deg); } }

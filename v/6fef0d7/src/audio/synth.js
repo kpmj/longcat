@@ -124,9 +124,9 @@ export function demoNote(kind, t0, midi, dur, syl = "ah", opts = {}) {
   const V = demoVoice(kind);
   if (V.id === "cat") return sing(t0, midi, dur, syl, opts);
   if (muted || !audioContext()) return { stop() {} };
-  const f = midiToHz(midi);
-  logSound(t0, dur + V.tail, f, f, 0, V.partials);
-  return stopper(V.nodes(ac, master, t0, f, dur, V.peak * (opts.vol ?? 1) * (midi < 50 ? 1.3 : 1), syl));
+  const f = midiToHz(midi), fall = V.words ? opts.fall || 0 : 0;
+  logSound(t0, dur + V.tail, f, f * Math.pow(2, -fall / 12), fall ? 1 : 0, V.partials);
+  return stopper(V.nodes(ac, master, t0, f, dur, V.peak * (opts.vol ?? 1) * (midi < 50 ? 1.3 : 1), syl, fall));
 }
 
 function tone(type, f0, f1, dur, vol, t = null, filter = null) {

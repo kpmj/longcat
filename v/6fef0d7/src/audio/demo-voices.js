@@ -174,10 +174,104 @@ export function meowNodes(ctx, dest, t0, hz, dur, peak) {
   return { out, srcs: [src] };
 }
 
+/* ---------- a softer sung voice: the same syllables as the cat voice, built to sound less like a buzzer ----------
+   the designer, 2026-11-14, after hearing the hum: "it sounds like an instrument; it does not show how the sound is made".
+   So the demo has to sing the syllable, and the instruments above cannot be it. What made the cat voice odd, and
+   what is different here:
+     - the source was a plain sawtooth (bright and buzzy); here the harmonics fall off faster, like a relaxed voice,
+       with a little breath mixed in;
+     - the mouth was always scaled up 1.32 times, a tiny mouth even on a low man's note; here the mouth follows the
+       pitch: full size on low notes, a little smaller on high ones, so the demo sounds like a singer of your range;
+     - three formants with nothing between them sounded hollow; here there are five, and a little of the plain tone
+       underneath;
+     - the pitch stood perfectly still; here a long note gets a light, late vibrato (12 cents either way, well inside
+       what the game calls on the note), as a person's would;
+     - on high notes the first formant follows the pitch up, as singers do, so "oo" and "ee" do not go thin.
+   Still a synthesiser: only a recording of a person will sound like a person. */
+const waveOf = new WeakMap();
+function voiceWave(ctx) {
+  let w = waveOf.get(ctx);
+  if (!w) {
+    const N = 48, real = new Float32Array(N + 1), imag = new Float32Array(N + 1);
+    for (let k = 1; k <= N; k++) imag[k] = 1 / Math.pow(k, SUNG_TILT);
+    w = ctx.createPeriodicWave(real, imag);
+    waveOf.set(ctx, w);
+  }
+  return w;
+}
+const SUNG_Q = [6, 9, 12, 12, 12], SUNG_GAIN = [1, 0.6, 0.32, 0.14, 0.07], SUNG_BODY = 0.1, SUNG_TILT = 1.6;
+/* How loud a vowel comes out at a pitch: the harmonics that fall on a formant pass, the rest do not, so "ah" on
+   one note can be several times louder than "oo" on another. This adds up what gets through (each band-pass as
+   its resonance curve), and the voice divides by it, so every note of a demo is about equally loud. */
+export function sungLevel(hz, F, bodyCut) {
+  let p = 0;
+  for (let k = 1; k <= 48 && k * hz < 12000; k++) {
+    const fr = k * hz;
+    let g = SUNG_BODY / Math.sqrt(1 + Math.pow(fr / bodyCut, 4));
+    for (let j = 0; j < 5; j++) g += SUNG_GAIN[j] / Math.sqrt(1 + SUNG_Q[j] * SUNG_Q[j] * Math.pow(fr / F[j] - F[j] / fr, 2));
+    p += Math.pow(g / Math.pow(k, SUNG_TILT), 2);
+  }
+  return Math.sqrt(p);
+}
+export const mouthFor = (hz) => (hz <= 175 ? 1 : hz >= 330 ? 1.17 : 1 + (0.17 * (hz - 175)) / 155);
+export const VIBRATO_CENTS = 12;
+export function sungVoiceNodes(ctx, dest, t0, hz, dur, syl, peak, fall = 0) {
+  const src = ctx.createOscillator(), out = ctx.createGain(), srcs = [src], mouth = mouthFor(hz), end = t0 + dur;
+  src.setPeriodicWave(voiceWave(ctx));
+  src.frequency.setValueAtTime(hz, t0);
+  if (fall) src.frequency.exponentialRampToValueAtTime(hz * Math.pow(2, -fall / 12), end);
+  else if (dur >= 0.7) {
+    const lfo = ctx.createOscillator(), depth = ctx.createGain();
+    lfo.frequency.value = 5.4;
+    depth.gain.setValueAtTime(0, t0);
+    depth.gain.setValueAtTime(0, t0 + 0.28);
+    depth.gain.linearRampToValueAtTime(hz * (Math.pow(2, VIBRATO_CENTS / 1200) - 1), t0 + 0.65);
+    lfo.connect(depth); depth.connect(src.frequency);
+    lfo.start(t0); lfo.stop(end + 0.15);
+    srcs.push(lfo);
+  }
+  out.gain.setValueAtTime(0, t0);
+  out.connect(dest);
+  /* the first three formants move with the sound; the two above them only give the voice its ring */
+  const formants = (ph) => { const F = FORMANT[ph]; return [Math.max(F[0] * mouth, hz * 1.02), F[1] * mouth, F[2] * mouth, 3300 * mouth, 4200 * mouth]; };
+  const bands = [0, 1, 2, 3, 4].map((j) => {
+    const bp = ctx.createBiquadFilter(), g = ctx.createGain();
+    bp.type = "bandpass"; bp.Q.value = SUNG_Q[j];
+    g.gain.value = SUNG_GAIN[j];
+    src.connect(bp); bp.connect(g); g.connect(out);
+    return bp;
+  });
+  const body = ctx.createBiquadFilter(), bg = ctx.createGain(), bodyCut = Math.max(700, hz * 2);
+  body.type = "lowpass"; body.frequency.value = bodyCut; bg.gain.value = SUNG_BODY;
+  src.connect(body); body.connect(bg); bg.connect(out);
+  const breath = ctx.createBufferSource(), bbp = ctx.createBiquadFilter(), bgain = ctx.createGain();
+  breath.buffer = noiseBuffer(ctx); breath.loop = true;
+  bbp.type = "bandpass"; bbp.frequency.value = 2200 * mouth; bbp.Q.value = 0.8; bgain.gain.value = 0.004;
+  breath.connect(bbp); bbp.connect(bgain); bgain.connect(out);
+  breath.start(t0); breath.stop(end + 0.15);
+  srcs.push(breath);
+  let t = t0, last = peak;
+  (SYLLABLE[syl] || SYLLABLE.ah).forEach(([ph, len, loud], idx) => {
+    const F = formants(ph);
+    bands.forEach((bp, j) => { if (idx === 0) bp.frequency.setValueAtTime(F[j], t); else bp.frequency.linearRampToValueAtTime(F[j], t + 0.09); });
+    last = (peak * loud) / Math.max(0.05, sungLevel(hz, F, bodyCut));
+    out.gain.linearRampToValueAtTime(last * (len == null ? 0.88 : 1), t + (idx === 0 ? 0.07 : 0.09));
+    if (len != null) { bands.forEach((bp, j) => bp.frequency.setValueAtTime(F[j], t + len)); out.gain.setValueAtTime(last, t + len); t += len; }
+  });
+  /* a held vowel swells a little and lets go slowly */
+  const hold = Math.max(t + 0.1, end - 0.1);
+  if (hold - t > 0.35) out.gain.linearRampToValueAtTime(last, t + (hold - t) * 0.45);
+  out.gain.setValueAtTime(last * (hold - t > 0.35 ? 1 : 0.88), hold);
+  out.gain.linearRampToValueAtTime(0, end + 0.06);
+  src.start(t0); src.stop(end + 0.15);
+  return { out, srcs };
+}
+
 /* The demo voices, in the order the Dev panel lists them. peak = the level that makes each about as loud as
    the others (measured with an offline context: all within about 3 dB of the cat voice); tail = seconds a note rings past its end. */
 export const DEMO_VOICES = [
-  { id: "cat", name: "Cat sings the syllable (the game's voice now)", peak: CAT_PEAK, tail: 0.1, partials: [1, 2, 3, 4, 5], nodes: (c, d, t, hz, dur, peak, syl) => catVoiceNodes(c, d, t, hz, dur, syl, peak) },
+  { id: "cat", name: "Cat sings the syllable (the game's voice now)", words: true, peak: CAT_PEAK, tail: 0.1, partials: [1, 2, 3, 4, 5], nodes: (c, d, t, hz, dur, peak, syl, fall) => catVoiceNodes(c, d, t, hz, dur, syl, peak, fall) },
+  { id: "sung", name: "E · Softer sung voice, sings the syllable", words: true, peak: 0.31, tail: 0.15, partials: [1, 2, 3, 4, 5], nodes: (c, d, t, hz, dur, peak, syl, fall) => sungVoiceNodes(c, d, t, hz, dur, syl, peak, fall) },
   { id: "hum", name: "A · Soft hum", peak: 0.26, tail: 0.1, partials: [1, 2, 3], nodes: humNodes },
   { id: "ocarina", name: "B · Ocarina", peak: 0.24, tail: 0.1, partials: [1, 2, 3, 4], nodes: ocarinaNodes },
   { id: "musicbox", name: "C · Music box that holds the note", peak: 0.5, tail: 0.2, partials: [1, 2, 4], nodes: musicBoxNodes },
