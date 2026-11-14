@@ -145,7 +145,17 @@ export function garmentLayers(g, ctx = {}) {
   /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */
   const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(`<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>`)}${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
   const artAll = trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills;
-  return { under: hop(under), art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy } };
+  /* how high the garment reaches at scene x: the top of its fur within 9 px of x, and the top of the cat's head when
+     that is under x. Infinity where nothing is there yet. The judge's fruit is seated on this (hatOnHead) */
+  const furTop = w / 2 + (F.tuftR > .51 || F.fluff ? Math.max(0, w * F.tuftR + F.fluff - w / 2) : 0);
+  const topAt = x => {
+    let top = Infinity;
+    for (const { pts } of rows) for (const p of pts) if (Math.abs(p.x - x) <= 9) top = Math.min(top, p.y - furTop);
+    const dx = Math.max(0, Math.abs(x - hx) - 8);
+    if (dx < 18) top = Math.min(top, hy - 18.5 * Math.sqrt(1 - (dx / 19.5) ** 2));
+    return top;
+  };
+  return { under: hop(under), art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy }, topAt };
 }
 
 /* a dashed guide over the steps not yet worn (from `from` to 12) */

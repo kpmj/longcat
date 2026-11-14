@@ -6,8 +6,8 @@ import { placeId, PLACE_NAME } from "../places/index.js";
 import { wrapCaption } from "../cards.js";
 import { stampArt as oldStamp } from "../stamps.js";
 import { sceneInner, placeLayers } from "./scene.js";
-import { judgeFigure } from "./judge.js";
-import { garmentLayers } from "./garments.js";
+import { judgeFigure, hatOnHead } from "./judge.js";
+import { garmentLayers, drawZone } from "./garments.js";
 import { loaf } from "./loaf.js";
 import { COATS, KEY, coatMarkup, straight, pawPair, catHead, catTail, bodyMarkup } from "./cat.js";
 import { headFor, tailFor, GUEST_PAL } from "./guests.js";
@@ -78,12 +78,15 @@ export function placeThumbSvg(place, time) {
 export function wardrobeThumbSvg(o = {}) {
   o = o || {};
   const zone = zoneId(o.zone) || "bottom", look = lookOf(o.look, zone, "morning"), time = TIME_OF_FUR[look.fur], steps = int(o.steps, 0, 12, 12);
-  const J = judgeFigure("neutral");
   const g = { zone, look, kind: kindId(o.kind), animal: animalId(o.animal), steps };
   const L = steps ? garmentLayers(g, { time, animate: false }) : null;
+  /* a hat goes on the head with the fruit seated on top of it, as in the scene; the frame moves up to keep the fruit in */
+  const H = L && drawZone(zone) === "hat" ? hatOnHead(L) : null;
+  const J = judgeFigure("neutral", H || {});
   const wait = steps ? "" : loaf(326, 430, -1, g, "normal", 1.5, zone, time);
-  const body = `${J.feet}${J.body}${J.lap}${J.head}${L ? L.art + L.head : ""}${wait}`;
-  return svgDoc("0 0 120 120", `<rect width="120" height="120" rx="8" fill="${PAPER}"/>${inset(4, 4, 112, 112, "-12 40 424 424", body)}<rect x="1" y="1" width="118" height="118" rx="8" fill="none" stroke="${KEY}" stroke-width="1.5"/>`);
+  const body = `${J.feet}${J.body}${J.lap}${J.head}${L && !H ? L.art + L.head : ""}${wait}`;
+  const up = H ? Math.max(0, H.itemLift - 6) : 0;
+  return svgDoc("0 0 120 120", `<rect width="120" height="120" rx="8" fill="${PAPER}"/>${inset(4, 4, 112, 112, `-12 ${f(40 - up)} 424 424`, body)}<rect x="1" y="1" width="118" height="118" rx="8" fill="none" stroke="${KEY}" stroke-width="1.5"/>`);
 }
 
 /* a cat sitting as a loaf, showing its kind: ears and tail */

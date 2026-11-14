@@ -5,8 +5,8 @@ import { f, num, int, rng, hash, svgDoc, inset, esc, txt, FONT, textWidth } from
 import { timeId, zoneId, ZONE_IDS, TIME_NAME } from "../palettes.js";
 import { placeLayers as oldPlaceLayers, placeId, PLACE_IDS, PLACE_UI as OLD_UI } from "../places/index.js";
 import { newYear } from "./places/newyear.js";
-import { zzPrint } from "./judge.js";
-import { judgeFigureOf } from "./judges.js";
+import { zzPrint, hatOnHead } from "./judge.js";
+import { judgeFigureOf, itemSeatOf } from "./judges.js";
 import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
 import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
@@ -113,13 +113,14 @@ export function sceneParts(o = {}) {
   const guides = o.guide == null ? [] : (o.guide === "all" ? ZONE_IDS : [].concat(o.guide)).map(zoneId).filter(Boolean);
   const guideOf = z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); };
   const guide = guides.filter(z => drawZone(z) !== "hat").map(guideOf).join("");
-  const onHead = guides.filter(z => drawZone(z) === "hat").map(guideOf).join("") + hat.map(l => l.under + l.art).join("") + (cushionOnHead ? cushion0 : "") + hat.map(l => l.head).join("");
+  /* the fruit on the judge's head is seated on top of the hat, however far the hat has grown (hatOnHead) */
+  const { onHead, itemLift } = hatOnHead(hat[0] || null, itemSeatOf(o.judge), { guide: guides.filter(z => drawZone(z) === "hat").map(guideOf).join(""), cushion: cushionOnHead ? cushion0 : "" });
   /* o.judge: which of the six judges sits here (print/judges.js); the capybara unless told otherwise */
-  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead });
+  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
   const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
-  return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, onHead, cushion: cushion0 };
+  return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, onHead, itemLift, cushion: cushion0 };
 }
 export const sceneInner = o => { const p = sceneParts(o); return `${p.L.back}${p.special}${p.L.seat}${p.shelves}${p.character}${p.L.front}${p.L.frame || ""}`; };
 /* the picture is clipped to its own 400 x 500 (a nested svg clips by itself): the page shows the svg in boxes of other
@@ -135,7 +136,9 @@ const rainbowMarkup = () => `<g fill="none" stroke-width="9.5">${RAINBOW.map((c,
 /* the judge from the chest up (300 x 220), for the singing screen: the same framing as ../portrait.js, no paper edge */
 export function judgeBustSvg(o = {}) {
   const p = sceneParts({ place: o.place, time: o.time, face: o.face || "neutral", garments: o.garments, animate: o.animate !== false });
-  return svgDoc("0 0 300 220", `<g transform="translate(-10 -33.6) scale(.8)">${p.L.back}${o.rainbow ? rainbowMarkup() : ""}${p.special}${p.L.seat}${p.character}</g>`);
+  /* a tall hat lifts the fruit out of the frame's top: the picture slides down by as much as it needs */
+  const down = p.itemLift * .8;
+  return svgDoc("0 0 300 220", `<g transform="translate(-10 ${f(-33.6 + down)}) scale(.8)">${p.L.back}${o.rainbow ? rainbowMarkup() : ""}${p.special}${p.L.seat}${p.character}</g>`);
 }
 /* UI colours beside each backdrop: bg = the scene's ground, ink = text on it, accent = the place's button colour */
 export const PLACE_UI = Object.fromEntries(PLACE_IDS.map(p => [p, Object.fromEntries(["morning", "golden", "night"].map(t => {

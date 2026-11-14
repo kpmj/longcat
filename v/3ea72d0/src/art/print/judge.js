@@ -59,21 +59,34 @@ const MOUTH = {
   o: sh(ell(0, 46, 5, 6.2), J.mouth, .8),
   yawn: sh(ell(0, 48, 10, 13), J.mouth, .8) + fl(ell(0, 55, 6, 4), "#c98078"),
 };
-function yuzu(hop) {
+function yuzu(hop, lift = 0) {
   const ticks = hop ? ln("M-27 -4q-4 8 -1 16M27 -4q4 8 1 16", .7) : "";
-  return `<g transform="translate(24 ${-103 - hop})">${sh(ell(0, 0, 19), J.yuzu, .9)}${fl("M-18 5A19 19 0 0 0 16.5 9.5A23 23 0 0 1 -18 5Z", J.yuzuDk, .55)}<g fill="${J.yuzuDk}"><circle cx="7" cy="3" r="1.1"/><circle cx="1.5" cy="9.5" r="1.1"/><circle cx="10.5" cy="-5" r="1.1"/></g>${sh("M2 -18q11 -15 25 -6q-12 11 -25 6z", J.leaf, .8)}<circle cx="0" cy="-18.5" r="2.2" fill="${J.key}"/>${ticks}</g>`;
+  return `<g transform="translate(24 ${f(-103 - hop - lift)})">${sh(ell(0, 0, 19), J.yuzu, .9)}${fl("M-18 5A19 19 0 0 0 16.5 9.5A23 23 0 0 1 -18 5Z", J.yuzuDk, .55)}<g fill="${J.yuzuDk}"><circle cx="7" cy="3" r="1.1"/><circle cx="1.5" cy="9.5" r="1.1"/><circle cx="10.5" cy="-5" r="1.1"/></g>${sh("M2 -18q11 -15 25 -6q-12 11 -25 6z", J.leaf, .8)}<circle cx="0" cy="-18.5" r="2.2" fill="${J.key}"/>${ticks}</g>`;
 }
 const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">${ln("M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6", .7 / s)}</g>`;
 
 /* The anchor on the head. Whatever is worn on the head (the hat cat, its guide) is drawn inside the head's own group,
    after the face, so every motion of the head carries it: the idle shake and yawn, the bob of a pat, and the fixed
-   tilt or nod of a face. `m` is markup in head space (the scene minus the head's place, see judgeFigure).
+   tilt or nod of a face. o.onHead = { under, over }, markup in head space (the scene minus the head's place, see
+   judgeFigure): `under` is the hat's body, `over` the hat cat's head.
+   - The fruit sits on top of the hat (the designer, 2026-11-14: "the hat portion will cover the fruit. Let's make the fruit
+     always sit on top of the hat when the hat is being built"). So it is drawn between the two, over the hat's body
+     and behind the cat's head, and o.itemLift raises it by as much as the hat has grown under it (hatOnHead).
    - the unpainted line pins the middle of the group's box: the head turns about the bottom middle of that box
      (ART_CSS, fill-box), and a cat that hangs over one side would otherwise move the pivot;
    - lc-rider: a pat on the judge is not a pat on the cat riding it (ART_CSS). */
-export const rider = m => (m ? `<path d="M-170 0h340" fill="none"/><g class="lc-rider">${m}</g>` : "");
+const rider = m => (m ? `<g class="lc-rider">${m}</g>` : "");
+export const onHeadOf = (o, item) => (o.onHead ? `<path d="M-170 0h340" fill="none"/>${rider(o.onHead.under)}${item}${rider(o.onHead.over)}` : item);
 /* scene markup -> head space, for a head that judgeFigure puts at (200 182) */
-export const toHead = m => (m ? `<g transform="translate(-200 -182)">${m}</g>` : "");
+const shift = m => (m ? `<g transform="translate(-200 -182)">${m}</g>` : "");
+export const toHead = h => (h && (h.under || h.over) ? { under: shift(h.under), over: shift(h.over) } : null);
+/* How a hat sits on a head. L = the hat's garmentLayers (or null), seat = the point in the scene where the thing on
+   the judge's head rests (its bottom middle). The fruit sinks SINK into the fur, like an egg in a nest. */
+export const YUZU_SEAT = { x: 224, y: 98 }, SINK = 3;
+export function hatOnHead(L, seat = YUZU_SEAT, extra = {}) {
+  const under = (extra.guide || "") + (L ? L.under + L.art : "") + (extra.cushion || ""), over = L ? L.head : "";
+  return { onHead: under || over ? { under, over } : null, itemLift: L ? Math.max(0, Math.round((seat.y - SINK - L.topAt(seat.x)) * 10) / 10) : 0 };
+}
 
 /* the head in head space. o.animate adds the blink class to the resting eyes; o.onHead rides the head (see rider) */
 export function judgeHead(face, o = {}) {
@@ -96,9 +109,10 @@ export function judgeHead(face, o = {}) {
   const face2 = idle ? `<g class="lc-face"><g class="lc-yawn-off">${MOUTH.split}${eyes}</g><g class="lc-yawn-on">${MOUTH.yawn}${eye(-52, "shut", [0, 0])}${eye(52, "shut", [0, 0])}</g></g><g class="lc-face-pet">${MOUTH.smile}${eye(-52, "happy", [0, 0])}${eye(52, "happy", [0, 0])}</g>` : eyes;
   const tear = p.tear ? sh("M-58 -16q-6 8 0 14q6 -6 0 -14z", J.tear, .6) : "";
   const shade = fl("M60 -70C76 -58 80 -40 80 -28L86 30C88 52 78 68 58 76C74 58 74 10 60 -70Z", J.dk, .35);
-  /* animated: the yuzu can be tapped on its own and hops */
-  const yz = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${yuzu(0)}</g>` : yuzu(0)}</g></g>` : yuzu(p.hop);
-  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yz + face2 + brow + tear + rider(o.onHead);
+  /* animated: the yuzu can be tapped on its own and hops. o.itemLift: how far the hat has raised it */
+  const lift = num(o.itemLift);
+  const yz = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${yuzu(0, lift)}</g>` : yuzu(0, lift)}</g></g>` : yuzu(p.hop, lift);
+  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + face2 + brow + tear + onHeadOf(o, yz);
   /* idle: the head shakes now and then and tips back with the yawn. Animated: a pat makes it bob (lc-bobble) */
   const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
   const head = o.animate ? `<g class="lc-bobble">${head1}</g>` : head1;

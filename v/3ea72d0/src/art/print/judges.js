@@ -5,7 +5,7 @@
    Head space: origin at the centre of the head box, drawn at scene scale inside translate(200 182).
    Not in the game's calendar yet: sceneParts draws one when asked (o.judge). */
 import { f, num, svgDoc } from "../util.js";
-import { printPose, judgeFigure as capyFigure, faceIconSvg as capyIcon, rider, toHead } from "./judge.js";
+import { printPose, judgeFigure as capyFigure, faceIconSvg as capyIcon, onHeadOf, toHead, YUZU_SEAT } from "./judge.js";
 
 const KEY = "#262122", WHITE = "#f8f2e2", MOUTH = "#7a3b33", TONGUE = "#c98078", TEAR = "#8fb8cc", CARD = "#f3ead6";
 const LW = 2.7;
@@ -232,6 +232,10 @@ const SPEC = {
 export const JUDGE_IDS = ["capybara", "shoebill", "seal", "owl", "salamander", "tanuki"];
 export const JUDGE_NAME = { capybara: { zh: "水豚", en: "Capybara" }, ...Object.fromEntries(Object.entries(SPEC).map(([id, S]) => [id, { zh: S.zh, en: S.en }])) };
 export const judgeId = id => (JUDGE_IDS.includes(id) ? id : "capybara");
+/* where the thing on each judge's head rests, in the scene: the bottom middle of the item as drawn (ITEM), with the
+   head at (200 182). A hat lifts the item from here (hatOnHead in ./judge.js) */
+const ITEM_SEAT = { leaf: [14, -83], mikan: [24, -84], acorn: [20, -76], maple: [22, -77], onigiri: [22, -87] };
+export const itemSeatOf = id => { const j = judgeId(id); if (j === "capybara") return YUZU_SEAT; const [x, y] = ITEM_SEAT[SPEC[j].item]; return { x: 200 + x, y: 182 + y }; };
 
 const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">${ln("M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6", .7 / s)}</g>`;
 /* the head in head space at scene scale. Animated, it behaves like the capybara's: it blinks, shakes now and then,
@@ -250,10 +254,12 @@ function head(S, face, o = {}) {
   const brow = S.ownBrow ? "" : p.brow === "one" ? ln(`M${bx - 9} ${by - 15 - br}q9 -6 19 -2`) : p.brow === "both" ? ln(`M${-bx - 10} ${by - 14 - br}q9 -6 19 -1M${bx - 9} ${by - 15 - br}q10 -5 19 1`) : "";
   const [tx, ty, tr] = S.tear;
   const tear = p.tear ? sh(`M${-tx - 6} ${ty + 12 + tr}q-6 8 0 14q6 -6 0 -14z`, TEAR, .6) : "";
-  const it = hop => `<g${hop ? ` transform="translate(0 ${-hop})"` : ""}>${ITEM[S.item]}${hop ? ln("M-8 -84q-4 8 -1 16M52 -84q4 8 1 16", .7) : ""}</g>`;
+  /* o.itemLift: how far the hat has raised the thing on the head (hatOnHead in ./judge.js) */
+  const lift = num(o.itemLift);
+  const it = hop => `<g${hop || lift ? ` transform="translate(0 ${f(-hop - lift)})"` : ""}>${ITEM[S.item]}${hop ? ln("M-8 -84q-4 8 -1 16M52 -84q4 8 1 16", .7) : ""}</g>`;
   const item0 = S.itemTwitch && !p.hop ? twitch(it(0), o, -4, 11) : it(p.hop);
   const item = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${item0}</g>` : item0}</g></g>` : item0;
-  const head0 = S.back(p, o) + S.skull(p, o) + faces + item + brow + tear + rider(o.onHead);
+  const head0 = S.back(p, o) + S.skull(p, o) + faces + brow + tear + onHeadOf(o, item);
   const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
   const head2 = o.animate ? `<g class="lc-bobble">${head1}</g>` : head1;
   const tf = [p.tilt ? `rotate(${p.tilt} 0 68)` : "", p.dy ? `translate(0 ${p.dy})` : ""].filter(Boolean).join(" ");
