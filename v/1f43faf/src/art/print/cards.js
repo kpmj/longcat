@@ -19,6 +19,13 @@ const PAPER = "#efe6d2", CARD = "#f6efdf", RED = "#bf452d", IND = "#1d3150", MUT
 const TIME_OF_FUR = { short: "morning", mid: "golden", long: "night" };
 const seal = (x, y, s = 18) => `<rect x="${f(x)}" y="${f(y)}" width="${s}" height="${s}" fill="${RED}"/>${glyph("貓", x + s / 2, y + s * .14, s * .72, PAPER)}`;
 
+/* The print finish of a postcard (the designer, 2026-11-14: "always add this post effect", pointing at the indigo sample on the
+   design board): the picture is cut a little rough, and the streaks a baren leaves, where the ink did not take, run
+   across it in the colour of the paper. Two filters; a postcard is a still picture, so their cost is paid once.
+   The ids are fixed: every postcard defines the same two filters, so several on one page do not disturb each other. */
+const printFinish = (x, y, w, h) => `<defs><filter id="lc-pc-rough" filterUnits="userSpaceOnUse" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/></filter>`
+  + `<filter id="lc-pc-streak" filterUnits="userSpaceOnUse" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}"><feTurbulence type="fractalNoise" baseFrequency=".006 .25" numOctaves="3" seed="9"/><feColorMatrix type="matrix" values="0 0 0 0 .937  0 0 0 0 .902  0 0 0 0 .824  0 0 0 -3.4 1.42"/></filter></defs>`;
+
 /* a postcard: the print on top (G landscape, characters in colour), the place as a title, the caption, the mark */
 export function postcardSvg(o = {}) {
   o = o || {};
@@ -27,7 +34,7 @@ export function postcardSvg(o = {}) {
   const title = o.title == null ? PLACE_NAME[placeId(o.place)] : txt(o.title);
   const textH = 30 + lines.length * lh, sh = Math.min(450, 590 - 22 - textH - 26 - 20), sw = sh * .8, sx = (400 - sw) / 2, top = 20 + sh + 30;
   return svgDoc("0 0 400 600", `<rect width="400" height="600" rx="6" fill="${CARD}"/><rect x="1" y="1" width="398" height="598" rx="6" fill="none" stroke="${KEY}" stroke-width="2"/>
-    ${inset(sx, 20, sw, sh, "0 0 400 500", scene)}<rect x="${f(sx)}" y="20" width="${f(sw)}" height="${f(sh)}" fill="none" stroke="${KEY}" stroke-width="1.6"/>
+    ${printFinish(sx, 20, sw, sh)}<g filter="url(#lc-pc-rough)">${inset(sx, 20, sw, sh, "0 0 400 500", scene)}</g><rect x="${f(sx)}" y="20" width="${f(sw)}" height="${f(sh)}" filter="url(#lc-pc-streak)" opacity=".42"/><rect x="${f(sx)}" y="20" width="${f(sw)}" height="${f(sh)}" fill="none" stroke="${KEY}" stroke-width="1.6"/>
     <text x="${f(sx + 2)}" y="${f(top)}" ${FONT} font-weight="800" font-size="18" fill="${KEY}">${esc(title)}</text>
     ${lines.map((l, i) => `<text x="${f(sx + 2)}" y="${f(top + 26 + i * lh)}" ${FONT} font-size="14.5" fill="${KEY}">${esc(l)}</text>`).join("")}
     <path d="M${f(sx)} 572 H${f(sx + sw)}" stroke="${KEY}" stroke-width="1" opacity=".35"/>

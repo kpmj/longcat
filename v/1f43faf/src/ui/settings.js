@@ -44,7 +44,8 @@ function render(root) {
         <div class="set"><span><b id="mic-state">…</b><small id="mic-note">&nbsp;</small></span><button class="btn small" data-a="test">Test it</button></div>
       </div>
       <div class="card"><h4>Sound and letters</h4>
-        <label class="toggle"><input type="checkbox" data-a="sound" ${S.settings.sound ? "checked" : ""}><span>Game sound (the hum, the bells)</span></label>
+        <label class="toggle"><input type="checkbox" data-a="sound" ${S.settings.sound ? "checked" : ""}><span>Game sound (the hum, the bells, taps on the home page)</span></label>
+        <label class="toggle"><input type="checkbox" data-a="music" ${S.settings.music !== false ? "checked" : ""}><span>Music on the home page</span></label>
         <label class="toggle"><input type="checkbox" data-a="letters" ${S.settings.letterNotify ? "checked" : ""}><span>Tell me when the monthly letter arrives</span></label>
         <p class="muted small">Only the monthly letter, never a daily reminder. Phone notifications aren’t built yet; for now the letter shows up in the game.</p>
       </div>
@@ -67,6 +68,7 @@ function render(root) {
   $("[data-a=hear]", root).onclick = () => { audioContext(); hum(now() + 0.05, firstNote(S).midi, 1.4); };
   $("[data-a=test]", root).onclick = () => openMicTest();
   $("[data-a=sound]", root).onchange = (e) => { S.settings.sound = e.target.checked; setMuted(!S.settings.sound); app.save(); };
+  $("[data-a=music]", root).onchange = (e) => { S.settings.music = e.target.checked; app.save(); };
   $("[data-a=letters]", root).onchange = (e) => { S.settings.letterNotify = e.target.checked; app.save(); if (e.target.checked) toast("Noted. Notifications aren’t built yet; letters show up in the game."); };
   $("[data-a=tips]", root).onclick = () => { resetTips(); toast("The tips will show again."); };
   $("[data-a=dev]", root).onclick = () => openDev();

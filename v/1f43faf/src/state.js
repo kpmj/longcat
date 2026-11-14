@@ -37,7 +37,7 @@ export function freshSave(real = new Date()) {
     created: dateKey(real),
     here: "onsen",
     onboarded: false,
-    settings: { range: null, nudge: 0, kinds: { scarf: "point", top: "point", bottom: "point" }, sound: true, letterNotify: false },
+    settings: { range: null, nudge: 0, kinds: { scarf: "point", top: "point", bottom: "point" }, sound: true, music: true, letterNotify: false },
     faces: 0,
     journal: [],
     takes: [],

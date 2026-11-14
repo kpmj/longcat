@@ -1,6 +1,7 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
 import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen } from "../state.js";
+import { tapSound } from "../audio/ambient.js";
 import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
@@ -151,6 +152,7 @@ export function wireTaps(el) {
     const t = e.target.closest ? e.target.closest("[data-tap]") : null;
     if (!t || !el.contains(t)) return;
     const group = t.dataset.group, els = group ? [...el.querySelectorAll(`[data-group="${group}"]`)] : [t];
+    if (app.S.settings.sound !== false) tapSound(t.dataset.tap);
     for (const x of els) {
       x.classList.remove("lc-tapped");
       x.getBoundingClientRect(); // restart the animation when tapped again

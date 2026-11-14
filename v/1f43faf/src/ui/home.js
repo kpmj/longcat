@@ -2,6 +2,7 @@
    earlier cats are no longer shown here, see state.js homeScene); one button to sing, one line under it. The three progress chips open the Garment sheet.
    Settings is the gear in the top bar. Nothing here counts streaks or shows a score. */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps } from "./app.js";
+import { startMusic, stopMusic } from "../audio/ambient.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { placeById, timeById, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
@@ -19,7 +20,8 @@ function garmentChips(S, place, time) {
 function sceneFor(S, place, real) {
   const o = St.homeScene(S, place, real);
   const nt = St.nextTake(S, place);
-  if (nt) o.guide = nt.zone; // a dashed line over the steps still to come on the garment being worn
+  /* no dashed guide over the steps still to come: the designer found the lines unexplained and asked for them to go (2026-11-14).
+     The art still draws one when a scene is given `guide` */
   const glow = app.props.glow;
   if (glow) o.garments = o.garments.map((g) => (g.zone === glow.zone ? { ...g, glow: glow.step } : g));
   return o;
@@ -61,6 +63,8 @@ export function renderHome(root) {
       <p class="sub">${sub}</p>
     </section>`;
   wireTaps($("#home-scene", root)); // pat a cat or the judge, tap the yuzu, the lamp, the sun
+  /* the home page has its own quiet music, in the colour of the time of day; it stops when the page is left */
+  if (S.settings.music !== false && S.settings.sound !== false) startMusic(shownTime); else stopMusic();
   const sing = $("[data-act=sing]", root);
   if (sing) sing.onclick = () => show("take", { ctx: St.nextTake(S, place) });
   const pick = $("[data-act=pick]", root);
@@ -183,4 +187,4 @@ function askRedo(place, time, zone, step) {
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
 
-app.screens.home = { render: renderHome, openPicker, openGarment };
+app.screens.home = { render: renderHome, openPicker, openGarment, leave: stopMusic };
