@@ -1,6 +1,16 @@
 /* Everything the game plays: the hummed demo, the count-in, and the per-place sound effects.
    Six effects a place (in tune / not, for each time of day), synthesised so the demo needs no audio files. */
-import { midiToHz } from "./pitch.js";
+import { midiToHz, hzToMidi } from "./pitch.js";
+import { selfLog, noteSound, fromSelf } from "./self.js";
+
+/* every pitched sound played, so the tracker can ignore the game's own voice (see self.js) */
+const heard = selfLog();
+const logSound = (t0, dur, f0, f1, glide, partials) => noteSound(heard, { t0, t1: t0 + dur, f0, f1, glide, partials });
+export function heardItself(midi, keep) {
+  if (!ac || midi == null) return false;
+  const delay = (ac.baseLatency || 0) + (ac.outputLatency || 0);
+  return fromSelf(heard, midiToHz(midi), ac.currentTime, keep, delay);
+}
 
 let ac = null, master = null, fx = null, fxTone = null, muted = false;
 
@@ -10,8 +20,13 @@ export function audioContext() {
     if (!AC) return null;
     ac = new AC();
     master = ac.createGain();
-    master.gain.value = 0.6;
+    /* Play-test, 2026-11-14: "really low even with the volume at max". A default compressor squashed
+       everything above -24 dBFS with no make-up gain (the designer's recording peaked near -10 dBFS). Now a limiter
+       like the old app's: idle at normal levels, it only catches peaks. */
+    master.gain.value = 1.8;
     const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -3; comp.knee.value = 2; comp.ratio.value = 20;
+    comp.attack.value = 0.002; comp.release.value = 0.12;
     master.connect(comp);
     comp.connect(ac.destination);
     /* effects go through their own bus so each time of day can colour them */
@@ -31,6 +46,7 @@ export function setMuted(m) { muted = !!m; }
 export function hum(t0, midi, dur, vol = 1) {
   if (muted || !audioContext()) return { stop() {} };
   const f = midiToHz(midi);
+  logSound(t0, dur + 0.1, f, f, 0, [1, 2, 3]);
   const o1 = ac.createOscillator(), o2 = ac.createOscillator(), lfo = ac.createOscillator();
   const lp = ac.createBiquadFilter(), g = ac.createGain(), g2 = ac.createGain(), lg = ac.createGain();
   o1.type = "triangle"; o2.type = "sine";
@@ -64,6 +80,7 @@ export function hum(t0, midi, dur, vol = 1) {
 function tone(type, f0, f1, dur, vol, t = null, filter = null) {
   if (muted || !audioContext()) return;
   const t0 = t ?? ac.currentTime;
+  logSound(t0, dur + 0.05, f0, Math.max(20, f1), dur, type === "sine" ? [1] : [1, 2, 3]);
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = type;
   o.frequency.setValueAtTime(f0, t0);
@@ -119,6 +136,7 @@ export function chime(notes = [523, 659, 784]) {
      off   one low note sliding down
    scale < 1 while more notes are still to be sung, so it does not drown the voice the microphone is hearing. */
 function bell(f, t0, dur, vol, type = "sine") {
+  logSound(t0, dur + 0.03, f, f, 0, type === "sine" ? [1, 2] : [1, 2, 3]);
   const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), g2 = ac.createGain();
   o.type = type; o.frequency.value = f;
   o2.type = "sine"; o2.frequency.value = f * 2; g2.gain.value = 0.25;
@@ -140,6 +158,7 @@ export function noteCue(level, midi, scale = 1) {
     bell(register(f, 500), t, 0.13, 0.1 * scale, "triangle");
   } else {
     const a = register(f, 300);
+    logSound(t, 0.32, a, a * 0.62, 0.24, [1, 3]);
     const o = ac.createOscillator(), g = ac.createGain();
     o.type = "triangle";
     o.frequency.setValueAtTime(a, t);

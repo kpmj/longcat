@@ -12,7 +12,8 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape } from "./lane-body.js";
-import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now } from "../audio/synth.js";
+import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
+import { notesNear } from "../audio/self.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
@@ -307,7 +308,9 @@ export function frame(dt) {
   if (!R || !R.started) return;
   const T = R.T, P = R.plan;
   const i = currentIndex(T);
-  const v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
+  let v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
+  /* the microphone also hears the phone's own bells: a frame that is one of them is not the singer */
+  if (v && app.S.dev.voice === "mic" && heardItself(v.midi, notesNear(P.notes, T.t, T.matcher.latency))) v = null;
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
   for (const e of evs) {
