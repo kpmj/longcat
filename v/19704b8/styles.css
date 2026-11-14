@@ -173,8 +173,53 @@ body.is-full .screen { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1
 .hint b.mid { color: #a66d08; }
 .hint b.off { color: #c14a36; }
 .hint span { font-size: 12.5px; color: #8a7a68; }
+
+/* the old drill's note chart behind the lane (fixed colours: the lane is paper in both themes) */
+.gl-line { stroke: #d9c6a0; stroke-width: 1.5; }
+.gl-faint { stroke: #ecdfc4; stroke-width: 1; stroke-dasharray: 2 5; }
+.gl-gutter { fill: #f6ead2; }
+.gl-label { font-family: var(--body); font-weight: 800; font-size: 11px; fill: #9a8364; text-anchor: end; }
+.gl-label.on { fill: #4a3222; font-size: 12.5px; }
+
+/* Ready, 3, 2, 1, GO! */
+.countdown { position: absolute; left: 0; right: 0; top: 38%; transform: translateY(-50%); text-align: center; pointer-events: none;
+  font-family: var(--display); font-weight: 600; font-size: 64px; line-height: 1; color: #4a3222; opacity: 0;
+  text-shadow: 0 2px 0 #fdf6e8, 0 0 14px #fdf6e8; }
+.countdown.go { color: #2f8a4a; font-size: 72px; }
+.countdown.pop { animation: cd-pop .62s ease-out forwards; }
+@keyframes cd-pop { 0% { opacity: 0; transform: translateY(-50%) scale(1.5); } 18% { opacity: 1; transform: translateY(-50%) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50%) scale(.92); } }
+
+/* the combo: a counter, then stars, music, a rainbow (drawn in the judge's sky) and confetti around the judge */
+.combo-chip { position: absolute; left: 10px; top: 10px; z-index: 3; padding: 4px 10px; border-radius: 999px; background: #fffdf6; color: #4a3222;
+  font-family: var(--display); font-weight: 600; font-size: 14px; box-shadow: 0 2px 8px rgba(60, 40, 15, .18); }
+.combo-chip[data-tier="1"] { background: #fff4c7; }
+.combo-chip[data-tier="2"] { background: #e6f4d8; }
+.combo-chip[data-tier="3"], .combo-chip[data-tier="4"] { background: linear-gradient(90deg, #fcd2cc, #fdecb5, #d6efc8, #cfe5f6, #e6d3f1); }
+.combo-chip.bump { animation: chip-bump .3s ease-out; }
+@keyframes chip-bump { 50% { transform: scale(1.18); } }
+.fx { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; transition: opacity .6s; }
+.fx.ending { opacity: 0; }
+.fx i { position: absolute; font-style: normal; }
+.fx-star { width: calc(26px * var(--s, 1)); height: calc(26px * var(--s, 1)); animation: fx-twinkle 1.6s ease-in-out infinite; }
+.fx-star svg { width: 100%; height: 100%; fill: #f4b93c; stroke: #fffdf6; stroke-width: 1.2; }
+@keyframes fx-twinkle { 0%, 100% { transform: scale(.55) rotate(0deg); opacity: .5; } 50% { transform: scale(1.1) rotate(25deg); opacity: 1; } }
+.fx-note { bottom: -24px; font-size: 24px; font-weight: 800; color: #8f6fd6; text-shadow: 0 1px 0 #fffdf6; animation: fx-rise 3.2s linear infinite; }
+@keyframes fx-rise { 0% { transform: translateY(0) rotate(-8deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-230px) rotate(10deg); opacity: 0; } }
+.fx-confetti { top: -12px; width: 7px; height: 11px; border-radius: 2px; animation: fx-fall 2.4s linear infinite; }
+.fx-confetti.c0 { background: #f28b82; } .fx-confetti.c1 { background: #fbbc5c; } .fx-confetti.c2 { background: #a7d99b; }
+.fx-confetti.c3 { background: #8fc6ec; } .fx-confetti.c4 { background: #d3a6e6; }
+@keyframes fx-fall { 0% { transform: translateY(0) rotate(var(--r)); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(270px) rotate(calc(var(--r) + 300deg)); opacity: .9; } }
+.fx.burst::before { content: ""; position: absolute; left: 50%; top: 45%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%;
+  border: 5px solid #f4b93c; animation: fx-burst .6s ease-out forwards; }
+@keyframes fx-burst { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .countdown.pop { animation: none; opacity: 1; }
+  .fx-star, .fx-note, .fx-confetti, .fx.burst::before, .combo-chip.bump { animation: none; }
+  .fx-note, .fx-confetti { display: none; }
+}
 .judge-wrap { border-radius: 20px; overflow: hidden; background: #efe1c6; flex: 1 1 auto; min-height: 150px; max-height: 260px; }
-.judge-wrap svg { width: 100%; height: 100%; }
+.judge-art { position: absolute; inset: 0; }
+.judge-art svg { width: 100%; height: 100%; display: block; }
 .judge-wrap { position: relative; }
 .judge-wrap::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 0 solid transparent; pointer-events: none; transition: border-color .12s, border-width .12s; }
 .judge-wrap[data-level="good"]::after { border: 6px solid #6fc17c; }

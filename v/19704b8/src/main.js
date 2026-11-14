@@ -40,4 +40,5 @@ window.LC = {
   range: (seconds, fps = 60) => { for (let i = 0; i < seconds * fps; i++) rangeFrame(1 / fps); },
   voice: (v) => { app.S.dev.voice = v; app.save(); },
   click: (sel) => { const el = $(sel); if (el) el.click(); return !!el; },
+  combo: (n) => { if (n != null) app.combo = n; return app.combo || 0; },
 };

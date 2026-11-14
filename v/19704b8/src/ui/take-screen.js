@@ -1,7 +1,10 @@
 /* The singing screen. The phrase is hummed once while its notes stream past the playhead; four beats; then the
    player sings it unaccompanied. The pitch draws the cat: the head rides the playhead, the body trails behind as
    sung. At the end of every note the judge makes one of three faces (on the note, close, off the note), the
-   note block takes that colour and a sound says the same thing. Every "?" is on the cat, never on the singer. */
+   note block takes that colour and a sound says the same thing. Every "?" is on the cat, never on the singer.
+   Behind the lane, the note chart of the old drill: a line for every pitch in the phrase, named in the gutter.
+   Notes that land in a row build a combo; the judge gets happier and the sky around it fills up (stars, music,
+   a rainbow, confetti). An off note ends the run quietly; nothing is lost. */
 import { app, show, sheet, closeSheet, esc, $, readVoice, prepareVoice, touchVoice } from "./app.js";
 import * as St from "../state.js";
 import { planTake } from "../drill/drills.js";
@@ -9,10 +12,13 @@ import { createTake, stepTake, skipDemo, currentIndex, DEMO_LEAD } from "../dril
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { hum, click, placeSfx, noteCue, chime, audioContext, now } from "../audio/synth.js";
+import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
 
-const W = 390, H = 300, PLAY_X = 118, PXS = 92, MID_Y = 150;
+const W = 390, H = 300, PLAY_X = 118, PXS = 92, MID_Y = 150, GUTTER = 40;
+const HOP = 0.16; // the demo head leaves for the next note this long before it arrives, and lands on time
+const FOLLOW = 0.03; // seconds for the head to settle on the sung pitch (time based, so phones keep up)
 let R = null;
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
@@ -23,7 +29,41 @@ function geometry(plan) {
   const step = Math.max(9, Math.min(18, 170 / Math.max(4, hi - lo)));
   return { mid: (lo + hi) / 2, step };
 }
-const yOf = (m) => Math.max(26, Math.min(H - 26, MID_Y - (m - R.geo.mid) * R.geo.step));
+const yRaw = (m) => MID_Y - (m - R.geo.mid) * R.geo.step;
+const yOf = (m) => Math.max(26, Math.min(H - 26, yRaw(m)));
+
+/* The old drill's note chart: a line for every pitch the phrase uses, padded three semitones either side with
+   faint semitone lines, so the singer sees which note is which and how far apart they are. */
+function laneGrid(plan) {
+  const targets = new Set(plan.notes.map((n) => n.midi));
+  const lo = Math.min(...targets) - 3, hi = Math.max(...targets) + 3;
+  let lines = "", labels = "";
+  for (let m = lo; m <= hi; m++) {
+    const y = yRaw(m);
+    if (y < 12 || y > H - 12) continue;
+    if (targets.has(m)) {
+      lines += `<line class="gl-line" x1="${GUTTER}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
+      labels += `<text class="gl-label" id="gl-${m}" x="${GUTTER - 6}" y="${(y + 4).toFixed(1)}">${noteName(m)}</text>`;
+    } else {
+      lines += `<line class="gl-faint" x1="${GUTTER}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
+    }
+  }
+  return { lines, gutter: `<rect class="gl-gutter" width="${GUTTER}" height="${H}"/>${labels}` };
+}
+
+/* Where the head is while the phrase is demonstrated (and while the singer is silent): sitting on the current
+   note, hopping to the next one just before it arrives so it lands as the note reaches the line. */
+function guideY(t) {
+  const N = R.plan.notes;
+  const k = N.findIndex((n) => t < n.s);
+  if (k === -1) return yOf(N[N.length - 1].midi);
+  if (k === 0) return yOf(N[0].midi);
+  const y0 = yOf(N[k - 1].midi), y1 = yOf(N[k].midi);
+  const a = (t - (N[k].s - HOP)) / HOP;
+  if (a <= 0) return y0;
+  const u = a * a * (3 - 2 * a);
+  return y0 + (y1 - y0) * u - Math.sin(Math.PI * a) * (y0 === y1 ? 6 : 10);
+}
 
 function laneNotes(plan) {
   return plan.notes.map((n, i) => {
@@ -38,8 +78,10 @@ function render(root, { ctx, retake = false, outcome = null }) {
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const plan = planTake({ step: ctx.step, time: ctx.time, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null };
+  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0 };
   R.geo = geometry(plan);
+  R.headY = yOf(plan.notes[0].midi);
+  const grid = laneGrid(plan);
   R.wearing = ["scarf", "top", "bottom"].map((z) => St.garmentSpec(S, ctx.place, ctx.time, z));
   const name = garmentName(ctx.time, ctx.zone);
   root.innerHTML = `
@@ -50,17 +92,27 @@ function render(root, { ctx, retake = false, outcome = null }) {
     <div class="lane-wrap">
       <svg class="lane" id="lane" viewBox="0 0 ${W} ${H}" aria-label="Lane">
         <rect width="${W}" height="${H}" class="lane-bg"/>
+        <g id="lane-grid">${grid.lines}</g>
         <g id="lane-notes">${laneNotes(plan)}</g>
         <line x1="${PLAY_X}" y1="14" x2="${PLAY_X}" y2="${H - 14}" class="playhead"/>
         <g id="lane-cat"></g>
+        <g id="lane-gutter">${grid.gutter}</g>
       </svg>
+      <div class="countdown" id="countdown" aria-live="polite"></div>
       <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>
     </div>
-    <div class="judge-wrap" id="judge">${judgeBustSvg({ face: "neutral", place: ctx.place, time: ctx.time, garments: R.wearing })}</div>
+    <div class="judge-wrap" id="judge-wrap">
+      <div class="judge-art" id="judge"></div>
+      <div class="fx" id="fx" aria-hidden="true"></div>
+      <div class="combo-chip" id="combo" hidden></div>
+    </div>
     <div class="take-foot"><button class="btn ghost" data-act="skip">Skip the demo</button></div>`;
   $("[data-act=close]", root).onclick = () => { stop(); show("home"); };
   $("[data-act=skip]", root).onclick = () => { if (R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
   wireTouch(root);
+  R.tier = comboTier(app.combo || 0);
+  paintJudge();
+  showCombo(app.combo || 0, false);
   start();
 }
 
@@ -102,23 +154,92 @@ function onCount() {
   if (skip) skip.hidden = true;
 }
 
+/* Ready, 3, 2, 1 on the four count-in beats; GO on the first downbeat, as the first note reaches the line. */
+function countdown(text, go = false) {
+  const el = document.getElementById("countdown");
+  if (!el) return;
+  el.textContent = text;
+  el.className = `countdown${go ? " go" : ""}`;
+  void el.offsetWidth; // restart the pop
+  el.classList.add("pop");
+}
+
 function hint(big, small = "", level = "") {
   const a = document.getElementById("hint-big"), b = document.getElementById("hint-small");
   if (a) { a.textContent = big; a.className = level; }
   if (b) b.textContent = small;
 }
 
+function paintJudge() {
+  const el = document.getElementById("judge");
+  if (el) el.innerHTML = judgeBustSvg({ face: R.face, place: R.ctx.place, time: R.ctx.time, garments: R.wearing, rainbow: R.tier >= 3 });
+}
+
 function setFace(face, hold = 0.9) {
   R.faceUntil = R.T.t + hold;
   if (face === R.face) return;
   R.face = face;
-  const el = document.getElementById("judge");
-  if (el) el.innerHTML = judgeBustSvg({ face, place: R.ctx.place, time: R.ctx.time, garments: R.wearing });
+  paintJudge();
 }
 
 function setLevel(level) {
-  const el = document.getElementById("judge");
+  const el = document.getElementById("judge-wrap");
   if (el) el.dataset.level = level || "";
+}
+
+/* ---------- the combo ----------
+   Notes on the note in a row, across takes, for as long as the app is open (the old drill's rule: a close note
+   keeps the run going without adding to it; an off note ends it). */
+const STAR = (x, y, s, d) => `<i class="fx-star" style="left:${x}%;top:${y}%;--s:${s};animation-delay:${d}s"><svg viewBox="-10 -10 20 20"><path d="M0 -9 L2.4 -2.4 L9 0 L2.4 2.4 L0 9 L-2.4 2.4 L-9 0 L-2.4 -2.4Z"/></svg></i>`;
+const FX = {
+  1: () => [[7, 18, 1, 0], [88, 14, .8, .5], [14, 62, .7, 1.1], [84, 58, 1, .3], [30, 8, .6, .8], [70, 6, .7, 1.4]].map((a) => STAR(...a)).join(""),
+  2: () => [[10, "♪", 0], [86, "♫", 1.1], [20, "♫", 2.2], [76, "♪", .6], [50, "♪", 1.7]].map(([x, n, d]) => `<i class="fx-note" style="left:${x}%;animation-delay:${d}s">${n}</i>`).join(""),
+  4: () => Array.from({ length: 16 }, (_, i) => `<i class="fx-confetti c${i % 5}" style="left:${(i * 37) % 100}%;animation-delay:${((i * 0.29) % 2.4).toFixed(2)}s;--r:${(i * 47) % 360}deg"></i>`).join(""),
+};
+function paintFx(tier) {
+  const el = document.getElementById("fx");
+  if (!el) return;
+  let html = "";
+  if (tier >= 1) html += FX[1]();
+  if (tier >= 2) html += FX[2]();
+  if (tier >= 4) html += FX[4]();
+  el.innerHTML = html;
+  el.dataset.tier = String(tier);
+}
+function showCombo(n, live = true) {
+  const chip = document.getElementById("combo");
+  const tier = comboTier(n);
+  if (chip) {
+    chip.hidden = n < 3;
+    chip.dataset.tier = String(tier);
+    chip.textContent = `${n} in a row`;
+    if (live && n >= 3) { chip.classList.remove("bump"); void chip.offsetWidth; chip.classList.add("bump"); }
+  }
+  const fx = document.getElementById("fx");
+  if (tier > R.tier) {
+    R.tier = tier;
+    if (fx) fx.classList.remove("ending"); // a new run can start while the last one is still fading
+    paintFx(tier);
+    paintJudge();
+    if (live && fx) {
+      fx.classList.remove("burst"); void fx.offsetWidth; fx.classList.add("burst");
+      chime(COMBO_TIERS[tier - 1].chime); // high, above the pitch tracker's range, so the mic ignores it
+    }
+  } else if (tier < R.tier) {
+    R.tier = tier;
+    if (fx) {
+      fx.classList.add("ending");
+      setTimeout(() => {
+        if (!R || R.tier > 0) return; // a new run already took over
+        fx.classList.remove("ending");
+        paintFx(0);
+        paintJudge();
+      }, 650);
+    }
+    else paintJudge();
+  } else if (!live) {
+    paintFx(tier);
+  }
 }
 
 /* The judge's face for a whole take. While the first garment is still teaching faces it is one of the three
@@ -130,8 +251,11 @@ function takeFace(mood, learnedAll) {
 
 function onNoteEnd(i, r) {
   const n = R.plan.notes[i], v = r.verdict, last = i === R.plan.notes.length - 1;
+  const before = app.combo || 0;
+  app.combo = nextCombo(before, v);
   setFace(NOTE_FACE[v], 99); // the face stays until the next note says otherwise
   setLevel(v);
+  showCombo(app.combo);
   R.mood = v === "good" ? "smug" : v === "off" ? "wide" : "squint";
   R.moodUntil = R.T.t + 0.75;
   R.marks.push({ t: (n.s + n.e) / 2, midi: n.midi, type: v === "good" ? "ok" : v === "off" ? "?" : "~" });
@@ -164,10 +288,10 @@ export function frame(dt) {
   for (const e of evs) {
     if (e.type === "demo-note") hint("Listen first", `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
-    else if (e.type === "beat") hint(["Ready", "3", "2", "1"][e.k] || "", "sing as the notes reach the line");
-    else if (e.type === "phase" && e.phase === "sing") hint("Sing", `“${P.drill.syl}”`);
+    else if (e.type === "beat") { countdown(["Ready", "3", "2", "1"][e.k] || ""); hint("", "sing as the notes reach the line"); }
+    else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.drill.syl}”`); }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
-    else if (e.type === "done") { draw(v); return finish(e.grade); }
+    else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
   }
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
@@ -176,10 +300,20 @@ export function frame(dt) {
     else hint("Sing", `“${P.drill.syl}”`);
   }
   if (R.face !== "neutral" && T.t > R.faceUntil) { setFace("neutral", 0); setLevel(""); }
-  draw(v);
+  draw(v, dt);
 }
 
-function draw(v) {
+/* light the gutter name of the line the voice is on (within a quarter tone) */
+function markGrid(midi) {
+  const on = midi == null ? null : Math.round(midi);
+  const hit = on != null && Math.abs(midi - on) <= 0.5 && document.getElementById(`gl-${on}`) ? on : null;
+  if (hit === R.gridOn) return;
+  if (R.gridOn != null) document.getElementById(`gl-${R.gridOn}`)?.classList.remove("on");
+  if (hit != null) document.getElementById(`gl-${hit}`).classList.add("on");
+  R.gridOn = hit;
+}
+
+function draw(v, dt = 1 / 60) {
   const T = R.T, P = R.plan;
   const shift = PLAY_X - T.t * PXS;
   const notes = document.getElementById("lane-notes");
@@ -194,16 +328,19 @@ function draw(v) {
     if (!tail) tail = { x: p.x, y: p.y };
     subs[subs.length - 1].push(p);
   }
-  const i = currentIndex(T);
-  const target = P.notes[i >= 0 ? i : Math.min(P.notes.length - 1, Math.max(0, T.live.length))];
-  const want = v ? yOf(v.midi) : T.phase === "demo" && i >= 0 ? yOf(P.notes[i].midi) : yOf(target.midi);
-  R.headY += (want - R.headY) * (v ? 0.5 : 0.12);
+  if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
+  else {
+    const want = v ? yOf(v.midi) : guideY(T.t);
+    const k = dt > 0 ? 1 - Math.exp(-dt / (v ? FOLLOW : 0.08)) : 1;
+    R.headY += (want - R.headY) * k;
+  }
+  markGrid(v ? v.midi : null);
   const last = subs[subs.length - 1];
   if (v && last.length) last.push({ x: PLAY_X, y: R.headY });
   let mood = R.mood;
   if (T.t > R.moodUntil) mood = T.phase === "sing" && v ? "sing" : "listen";
   const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
-  const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 3 : 0;
+  const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 1.5 : 0;
   const el = document.getElementById("lane-cat");
   if (el) el.innerHTML = laneCatSvg({ subs: subs.filter((s) => s.length > 1), head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
 }
