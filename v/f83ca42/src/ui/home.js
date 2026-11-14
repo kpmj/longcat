@@ -5,7 +5,7 @@ import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps } from "./app
 import { startMusic, stopMusic } from "../audio/ambient.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
-import { placeById, timeById, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
+import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
 
@@ -53,7 +53,7 @@ export function renderHome(root) {
   }
   root.innerHTML = `
     <header class="topbar">
-      <div class="where"><span class="place">${esc(p.name)}</span><span class="time-chip t-${shownTime}">${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)}</span>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
+      <div class="where"><span class="place">${esc(p.name)}</span><button class="time-chip t-${shownTime}" data-act="times" aria-label="${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)}. Open the times of day">${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)} <i aria-hidden="true">▾</i></button>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
       <div class="tools">${unread.length ? `<button class="letter-btn" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="icon-btn gear" data-go="settings" aria-label="Settings">⚙</button></div>
     </header>
     <div class="scene-wrap" id="home-scene">${sceneSvg(sceneFor(S, place, real))}</div>
@@ -71,6 +71,8 @@ export function renderHome(root) {
   if (pick) pick.onclick = () => openPicker();
   $$("[data-go]", root).forEach((b) => (b.onclick = () => show(b.dataset.go)));
   $$(".gchip", root).forEach((b) => (b.onclick = () => openGarment(b.dataset.zone)));
+  const tc = $("[data-act=times]", root);
+  if (tc) tc.onclick = () => openTimes();
   const lb = $("[data-act=letter]", root);
   if (lb) lb.onclick = () => app.screens.places.openLetter(unread[0]);
   if (!nt && time && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && openPicker(), 350);
@@ -174,6 +176,28 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
 
 /* Singing an earlier step again: the new take replaces that step (its shape and its folds) once it is sung;
    a silent take keeps the old one. It counts as practice, never as progress. */
+/* The times of day of this place (the designer, 2026-11-14: tap the time chip "so I can go back to the previous time and
+   redo the drill to fix the imperfect ones"). Every time already reached lists its three garments; a garment
+   opens its Garment sheet, where any step sung can be sung again. Nothing here moves progress. */
+function openTimes() {
+  const S = app.S, place = S.here, reached = St.reachedTimes(S, place), cur = St.currentTime(S, place);
+  const rows = TIMES.map((t) => {
+    const ok = reached.includes(t.id);
+    const cells = ZONES.map((z) => {
+      const n = St.progress(S, place, t.id, z.id), folds = St.stepsOf(S, place, t.id, z.id).filter((x) => x?.tuft).length;
+      return `<button class="time-g" data-zone="${z.id}" data-time="${t.id}" ${ok && n ? "" : "disabled"}>${wardrobeThumbSvg({ ...St.garmentSpec(S, place, t.id, z.id) })}<b>${esc(garmentName(t.id, z.id))}</b><i>${n >= STEPS ? "done" : `${n} / ${STEPS}`}${folds ? ` · ${folds} fold${folds > 1 ? "s" : ""}` : ""}</i></button>`;
+    }).join("");
+    return `<div class="time-row${ok ? "" : " later"}"><p class="eyebrow">${esc(t.name)} · ${esc(t.flavour)}${t.id === cur ? " · now" : ok ? "" : " · not yet"}</p><div class="time-gs">${cells}</div></div>`;
+  }).join("");
+  const el = sheet(`
+    <h3>Times of day</h3>
+    <p class="muted small">Pick a garment to see its steps. Any step you’ve sung can be sung again; nothing moves forward or back.</p>
+    ${rows}
+    <button class="btn" data-a="close">Close</button>`, { tall: true });
+  el.querySelector("[data-a=close]").onclick = () => closeSheet();
+  el.querySelectorAll(".time-g:not([disabled])").forEach((b) => (b.onclick = () => { closeSheet(true); openGarment(b.dataset.zone, b.dataset.time); }));
+}
+
 function askRedo(place, time, zone, step) {
   const d = ladderFor(time)[step - 1], name = garmentName(time, zone);
   const el = sheet(`
@@ -182,7 +206,9 @@ function askRedo(place, time, zone, step) {
     <div class="row"><button class="btn primary" data-a="go">Sing it again</button><button class="btn" data-a="no">Not now</button></div>`);
   el.querySelector("[data-a=go]").onclick = () => {
     closeSheet(true);
-    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}` }, retake: true, outcome: null });
+    /* after singing, go back to where this was asked from (home or the Wardrobe) */
+    const back = app.screen === "wardrobe" ? "wardrobe" : "home";
+    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}`, back }, retake: true, outcome: null });
   };
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
