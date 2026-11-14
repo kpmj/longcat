@@ -1,9 +1,10 @@
-/* Microphone input: getUserMedia -> analyser -> YIN, read once per animation frame.
-   Audio never leaves the device: frames are turned into numbers here and the stream is never recorded. */
-import { yin, downsample } from "./pitch.js";
+/* Microphone input: getUserMedia -> analyser -> YIN, read once per animation frame, at the microphone's own
+   sample rate (as the old Vocal Gym drill did). Audio never leaves the device: frames are turned into numbers
+   here and the stream is never recorded. */
+import { yin } from "./pitch.js";
 import { audioContext } from "./synth.js";
 
-let stream = null, analyser = null, buf = null, ds = null;
+let stream = null, analyser = null, buf = null;
 
 export const micReady = () => !!analyser;
 
@@ -35,8 +36,5 @@ export function closeMic() {
 export function readMic() {
   if (!analyser) return null;
   analyser.getFloatTimeDomainData(buf);
-  const ac = audioContext();
-  const d = downsample(buf, ac.sampleRate, 16000, ds);
-  ds = d.samples;
-  return yin(d.samples, d.sr);
+  return yin(buf, audioContext().sampleRate);
 }

@@ -1,14 +1,17 @@
 /* One take as a small state machine, free of DOM and audio so tests can run it with synthetic voices.
    Flow (same as the meme-games prototypes): the phrase is hummed once in tempo (demo), four count-in beats,
-   then the player sings it unaccompanied past a playhead. The caller drives it with step(dt, frame). */
-import { gradeNote, gradeTake, estimateLatency } from "./grade.js";
+   then the player sings it unaccompanied past a playhead. The caller drives it with step(dt, frame).
+   While singing, every frame goes to the old Vocal Gym note matcher (./match.js); a note's verdict arrives
+   once the singer is past it. */
+import { gradeTake, heardShare } from "./grade.js";
+import { NoteMatcher } from "./match.js";
 
 export const DEMO_LEAD = 0.5;
 export const DEMO_TAIL = 0.45;
 export const SING_TAIL = 0.55; // keep listening after the last note so a late singer is not cut off
 
 export function createTake(plan) {
-  return { plan, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, ended: 0, lat: 0.1, live: [], grade: null };
+  return { plan, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(plan.notes), live: [], grade: null };
 }
 
 export function skipDemo(T) {
@@ -46,18 +49,23 @@ export function stepTake(T, dt, frame = null) {
     return ev;
   }
   /* sing */
-  T.frames.push({ t: T.t, midi: frame && Number.isFinite(frame.midi) ? frame.midi : null, conf: frame ? frame.conf ?? 1 : 0 });
+  const midi = frame && Number.isFinite(frame.midi) ? frame.midi : null;
+  const conf = frame ? frame.conf ?? 1 : 0;
+  T.frames.push({ t: T.t, midi, conf });
   for (let i = T.singIdx + 1; i < P.notes.length && T.t >= P.notes[i].s; i++) { T.singIdx = i; ev.push({ type: "note-start", i }); }
-  while (T.ended < P.notes.length && T.t >= P.notes[T.ended].e + T.lat + 0.05) {
-    const i = T.ended++;
-    const r = gradeNote(T.frames, P.notes[i], T.lat);
-    T.live[i] = r;
-    T.lat = estimateLatency(T.frames, P.notes.slice(0, i + 1));
-    ev.push({ type: "note-end", i, result: r });
-  }
+  const ended = (list) => {
+    for (const { index, result } of list) {
+      const r = { ...result, heard: heardShare(T.frames, P.notes[index], T.matcher.latency) };
+      T.live[index] = r;
+      ev.push({ type: "note-end", i: index, result: r });
+    }
+  };
+  /* the matcher sees what the old drill saw: a pitch, or nothing when the tracker heard none */
+  ended(T.matcher.feed({ time: T.t, midi: midi !== null && conf >= 0.5 ? midi : null, rms: frame?.rms ?? 0.1 }));
   if (T.t >= P.total + SING_TAIL) {
+    ended(T.matcher.finish());
     T.phase = "done";
-    T.grade = gradeTake(T.frames, P);
+    T.grade = gradeTake(T.frames, P, T.live, T.matcher.latency);
     ev.push({ type: "done", grade: T.grade });
   }
   return ev;

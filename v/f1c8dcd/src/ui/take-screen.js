@@ -195,7 +195,7 @@ function draw(v) {
     subs[subs.length - 1].push(p);
   }
   const i = currentIndex(T);
-  const target = P.notes[i >= 0 ? i : Math.min(P.notes.length - 1, Math.max(0, T.ended))];
+  const target = P.notes[i >= 0 ? i : Math.min(P.notes.length - 1, Math.max(0, T.live.length))];
   const want = v ? yOf(v.midi) : T.phase === "demo" && i >= 0 ? yOf(P.notes[i].midi) : yOf(target.midi);
   R.headY += (want - R.headY) * (v ? 0.5 : 0.12);
   const last = subs[subs.length - 1];

@@ -1,29 +1,17 @@
-/* Grading a take (the designer's play-test, 2026-11-13). Every note gets one of three levels from how much of it was
-   sung on the note:
+/* Grading a whole take. Each note's verdict comes from the old Vocal Gym drill scorer (./match.js): on the note
+   (green), close (amber) or off (red, or nothing sung for it). This file adds what Longcat needs on top: the
+   counts, where the folds go, whether the take counts, the take's shape and its 有聲比例.
 
-     good  at least 80 % of the note was on it
-     mid   30 to 80 %: room to improve
-     off   under 30 %; silence counts as not on the note
-
-   "On the note" is generous: within ON_CENTS of it, so a voice a little flat or sharp still counts. The slide
-   from one note into the next is not graded (the first and last bit of every note is skipped). Latency is
-   forgiven (estimated per take and subtracted); rhythm is not. A take counts if any voice was heard
-   (decision 3, 2026-11-12).
-
-   frames: [{ t, midi | null, conf }] with t in seconds from the first downbeat. */
+   A take counts if any voice was heard (decision 3, 2026-11-12). frames: [{ t, midi | null, conf }] with t in
+   seconds from the first downbeat. */
 import { STEPS } from "../content.js";
 
-export const ON_CENTS = 60; // a frame this close to the note is on it (a semitone is 100)
-export const GOOD_SHARE = 0.8;
-export const OFF_SHARE = 0.3;
-export const LEAD_SKIP = 0.18, LEAD_PART = 0.3; // the slide into a note: this many seconds, at most this part of it
-export const TAIL_SKIP = 0.06, TAIL_PART = 0.1;
 export const MIN_CONF = 0.5;
 export const COUNT_SECONDS = 0.35; // any voice at all for this long and the take counts
 export const SHAPE_N = 12;
 export const LEVELS = ["good", "mid", "off"];
 
-/* Singing the right note an octave away is the right note (and protects against tracker octave slips). */
+/* The garment's wobble is drawn by distance from the note; an octave away draws as the note (it is only art). */
 export const foldCents = (c) => c - 1200 * Math.round(c / 1200);
 const median = (a) => {
   if (!a.length) return 0;
@@ -39,38 +27,10 @@ export function frameStep(frames) {
   return Math.max(1 / 240, Math.min(0.1, median(d)));
 }
 
-/* The singer's constant delay (device + reaction): median offset of each note's first in-tune-ish frame. */
-export function estimateLatency(frames, notes) {
-  const offs = [];
-  for (const n of notes) {
-    const f = frames.find((x) => x.t >= n.s - 0.1 && x.t <= n.s + 0.5 && isVoiced(x) && Math.abs(foldCents((x.midi - n.midi) * 100)) < 150);
-    if (f) offs.push(f.t - n.s);
-  }
-  if (!offs.length) return 0.1;
-  return Math.max(0, Math.min(0.35, median(offs)));
-}
-
-/* The part of a note that is graded: the note minus the slide in and the release. */
-export function windowOf(n, lat) {
-  const len = n.e - n.s;
-  return [n.s + lat + Math.min(LEAD_SKIP, len * LEAD_PART), n.e + lat - Math.min(TAIL_SKIP, len * TAIL_PART)];
-}
-export const levelOf = (share) => (share >= GOOD_SHARE ? "good" : share >= OFF_SHARE ? "mid" : "off");
-
-export function gradeNote(frames, n, lat = 0.1) {
-  const [a, b] = windowOf(n, lat);
-  const inWin = frames.filter((f) => f.t >= a && f.t < b);
-  const voiced = inWin.filter(isVoiced);
-  const cs = voiced.map((f) => foldCents((f.midi - n.midi) * 100));
-  const on = cs.filter((c) => Math.abs(c) <= ON_CENTS).length;
-  const share = inWin.length ? on / inWin.length : 0;
-  return {
-    verdict: levelOf(share),
-    share: Math.round(share * 100) / 100, // how much of the note was on it
-    heard: inWin.length ? Math.round((voiced.length / inWin.length) * 100) / 100 : 0,
-    cents: Math.round(median(cs)),
-    frames: inWin.length,
-  };
+/* How much of a note's time had any voice in it, after latency: 0 means the singer was silent there. */
+export function heardShare(frames, n, lat) {
+  const inWin = frames.filter((f) => f.t >= n.s + lat && f.t < n.e + lat);
+  return inWin.length ? Math.round((inWin.filter(isVoiced).length / inWin.length) * 100) / 100 : 0;
 }
 
 /* The take's shape: SHAPE_N slices of how far from the note each part was, in [-1, 1]; null where silent. */
@@ -100,17 +60,14 @@ function nearestNote(notes, t) {
   return best;
 }
 
-export function gradeTake(frames, plan) {
+/* results: the matcher's per-note results, in order; lat: the latency it settled on. */
+export function gradeTake(frames, plan, results, lat) {
   const dt = frameStep(frames);
-  const lat = estimateLatency(frames, plan.notes);
-  const notes = plan.notes.map((n) => gradeNote(frames, n, lat));
+  const notes = plan.notes.map((n, i) => ({ ...results[i], heard: heardShare(frames, n, lat) }));
   const sing = frames.filter((f) => f.t >= -0.2 && f.t <= plan.total + 0.6);
   const voicedSeconds = sing.filter(isVoiced).length * dt;
   let inWin = 0, voicedIn = 0;
-  for (const n of plan.notes) {
-    const [a, b] = windowOf(n, lat);
-    for (const f of frames) if (f.t >= a && f.t < b) { inWin++; if (isVoiced(f)) voicedIn++; }
-  }
+  for (const n of plan.notes) for (const f of frames) if (f.t >= n.s + lat && f.t < n.e + lat) { inWin++; if (isVoiced(f)) voicedIn++; }
   const counts = { good: 0, mid: 0, off: 0 };
   notes.forEach((r) => counts[r.verdict]++);
   /* where along the take each off note sits (0 to 1): the garment gets a fold there */
