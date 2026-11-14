@@ -7,7 +7,7 @@ import { ZONES, timeById, garmentName } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now } from "../audio/synth.js";
-import { openMic, readMic, micReady } from "../audio/mic.js";
+import { openMic, closeMic, readMic, micReady } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
 /* the first note of the next step, in the current key */
@@ -79,9 +79,10 @@ export async function openMicTest() {
   const el = sheet(`<h3>Say “ahh”</h3><div class="meter"><i id="mt-bar"></i></div>
     <div class="heard"><b id="mt-note">–</b><span id="mt-say">Listening…</span></div>
     <p class="muted small">If the bar doesn’t move: check that this page may use the microphone (the ᴀA or lock icon in the address bar), and that nothing covers it.</p>
-    <button class="btn primary" data-a="done">Done</button>`);
+    <button class="btn primary" data-a="done">Done</button>`, { onClose: () => end() });
   let raf = 0, live = true;
-  const end = () => { live = false; cancelAnimationFrame(raf); };
+  /* close the microphone again: on iPhone an open microphone keeps every sound quiet, like a call */
+  const end = () => { if (!live) return; live = false; cancelAnimationFrame(raf); closeMic(); };
   el.querySelector("[data-a=done]").onclick = () => { end(); closeSheet(); if (app.screen === "settings") show("settings"); };
   const ok = await openMic();
   if (!ok) { el.querySelector("#mt-say").textContent = "The microphone isn’t allowed yet."; return; }

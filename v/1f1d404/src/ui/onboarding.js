@@ -6,6 +6,7 @@ import * as St from "../state.js";
 import { sceneSvg, letterSvg, judgeBustSvg } from "../art/index.js";
 import { createHold, feedHold, rangeFrom, HOLD_SECONDS } from "../drill/range.js";
 import { audioContext, chime, now } from "../audio/synth.js";
+import { closeMic } from "../audio/mic.js";
 import { noteName } from "../audio/pitch.js";
 import { ZONES, placeById } from "../content.js";
 
@@ -185,6 +186,7 @@ function nextPhase() {
 function stopRange() {
   if (RF?.raf) cancelAnimationFrame(RF.raf);
   touchVoice.down = false;
+  closeMic(); // an open microphone keeps every sound quiet on iPhone; the take opens it again when needed
   RF = null;
 }
 
