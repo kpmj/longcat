@@ -336,7 +336,7 @@ function draw(v, dt = 1 / 60) {
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
   /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
-  const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.lane, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
+  const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
   else {
     const want = v ? yOf(v.midi) : guideY(T.t);

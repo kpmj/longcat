@@ -97,10 +97,11 @@ export function toast(msg) {
    god = sings everything in tune, human = a little flat and shaky (still on the note), wobbly = drifts a
    semitone either side (close), tufty = one clear miss per phrase, half = stops halfway, silent = nothing,
    touch = press the lane. */
-/* How the lane draws the cat when the notes are short: options being tried (see lane-body.js). */
+/* How the lane draws the cat when the notes are short. The first is the game's own; the rest are kept for
+   comparing (see lane-body.js). */
 export const LANE_MODES = [
-  { id: "trace", name: "As now: fat on notes, thread between" },
-  { id: "snap", name: "A · Body lies flat on the note line" },
+  { id: "snap", name: "A · Body lies flat on the note line (the game's choice)" },
+  { id: "trace", name: "Before: fat following the voice, thread between" },
   { id: "slim", name: "B · One slim body, no fat pieces" },
   { id: "stub", name: "C · Short cat: head and a little body" },
 ];

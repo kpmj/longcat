@@ -70,8 +70,8 @@ export function openDev() {
     <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
     <h4>Voice source</h4>
     <div class="radio">${VOICE_MODES.map((v) => `<label><input type="radio" name="voice" value="${v.id}" ${S.dev.voice === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
-    <h4>Cat body on short notes (trying options)</h4>
-    <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.lane || "trace") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Cat body on short notes</h4>
+    <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.shortBody || "snap") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Progress (${esc(place)} · ${time ? timeById(time).name : "all nine"}${nt ? ` · ${garmentName(nt.time, nt.zone)}, step ${nt.step}` : ""})</h4>
     <div class="grid2">
       <button class="btn small" data-a="one" ${nt ? "" : "disabled"}>Count this step</button>
@@ -88,7 +88,7 @@ export function openDev() {
     </div>
     <h4>Last five takes</h4>
     <p class="muted small mono">${last || "none yet"}</p>`, { tall: true });
-  $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.lane = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
+  $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.shortBody = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=voice]", el).forEach((i) => (i.onchange = () => { S.dev.voice = i.value; app.save(); toast(`Voice source: ${VOICE_MODES.find((v) => v.id === i.value).name}`); }));
   const done = (out, name = "") => {
     app.save();

@@ -136,12 +136,18 @@ function eased(frames, half = 1) {
   });
 }
 
-/* How the body is drawn when the notes are short (under SHORT_NOTE seconds). Long notes always use "trace".
-     trace  fat on the notes following the real voice, a thread between (the look since 2026-11-13)
-     snap   fat pieces lie flat on the line of the note they belong to; the head and the thread show the voice
+/* How the body is drawn when the notes are short (under SHORT_NOTE seconds). Long notes always use "trace":
+   a long note is practice in holding steady, so its wobble should show.
+     snap   fat pieces lie flat on the line of the note they belong to; the head and the thread show the voice.
+            The game's choice for short notes (the designer, 2026-11-14, option A of
+            docs/design/longcat-short-note-body-options.html): on a half-second note there is no time to read
+            the wobble, only whether you are on the note.
+     trace  fat on the notes following the real voice, a thread between
      slim   no fat body at all: the whole line is one slim, smoothed ribbon
-     stub   only a short piece of body behind the head; what was sung before is told by the blocks alone */
-export const BODY_MODES = ["trace", "snap", "slim", "stub"];
+     stub   only a short piece of body behind the head; what was sung before is told by the blocks alone
+   The other three stay behind the Dev panel for comparing. */
+export const BODY_MODES = ["snap", "trace", "slim", "stub"];
+export const SHORT_BODY = "snap";
 export const SHORT_NOTE = 0.8;
 export const STUB_SECONDS = 0.32;
 export const SNAP_TO_LINE = 0.5; // semitones: a level this close to the note is drawn on the note's own line
@@ -150,8 +156,8 @@ export const isShort = (notes) => notes.length > 1 && notes[0].e - notes[0].s < 
 /* frames: [{ t, midi | null }]; now: the take clock; xOf(t), yOf(midi): the caller's coordinates. Returns
    { subs, threads, tail, slim, headJoins }: polylines for laneCatSvg, and whether the body runs up to the
    head (so the caller can join the two). */
-export function laneShape({ frames, notes, lat = 0, now, mode = "trace", xOf, yOf, cull = -30 }) {
-  const m = BODY_MODES.includes(mode) && isShort(notes) ? mode : "trace";
+export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, xOf, yOf, cull = -30 }) {
+  const m = !isShort(notes) ? "trace" : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
   const clean = despike(frames), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : clean;
   const threads = [[]], subs = [[]];
   const cut = (list) => { if (list[list.length - 1].length) list.push([]); };
