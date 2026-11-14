@@ -10,12 +10,19 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 .lc-tapped .lc-face { opacity: 0; }
 .lc-tapped .lc-face-pet { opacity: 1; }
 [data-tap] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* the hat cat rides inside the judge's head group (lc-rider, print/judge.js), so it moves with the head. A pat on the
+   judge is not a pat on that cat: it keeps its own face and hearts until it is patted itself */
+.lc-tapped .lc-rider [data-tap]:not(.lc-tapped) .lc-face { opacity: 1; }
+.lc-tapped .lc-rider [data-tap]:not(.lc-tapped) .lc-face-pet, .lc-tapped .lc-rider [data-tap]:not(.lc-tapped) .lc-heart { opacity: 0; animation: none; }
+.lc-tapped .lc-rider [data-tap]:not(.lc-tapped) .lc-nuzzle { animation: none; }
 /* the reset beat (docs/art-style.md): a runner is hidden except while it runs */
 .lc-run-x, .lc-breeze { opacity: 0; }
 /* a sparkle beside the step just sung shows only while it twinkles; with reduced motion only the rim is there */
 .lc-new-spark { transform-box: fill-box; transform-origin: 50% 50%; transform: scale(0); }
 .lc-new-rim { transition: opacity .5s ease-out; }
 .lc-rim-off .lc-new-rim { opacity: 0; }
+/* a shooting star shows only while it flies */
+.lc-shoot { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .lc-tapped .lc-nuzzle { transform-box: fill-box; transform-origin: 50% 90%; animation: lc-nuzzle .55s ease-in-out 2; }
   .lc-tapped .lc-heart { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-heart 1.2s ease-out both; }
@@ -61,6 +68,12 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-ride { animation: lc-ride 16s linear infinite; }
   .lc-float { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-float 6s ease-in-out infinite; }
   .lc-spark { animation: lc-spark 2.8s ease-out infinite; }
+  /* year-two places: the lighthouse lamp sweeps (its origin is set inline, at the lamp), a firework opens and fades,
+     a shooting star crosses, the washing turns */
+  .lc-sweep { animation: lc-sweep 9s ease-in-out infinite; }
+  .lc-burst { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-burst 4.2s ease-out infinite; }
+  .lc-shoot { animation: lc-shoot 12s linear infinite; }
+  .lc-spin { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-spin 2.6s linear infinite; }
   .lc-leave { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-leave .4s ease-in both; }
   .lc-run-x { animation: lc-run-x 1s linear both; }
   .lc-run-y { animation: lc-run-y 1s ease-in both; }
@@ -71,6 +84,10 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-breeze { animation: lc-breeze 1.7s ease-in-out .2s both; }
   .lc-tummy { animation: lc-tummy .5s ease-out 1.5s both; }
 }
+@keyframes lc-sweep { 0%, 100% { transform: rotate(-9deg); opacity: .6; } 50% { transform: rotate(14deg); opacity: 1; } }
+@keyframes lc-burst { 0% { transform: scale(.08); opacity: 0; } 6% { opacity: 1; } 42% { transform: scale(1); opacity: 1; } 70%, 100% { transform: scale(1.1); opacity: 0; } }
+@keyframes lc-shoot { 0%, 84% { transform: translate(0, 0); opacity: 0; } 86% { opacity: 1; } 93% { transform: translate(-170px, 75px); opacity: 0; } 100% { transform: translate(-170px, 75px); opacity: 0; } }
+@keyframes lc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes lc-nuzzle { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-9deg) translateY(-1px); } 70% { transform: rotate(8deg); } }
 @keyframes lc-heart { 0% { transform: translate(0, 6px) scale(.4); opacity: 0; } 20% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { transform: translate(var(--lc-x, 0px), -30px) scale(1.1); opacity: 0; } }
 @keyframes lc-ear-now { 0%, 100% { transform: rotate(0deg); } 40% { transform: rotate(-18deg); } 70% { transform: rotate(8deg); } }
@@ -119,7 +136,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-ride { from { transform: translate(0, 0); } to { transform: translate(var(--lc-x, 200px), var(--lc-y, 34px)); } }
 @keyframes lc-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--lc-x, 6px), var(--lc-y, -3px)); } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark { animation: none !important; }
+  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin { animation: none !important; }
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }
   .lc-leave { opacity: 0; }

@@ -20,9 +20,14 @@ export const GUEST_PAL = {
   dachshund: { fur: "#4d3d36", furDk: "#3a2e29", stripe: "#2c2320", belly: "#d9a46a", ink: "#1e1614", nose: "#1e1614", inner: "#c98f55" },
   otter:     { fur: "#c4ab90", furDk: "#a68b70", stripe: "#86705a", belly: "#f1e4d0", ink: "#2e2018", nose: "#3a2a20", inner: "#e2cdb4" },
   ferret:    { fur: "#e8dcc4", furDk: "#cdbd9d", stripe: "#8a7866", belly: "#f7f1e4", ink: "#2e2018", nose: "#d98a98", inner: "#f0d6c6", mask: "#7a6a58" },
-  dragon:    { fur: "#d9573f", furDk: "#b4432f", stripe: "#9c3626", belly: "#f6e2bf", ink: "#3a1d17", nose: "#3a1d17", inner: "#f3c27a", mane: "#f0b44c", horn: "#f6e2bf" },
+  dragon:    { fur: "#d9573f", furDk: "#b4432f", stripe: "#9c3626", belly: "#f6e2bf", ink: "#3a1d17", nose: "#3a1d17", inner: "#f3c27a", mane: "#f0b44c", horn: "#f6e2bf" },  fox:       { fur: "#d98a3a", furDk: "#b86a26", stripe: "#7c4a22", belly: "#f6eedd", ink: "#2e2018", nose: "#2e2018", inner: "#3a2a22" },
+  redpanda:  { fur: "#b8562c", furDk: "#8f3f1e", stripe: "#e9c9a0", belly: "#3a2a22", ink: "#2e2018", nose: "#2e2018", inner: "#f6eedd" },
+  rabbit:    { fur: "#ece5d5", furDk: "#cfc5ae", stripe: "#b3a78c", belly: "#f8f4ea", ink: "#2e2018", nose: "#a7605a", inner: "#dcb8a4" },
+  carp:      { fur: "#bf452d", furDk: "#96301f", stripe: "#f1dfb8", belly: "#f1dfb8", ink: "#2e2018", nose: "#2e2018", inner: "#f8f2e2" },
 };
-export const ANIMALS = ["cat", "dachshund", "otter", "ferret", "dragon"];
+/* year two (2026-11-14): fox, red panda, rabbit and the carp streamer are drawn (print/guests.js) but not in GUESTS yet,
+   so no month uses them until the calendar says so */
+export const ANIMALS = ["cat", "dachshund", "otter", "ferret", "dragon", "fox", "redpanda", "rabbit", "carp"];
 export const GUESTS = ["dachshund", "otter", "ferret", "dragon"];
 
 /* fur length follows the weather, not progress. w = body width in the 400x500 scene, fluff = extra tuft radius */

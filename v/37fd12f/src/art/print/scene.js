@@ -5,7 +5,8 @@ import { f, num, int, rng, hash, svgDoc, inset, esc, txt, FONT, textWidth } from
 import { timeId, zoneId, ZONE_IDS, TIME_NAME } from "../palettes.js";
 import { placeLayers as oldPlaceLayers, placeId, PLACE_IDS, PLACE_UI as OLD_UI } from "../places/index.js";
 import { newYear } from "./places/newyear.js";
-import { judgeFigure, zzPrint } from "./judge.js";
+import { zzPrint } from "./judge.js";
+import { judgeFigureOf } from "./judges.js";
 import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
 import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
@@ -34,8 +35,12 @@ function cushionMarkup(c) {
 /* G landscapes (o.landscape in sceneParts): postcards, and since 2026-11-14 the home page and the wardrobe, which
    show the same background as the postcards. Drawn with `animate` they move and answer a tap like the H scene does */
 const LANDSCAPE = { onsen: onsenLandscape, ...Object.fromEntries(Object.entries(PLACES).map(([k, P]) => [k, P.landscape])) };
+/* a place made with places/kit.js can be passed as itself instead of an id (the year-two places, not in the calendar yet) */
+const madePlace = place => (place && typeof place === "object" && typeof place.scene === "function" && typeof place.landscape === "function" ? place : null);
 export function placeLayers(place, time, seed = 0, animate = false, landscape = false) {
-  const p = placeId(place), t = timeId(time);
+  const own = madePlace(place), t = timeId(time);
+  if (own) return { ...(landscape ? own.landscape(t, animate) : own.scene(t, rng(hash(`${own.name}|${t}|${seed}`)), animate)), wood: woodOf(t) };
+  const p = placeId(place);
   if (landscape && LANDSCAPE[p]) return { ...LANDSCAPE[p](t, animate), wood: woodOf(t) };
   if (!DRAW[p]) return { ...oldPlaceLayers(p, t, seed, animate), wood: woodOf(t), frame: "" };
   return { ...DRAW[p](t, rng(hash(`${p}|${t}|${seed}`)), animate), wood: woodOf(t) };
@@ -43,9 +48,8 @@ export function placeLayers(place, time, seed = 0, animate = false, landscape = 
 const list = v => (Array.isArray(v) ? v.filter(x => x && typeof x === "object") : []);
 
 export function sceneParts(o = {}) {
-  const place = placeId(o.place), time = timeId(o.time), animate = o.animate !== false, seed = num(o.seed);
-  const L = placeLayers(place, time, seed, animate, !!o.landscape);
-  const J = judgeFigure(o.face || "neutral", { animate, react: o.react, paws: o.paws });
+  const own = madePlace(o.place), place = own ? own.name : placeId(o.place), time = timeId(o.time), animate = o.animate !== false, seed = num(o.seed);
+  const L = placeLayers(own || place, time, seed, animate, !!o.landscape);
   const seen = new Set(), worn = [], waiting = [];
   for (const g of list(o.garments)) {
     const z = zoneId(g.zone);
@@ -64,7 +68,11 @@ export function sceneParts(o = {}) {
     const d = Math.hypot(a.headAt.x - b.headAt.x, a.headAt.y - b.headAt.y);
     if (d < 40) layers[i] = garmentLayers(worn[i], { ...ctx, headLift: Math.min(20, 40 - d) });
   }
-  const ok = layers.filter(Boolean);
+  /* The hat is worn on the head, so it is anchored there: it is drawn inside the head's own group (`onHead` below)
+     and shakes, yawns, tilts, nods and bobs with it (the designer, 2026-11-14: "the hat cat doesn't move along with the
+     head"). The scarf and the top sit on the body, which only breathes, and stay in the scene's own layers. */
+  const isHat = i => drawZone(worn[i].zone) === "hat";
+  const ok = layers.filter((l, i) => l && !isHat(i)), hat = layers.filter((l, i) => l && isHat(i));
   const garments = ok.map(l => l.under).join("") + ok.map(l => l.art).join("");
   const heads = ok.map(l => l.head).join("");
   const baskets = list(o.baskets).slice(0, 2);
@@ -99,13 +107,19 @@ export function sceneParts(o = {}) {
   const waitingArt = waiting.length ? pile(200, 437, waiting, "normal", time, 1.15, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null) : "";
   /* a small breeze crosses in front of the judge: two lines of wind and a leaf */
   const breeze = animate && o.react === "shiver" ? `<g class="lc-breeze"><path d="M0 300q22 -9 44 0t44 0M30 324q18 -7 36 0t36 0" fill="none" stroke="#f8f2e2" stroke-width="2.4" stroke-linecap="round" opacity=".85"/><path transform="translate(104 300) rotate(30)" d="M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z" fill="#bf452d" stroke="${KEY}" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
-  const cushion = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";
+  const cushion0 = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";
+  /* a cushion on a step of the hat rides the head with the hat */
+  const cushionOnHead = !!cushion0 && drawZone(o.cushion.zone) === "hat", cushion = cushionOnHead ? "" : cushion0;
   const guides = o.guide == null ? [] : (o.guide === "all" ? ZONE_IDS : [].concat(o.guide)).map(zoneId).filter(Boolean);
-  const guide = guides.map(z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); }).join("");
+  const guideOf = z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); };
+  const guide = guides.filter(z => drawZone(z) !== "hat").map(guideOf).join("");
+  const onHead = guides.filter(z => drawZone(z) === "hat").map(guideOf).join("") + hat.map(l => l.under + l.art).join("") + (cushionOnHead ? cushion0 : "") + hat.map(l => l.head).join("");
+  /* o.judge: which of the six judges sits here (print/judges.js); the capybara unless told otherwise */
+  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
   const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
-  return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, cushion };
+  return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, onHead, cushion: cushion0 };
 }
 export const sceneInner = o => { const p = sceneParts(o); return `${p.L.back}${p.special}${p.L.seat}${p.shelves}${p.character}${p.L.front}${p.L.frame || ""}`; };
 /* the picture is clipped to its own 400 x 500 (a nested svg clips by itself): the page shows the svg in boxes of other

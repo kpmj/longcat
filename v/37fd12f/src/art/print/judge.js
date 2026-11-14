@@ -65,7 +65,17 @@ function yuzu(hop) {
 }
 const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">${ln("M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6", .7 / s)}</g>`;
 
-/* the head in head space. o.animate adds the blink class to the resting eyes */
+/* The anchor on the head. Whatever is worn on the head (the hat cat, its guide) is drawn inside the head's own group,
+   after the face, so every motion of the head carries it: the idle shake and yawn, the bob of a pat, and the fixed
+   tilt or nod of a face. `m` is markup in head space (the scene minus the head's place, see judgeFigure).
+   - the unpainted line pins the middle of the group's box: the head turns about the bottom middle of that box
+     (ART_CSS, fill-box), and a cat that hangs over one side would otherwise move the pivot;
+   - lc-rider: a pat on the judge is not a pat on the cat riding it (ART_CSS). */
+export const rider = m => (m ? `<path d="M-170 0h340" fill="none"/><g class="lc-rider">${m}</g>` : "");
+/* scene markup -> head space, for a head that judgeFigure puts at (200 182) */
+export const toHead = m => (m ? `<g transform="translate(-200 -182)">${m}</g>` : "");
+
+/* the head in head space. o.animate adds the blink class to the resting eyes; o.onHead rides the head (see rider) */
 export function judgeHead(face, o = {}) {
   const p = typeof face === "object" && face ? face : printPose(face);
   const earArt = (sx, flick) => `<g transform="translate(${sx * 67} -71) rotate(${sx * 40 + (flick ? -34 : 0)})">${sh(ell(0, 0, 9, 11.5), J.dk)}${fl(ell(0, 1.5, 4, 6), J.ear, .9)}</g>`;
@@ -88,7 +98,7 @@ export function judgeHead(face, o = {}) {
   const shade = fl("M60 -70C76 -58 80 -40 80 -28L86 30C88 52 78 68 58 76C74 58 74 10 60 -70Z", J.dk, .35);
   /* animated: the yuzu can be tapped on its own and hops */
   const yz = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${yuzu(0)}</g>` : yuzu(0)}</g></g>` : yuzu(p.hop);
-  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yz + face2 + brow + tear;
+  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yz + face2 + brow + tear + rider(o.onHead);
   /* idle: the head shakes now and then and tips back with the yawn. Animated: a pat makes it bob (lc-bobble) */
   const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
   const head = o.animate ? `<g class="lc-bobble">${head1}</g>` : head1;
@@ -119,7 +129,7 @@ export function judgeFigure(face, o = {}) {
   const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY);
   const lap = ln("M64 424Q128 404 194 414M206 414Q272 404 336 424", .6);
   const feet = [146, 254].map(x => `<g transform="translate(${x} 462)">${sh(ell(0, 0, 29, 11.5), J.dk)}${ln("M-9 -3.5v7M0 -4.5v8M9 -3.5v7", .6)}</g>`).join("");
-  const head = `<g transform="translate(200 182) scale(2)">${judgeHead(p, o)}</g>`;
+  const head = `<g transform="translate(200 182) scale(2)">${judgeHead(p, { ...o, onHead: toHead(o.onHead) })}</g>`;
   const paws = pawsScene(p, 200, 270);
   /* animated: head and body can be patted; they answer together through data-group */
   const tap = m => (o.animate ? `<g data-tap="judge" data-group="judge">${m}</g>` : m);
