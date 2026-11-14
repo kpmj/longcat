@@ -9,6 +9,11 @@ import { column, glyph } from "../lettering.js";
 
 export const KEY = "#262122", PAPER = "#efe6d2", RED = "#bf452d";
 export const IND = ["#1d3150", "#33517a", "#5d7ea3", "#93abc4", "#c6d3dc", "#dde5e8"];
+/* Golden hour has its own ink (the designer, 2026-11-14: "到傍晚再用藍色感覺看起來不太像是傍晚 需要比較暖色系的背景"). The whole
+   landscape is printed in dusk rose instead of indigo: plum in the shadows, dusty pink and peach in the light, under
+   a sky that steps from vermilion down to cream. Rose, not orange, so the brown judge still stands clear of it. */
+export const DUSK = ["#3e2a3c", "#6b4459", "#9c6670", "#c99688", "#e9c6a8", "#f6e3c9"];
+export const DUSK_SKY = ["#d27a58", "#e8a468", "#f3ca8c", "#f8e6c0"];
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 export const mix = (a, b, t) => "#" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, "0")).join("");
 /* a designed (morning) colour moved to the light of the time of day */
@@ -17,7 +22,7 @@ export const tint = (c, time) => (time === "golden" ? mix(c, "#e59a55", .2) : ti
 /* the indigo palette of a view, per time: d[0] darkest .. d[5] lightest, the stepped sky, the disc in it, the one warm accent */
 export const VIEW = {
   morning: { d: IND, sky: [IND[2], IND[3], IND[4], PAPER], disc: ["#c9553f", 86, 150, 26], mist: PAPER, mistO: .95, warm: PAPER, glow: 0, paper: PAPER, line: IND[0], lit: false, time: "朝" },
-  golden: { d: IND, sky: [IND[2], IND[4], "#f1dcae", "#e4b06c"], disc: ["#f8eecd", 306, 146, 34], mist: "#f6ead0", mistO: .95, warm: "#f2d27a", glow: .3, paper: "#f6ead0", line: IND[0], lit: true, time: "夕" },
+  golden: { d: DUSK, sky: DUSK_SKY, disc: ["#fdf3cf", 306, 146, 34], mist: "#f8e9cf", mistO: .9, warm: "#f6d77c", glow: .3, paper: "#f6ead0", line: DUSK[0], lit: true, time: "夕" },
   night: { d: ["#0c182c", "#132744", "#1d3150", "#2c4566", "#4c6a90", "#6f8bb0"], sky: ["#0e1a30", "#15243e", IND[0], IND[1]], disc: ["#f2ecd6", 306, 84, 22], mist: IND[3], mistO: .4, warm: "#f4d566", glow: .5, paper: "#c9d3e0", line: "#0c182c", lit: true, time: "夜" },
 };
 const STARS = [[60, 52, 1.8], [128, 34, 1.4], [196, 62, 1.2], [250, 38, 1.6], [34, 130, 1.2], [150, 98, 1.1], [226, 104, 1.3], [372, 150, 1.2]];

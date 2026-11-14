@@ -3,6 +3,7 @@
    Returns the same layers as ../../places/a.js onsen ({ back, seat, front, wall }) plus `frame`, drawn last. */
 import { f } from "../../util.js";
 import { column, glyph } from "../lettering.js";
+import { DUSK, DUSK_SKY } from "./kit.js";
 
 export const KEY = "#262122", PAPER = "#efe6d2", RED = "#bf452d";
 const T = {
@@ -74,13 +75,16 @@ export function onsen(time, R, animate) {
 const IND = ["#1d3150", "#33517a", "#5d7ea3", "#93abc4", "#c6d3dc", "#dde5e8"];
 const G = {
   morning: { sky: [IND[2], IND[3], IND[4], PAPER], disc: ["#c9553f", 86, 156, 26], far: IND[3], near: IND[3], nearTop: IND[1], mist: PAPER, rock: IND[4], rockDk: IND[2], stone: IND[5], floor: IND[4], lamp: PAPER, water: IND[3], waterDk: IND[1], wave: PAPER, bamboo: IND[3], leaf: IND[1], time: "朝", glow: 0, ink: KEY },
-  golden: { sky: [IND[2], IND[4], "#f1dcae", "#e4b06c"], disc: ["#f8eecd", 306, 150, 34], far: IND[3], near: IND[3], nearTop: IND[1], mist: "#f6ead0", rock: IND[4], rockDk: IND[2], stone: IND[5], floor: IND[4], lamp: "#f2d27a", water: IND[3], waterDk: IND[1], wave: "#f6ead0", bamboo: IND[3], leaf: IND[1], time: "夕", glow: .3, ink: KEY },
+  /* golden hour is printed in dusk rose, not indigo (see DUSK in ./kit.js) */
+  golden: { sky: DUSK_SKY, disc: ["#fdf3cf", 306, 150, 34], far: DUSK[2], near: DUSK[3], nearTop: DUSK[1], mist: "#f8e9cf", rock: DUSK[4], rockDk: DUSK[2], stone: DUSK[5], floor: DUSK[4], lamp: "#f6d77c", water: DUSK[3], waterDk: DUSK[1], wave: "#f8e9cf", bamboo: DUSK[3], leaf: DUSK[1], line: DUSK[0], time: "夕", glow: .3, ink: KEY },
   night: { sky: ["#0e1a30", "#15243e", IND[0], IND[1]], disc: ["#f2ecd6", 306, 80, 22], far: IND[1], near: "#172a46", nearTop: "#0e1a30", mist: IND[3], rock: "#2c4566", rockDk: "#0e1a30", stone: "#4c6a90", floor: "#243b5a", lamp: "#f4d566", water: IND[1], waterDk: "#0c182c", wave: IND[3], bamboo: "#28466b", leaf: "#132744", time: "夜", glow: .5, ink: KEY },
 };
 const ikey = (w) => `stroke="${IND[0]}" stroke-width="${f(w)}" stroke-linejoin="round" stroke-linecap="round"`;
 const mist = (x, y, w, h, c, o) => `<g fill="${c}" opacity="${o}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}"/><rect x="${f(x + w * .28)}" y="${f(y + h * .62)}" width="${f(w * .9)}" height="${h}" rx="${h / 2}"/></g>`;
 export function onsenLandscape(time, animate = false) {
   const P = G[time] || G.morning, night = time === "night";
+  /* the landscape's line is the darkest step of its own ink: indigo, or plum at golden hour */
+  const ikey = w => `stroke="${P.line || IND[0]}" stroke-width="${f(w)}" stroke-linejoin="round" stroke-linecap="round"`;
   const on = (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
   const tap = (kind, m) => (animate ? `<g data-tap="${kind}">${m}</g>` : m);
   const [dc, dx, dy, dr] = P.disc;
