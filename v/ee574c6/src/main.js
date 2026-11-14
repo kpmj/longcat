@@ -7,6 +7,7 @@ import "./ui/wardrobe.js";
 import "./ui/album.js";
 import "./ui/places.js";
 import "./ui/settings.js";
+import "./ui/drill-editor.js";
 import "./ui/onboarding.js";
 import { runFrames, running } from "./ui/take-screen.js";
 import { rangeFrame } from "./ui/onboarding.js";

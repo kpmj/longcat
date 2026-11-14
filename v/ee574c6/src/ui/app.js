@@ -6,6 +6,7 @@ import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
 import { VOICES } from "../drill/take.js";
+import { applyDrillEdits, drillEditCount } from "../content.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -22,13 +23,15 @@ export const app = {
   props: {},
   real: () => new Date(),
   save() { writeSave(storage, app.S); },
-  reset() { app.S = freshSave(app.real()); app.save(); },
+  /* Start over clears the player's month, not the designer's drill edits (dev tools → Drill editor has its own undo) */
+  reset() { const keep = app.S?.dev?.drillEdits || null; app.S = freshSave(app.real()); app.S.dev.drillEdits = keep; app.save(); },
   canSave,
 };
 
 export function boot() {
   app.S = loadSave(storage, app.real());
   if (new URLSearchParams(location.search).has("dev")) app.S.dev.panel = true;
+  app.S.dev.drillEdits = drillEditCount(app.S.dev.drillEdits) ? applyDrillEdits(app.S.dev.drillEdits) : null;
   setMuted(!app.S.settings.sound);
 }
 

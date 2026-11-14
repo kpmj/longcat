@@ -61,8 +61,8 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
 }
 
 /* The full plan of one take: notes with start/end in seconds from the first downbeat. */
-export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "" }) {
-  const drill = drillForStep(step, time);
+export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null }) {
+  const drill = given || drillForStep(step, time); // `drill` is for the dev drill editor: hear a drill before it is saved
   const fl = FLAVOURS[time] || FLAVOURS.golden;
   const rel = drill.free ? freeMelody(seed || drill.id, drill.free) : drill.rel;
   const low = Math.min(...rel), span = Math.max(...rel) - low;

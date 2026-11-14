@@ -96,6 +96,58 @@ export const LADDERS = {
 export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
 export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
 
+/* The drill editor (dev tools, the designer 2026-11-14): the designer moves and edits drills on the phone. The edits live in the
+   save (S.dev.drillEdits) and are laid over the tables above when the game starts and after every change, so
+   everything that reads DRILL / LADDERS sees them. Shape: { ladders: { morning: [twelve ids] }, drills: { id:
+   { name, rel, dur } | { name, free: { notes, top }, dur } } }. Nothing here is graded differently. */
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const BUILT_IN = { drills: clone(DRILL), ladders: clone(LADDERS) };
+export const builtInDrills = () => clone(BUILT_IN);
+export const DRILL_LIMITS = { notes: 16, low: -12, high: 24, span: 19, durMin: 0.3, durMax: 8 };
+
+/* One drill from untrusted input (a save, or text pasted into the editor); null when it cannot be sung. */
+export function cleanDrill(d) {
+  if (!d || typeof d !== "object") return null;
+  const L = DRILL_LIMITS, dur = Number(d.dur);
+  if (!(dur >= L.durMin && dur <= L.durMax)) return null;
+  const name = String(d.name ?? "").trim().slice(0, 40) || "Drill";
+  if (d.free) {
+    const notes = Math.round(Number(d.free.notes)), top = Math.round(Number(d.free.top));
+    if (!(notes >= 2 && notes <= 12 && top >= 1 && top <= 7)) return null;
+    return { name, free: { notes, top }, dur };
+  }
+  if (!Array.isArray(d.rel) || !d.rel.length || d.rel.length > L.notes) return null;
+  const rel = d.rel.map(Number);
+  if (rel.some((r) => !Number.isInteger(r) || r < L.low || r > L.high)) return null;
+  if (Math.max(...rel) - Math.min(...rel) > L.span) return null;
+  return { name, rel, dur };
+}
+/* The whole set of edits, cleaned: anything that does not fit is dropped, never half applied. */
+export function cleanDrillEdits(e) {
+  const out = { ladders: {}, drills: {} };
+  if (!e || typeof e !== "object") return out;
+  for (const [id, d] of Object.entries(e.drills || {})) {
+    const c = /^[a-z0-9_]{1,24}$/.test(id) ? cleanDrill(d) : null;
+    if (c) out.drills[id] = c;
+  }
+  const known = (id) => typeof id === "string" && (id in out.drills || id in BUILT_IN.drills);
+  for (const t of TIME_IDS) {
+    const l = e.ladders?.[t];
+    if (Array.isArray(l) && l.length === STEPS && l.every(known)) out.ladders[t] = [...l];
+  }
+  return out;
+}
+export const drillEditCount = (e) => Object.keys(e?.ladders || {}).length + Object.keys(e?.drills || {}).length;
+/* Lay the edits over the built-in tables (null = back to the built-in ones). Returns what was applied. */
+export function applyDrillEdits(e) {
+  const c = cleanDrillEdits(e), base = clone(BUILT_IN);
+  for (const k of Object.keys(DRILL)) delete DRILL[k];
+  Object.assign(DRILL, base.drills, clone(c.drills));
+  for (const [id, d] of Object.entries(DRILL)) d.id = id;
+  for (const t of TIME_IDS) LADDERS[t] = c.ladders[t] || base.ladders[t];
+  return c;
+}
+
 /* Each cat has its own sound, the same shapes sung three ways. A mouth is what the lane cat's face shows:
    mm (closed), oo (small and round), ee (wide), ah (open), ay (half open). The game listens to pitch only, so
    it cannot tell which sound was sung; the sound is a suggestion, never graded. */

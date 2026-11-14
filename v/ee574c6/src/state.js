@@ -46,7 +46,7 @@ export function freshSave(real = new Date()) {
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
-    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "cat" },
+    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "cat", drillEdits: null },
   };
 }
 

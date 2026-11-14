@@ -4,7 +4,7 @@
 import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
 import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
-import { ZONES, timeById, garmentName, sylFor } from "../content.js";
+import { ZONES, timeById, garmentName, sylFor, drillEditCount } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, audioState } from "../audio/synth.js";
@@ -117,6 +117,9 @@ export function openDev() {
   const el = sheet(`
     <h3>Dev tools</h3>
     <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · sound ${audioState()} · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
+    <h4>Drills</h4>
+    <p class="muted small">Move the twelve steps of a time of day, or change a drill’s notes and speed. ${drillEditCount(S.dev.drillEdits) ? `${drillEditCount(S.dev.drillEdits)} changed on this phone.` : "Nothing changed yet."}</p>
+    <button class="btn small" data-a="drills">Open the drill editor</button>
     <h4>Voice source</h4>
     <div class="radio">${VOICE_MODES.map((v) => `<label><input type="radio" name="voice" value="${v.id}" ${S.dev.voice === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Cat body on short notes</h4>
@@ -172,6 +175,7 @@ export function openDev() {
     for (const z of ZONES) if (!St.garmentDone(S, place, time, z.id)) { St.chooseZone(S, place, z.id); out = St.devFillGarment(S, place, real, { tufts: true }); }
     done(out);
   });
+  act("drills", () => { closeSheet(true); show("drills", { time: time || "morning" }); });
   act("day", () => { S.dev.dayOffset++; done(null); });
   act("month", () => { St.devAdvanceToNextMonth(S, real); done(null); });
   act("today", () => { S.dev.dayOffset = 0; done(null); });
