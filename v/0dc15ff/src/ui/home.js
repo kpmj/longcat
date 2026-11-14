@@ -4,7 +4,7 @@
    holds the bottom row. Sing itself is the middle button of that bottom row, on every tab (app.js renderDock).
    A cat's cell opens its Garment sheet. Nothing here counts streaks or shows a score. */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } from "./app.js";
-import { startMusic, stopMusic } from "../audio/ambient.js";
+import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
@@ -84,7 +84,11 @@ export function renderHome(root) {
   window.removeEventListener("resize", onResize);
   window.addEventListener("resize", onResize);
   /* the home page has its own quiet music, in the colour of the time of day; it stops when the page is left */
-  if (musicOn(S)) startMusic(shownTime); else stopMusic();
+  /* Coming back from singing (or from the beat that follows it) the page first settles: the phone has just let
+     the microphone go and the result's sounds may still ring. Then the music comes up slowly. */
+  const afterTake = app.from === "take" || app.from === "beat";
+  setTune(S.dev.homeMusic);
+  if (musicOn(S)) startMusic(shownTime, afterTake ? { delay: 0.6, fade: 2.6 } : { fade: 1.2 }); else stopMusic();
   /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
   const mb = $("[data-act=music]", root);
   if (mb) mb.onclick = () => {

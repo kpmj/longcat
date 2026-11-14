@@ -542,4 +542,5 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .dock .tab { font-size: 11px; }
 /* on Home the row is the lower half of the paper sheet */
 body.is-home .dock { --card: #f6efe0; --soft: #e9dfc8; --muted: #7a6470; --brand: #1d3150; background: #f6efe0; border-top-color: transparent; color: #3e2a3c; }
-body.is-home .dev-fab { bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 88px); }
+/* no Dev button over the picture: the dev tools are at the bottom of Settings (the designer, 2026-11-14) */
+body.is-home .dev-fab { display: none; }

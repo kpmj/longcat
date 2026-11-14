@@ -1,7 +1,7 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
 import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen, currentTime, nextTake, beatPending } from "../state.js";
-import { tapSound } from "../audio/ambient.js";
+import { tapSound, stopMusic } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady } from "../audio/mic.js";
@@ -49,7 +49,9 @@ export function show(name, props = {}) {
   if (prev && app.screens[prev]?.leave) app.screens[prev].leave();
   closeSheet(true);
   hideTip();
+  app.from = prev || null;
   app.screen = name;
+  if (name !== "home") stopMusic(); // the music is Home's (a tune tried out in the dev tools stops here too)
   if (name === "wardrobe" || name === "album") { markSeen(app.S, name); app.save(); }
   app.props = props;
   const root = $("#screen");

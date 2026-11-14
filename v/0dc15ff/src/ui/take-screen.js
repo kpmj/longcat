@@ -16,6 +16,7 @@ import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
 import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
+import { musicQuiet } from "../audio/ambient.js";
 import { demoVoice } from "../audio/demo-voices.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
@@ -170,6 +171,11 @@ async function start() {
      everything quietly (see audio/mic.js). The first time in a visit it is opened here, so the permission
      question comes before the demo, then closed again so the demo is heard at full volume. */
   const mic = app.S.dev.voice === "mic";
+  /* Home's music is fading out (ambient.js, about a third of a second). Nothing of the take may start over it:
+     opening or closing the microphone makes a phone drop to call volume, and the music is not in the log of
+     sounds the game made itself. */
+  await musicQuiet();
+  if (!R) return;
   if (mic && micReady()) closeMic(); // left open by the range finder or the microphone test
   if (mic && !micGranted()) {
     /* if the browser's question is slow to come, say what the game is waiting for */

@@ -9,6 +9,7 @@ import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState } from "../audio/synth.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
+import { MUSIC, setTune, startMusic, stopMusic } from "../audio/ambient.js";
 import { openMic, closeMic, readMic, micReady } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
@@ -127,6 +128,9 @@ export function openDev() {
     <h4>Demo voice</h4>
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
+    <h4>Home music</h4>
+    <p class="muted small">Four tunes to compare. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
+    <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "box") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Progress (${esc(place)} · ${time ? timeById(time).name : "all nine"}${nt ? ` · ${garmentName(nt.time, nt.zone)}, step ${nt.step}` : ""})</h4>
     <div class="grid2">
       <button class="btn small" data-a="one" ${nt ? "" : "disabled"}>Count this step</button>
@@ -146,7 +150,7 @@ export function openDev() {
     <button class="btn small" data-a="pitchlog">Copy the numbers</button>
     <textarea class="pitchlog" readonly hidden></textarea>
     <h4>Last five takes</h4>
-    <p class="muted small mono">${last || "none yet"}</p>`, { tall: true });
+    <p class="muted small mono">${last || "none yet"}</p>`, { tall: true, onClose: () => { if (app.screen !== "home") stopMusic(); } });
   const pl = el.querySelector("[data-a=pitchlog]"), ta = el.querySelector(".pitchlog");
   pl.onclick = async () => {
     const text = lastTakeText();
@@ -157,6 +161,12 @@ export function openDev() {
   $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
   const hearDemo = async () => { audioContext(); const m = firstNote(S).midi, hs = sylFor("bottom", St.currentTime(S, place) || "morning"), kind = await prepareDemo(S.dev.demoVoice, hs, [0, 2, 4].map((d) => m + d)); [0, 2, 4, 2, 0].forEach((d, k) => demoNote(kind, now() + 0.08 + k * 0.6, m + d, 0.52, hs)); };
   el.querySelector("[data-a=hear-demo]").onclick = hearDemo;
+  $$("input[name=music]", el).forEach((i) => (i.onchange = () => { S.dev.homeMusic = i.value; app.save(); setTune(i.value);
+    /* away from Home the music is not playing: start it so the tune can be heard here; it stops when the panel closes */
+    if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
+    startMusic(time || "night", { fade: 0.6 });
+    toast(`Home music: ${MUSIC.find((v) => v.id === i.value).name}`);
+  }));
   $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.shortBody = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=voice]", el).forEach((i) => (i.onchange = () => { S.dev.voice = i.value; app.save(); toast(`Voice source: ${VOICE_MODES.find((v) => v.id === i.value).name}`); }));
   const done = (out, name = "") => {
