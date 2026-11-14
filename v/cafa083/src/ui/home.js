@@ -122,8 +122,8 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
    (game-flow board, decision D). During the tutorial the first garment is worn to the end. */
 const PATTERN_NAME = Object.fromEntries(PATTERNS.map((x) => [x.id, x.name]));
 const FUR = { short: "short fur", mid: "mid fur", long: "long fur" };
-export function openGarment(zone) {
-  const S = app.S, place = S.here, time = St.currentTime(S, place) || "night";
+export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "night") {
+  const S = app.S, place = S.here;
   const g = St.garmentSpec(S, place, time, zone), steps = St.stepsOf(S, place, time, zone);
   const n = steps.length, done = n >= STEPS, active = St.activeZone(S, place) === zone;
   const z = ZONES.find((x) => x.id === zone), name = garmentName(time, zone);
@@ -160,7 +160,7 @@ export function openGarment(zone) {
     ${buttons}`);
   const on = (a, fn) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.onclick = fn; };
   on("close", () => closeSheet());
-  on("wardrobe", () => { closeSheet(true); show("wardrobe"); });
+  on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe"); });
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });
   on("wear", () => { St.chooseZone(S, place, zone); app.save(); closeSheet(true); show("home", { noAutoPick: true }); });
@@ -179,7 +179,7 @@ function askRedo(place, time, zone, step) {
     closeSheet(true);
     show("take", { ctx: { place, time, zone, step, drill: drillForStep(step), seed: `${place}.${time}.${zone}` }, retake: true, outcome: null });
   };
-  el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone); };
+  el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
 
 app.screens.home = { render: renderHome, openPicker, openGarment };

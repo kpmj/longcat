@@ -246,6 +246,13 @@ body.is-full .screen { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1
 .wcell svg { width: 100%; max-width: 50px; height: auto; }
 .wcell span { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .wcell.on { border-color: var(--brand); background: var(--soft); }
+.redo-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.redo-g { display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); padding: 6px 4px; min-width: 0; font: inherit; color: inherit; cursor: pointer; }
+.redo-g svg { width: 100%; max-width: 56px; height: auto; }
+.redo-g span { display: flex; flex-direction: column; align-items: center; min-width: 0; max-width: 100%; }
+.redo-g b { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.redo-g i { font-style: normal; font-size: 11px; color: var(--muted); }
+.redo-g:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .bgchip { min-height: 38px; border-radius: 12px; border: 1.5px solid var(--line); font-weight: 700; font-size: 13px; }
 .bgchip.t-morning { background: #f3e6d6; color: #6b5440; }
 .bgchip.t-golden { background: #f6cf8f; color: #6a4413; }

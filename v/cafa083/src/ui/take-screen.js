@@ -501,8 +501,12 @@ function accept(ctx, outcome) {
     const nm = garmentName(ctx.time, ctx.zone).toLowerCase();
     return setTimeout(() => app.screens.home.openPicker?.({ after: `The ${nm} is on.`, tipText: `The ${nm} is in the Wardrobe now. Other places are open too.` }), 600);
   }
+  /* a step of a finished garment from another time of day, sung again from the Wardrobe: go back there */
+  if (!outcome && fromWardrobe(ctx)) return show("wardrobe");
   show("home", { glow: { zone: ctx.zone, step: ctx.step } });
 }
+
+const fromWardrobe = (ctx) => ctx.time !== St.currentTime(app.S, ctx.place) && St.garmentDone(app.S, ctx.place, ctx.time, ctx.zone);
 
 app.screens.take = { render, fullscreen: true, leave: () => stop() };
 

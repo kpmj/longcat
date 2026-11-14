@@ -2,10 +2,10 @@
    finished garments and times already reached can be chosen; this month only; photos only (home never changes);
    no list of combinations and no counter. The Cats tab holds the four cat kinds per body part (free, a setting,
    never progress; moved here from Settings by the game-flow board): the judge above changes as you pick. */
-import { app, show, esc, $, $$ } from "./app.js";
+import { app, show, esc, $, $$, sheet, closeSheet } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, catKindSvg } from "../art/index.js";
-import { ZONES, TIMES, STEPS, CAT_KINDS, garmentName, placeById } from "../content.js";
+import { ZONES, TIMES, STEPS, CAT_KINDS, garmentName, placeById, timeById } from "../content.js";
 import { openCard } from "./album.js";
 
 let pick = null, mode = "outfit";
@@ -58,6 +58,7 @@ function render(root) {
       }).join("")}</div>
       <button class="btn primary big" data-a="shoot" ${ZONES.every((z) => pick.set[z.id]) ? "" : "disabled"}>Take a postcard</button>
       <p class="sub">${any ? "Finished garments and times you’ve reached, mixed any way you like. Home doesn’t change." : "Finish a garment and it lands here."}</p>
+      ${any ? `<button class="btn ghost" data-a="redo">Sing a step again</button>` : ""}
     </section>`;
   $$(".wcell", root).forEach((b) => (b.onclick = () => {
     pick.set[b.dataset.zone] = pick.set[b.dataset.zone] === b.dataset.time ? null : b.dataset.time;
@@ -65,12 +66,30 @@ function render(root) {
   }));
   wireSegs(root);
   $$(".bgchip", root).forEach((b) => (b.onclick = () => { pick.bg = b.dataset.bg; render(root); }));
+  const redo = $("[data-a=redo]", root);
+  if (redo) redo.onclick = () => pickToRedo();
   $("[data-a=shoot]", root).onclick = () => {
     const card = St.addMixCard(S, place, pick.set, pick.bg, app.real());
     if (!card) return;
     app.save();
     openCard(card);
   };
+}
+
+/* Singing a step of a finished garment again (the designer, 2026-11-14: finished garments of earlier times too). A tap on
+   a cell above picks it for the postcard, so this has its own button: pick a garment, then a step in its
+   Garment sheet (home.js). It never moves progress. */
+function pickToRedo() {
+  const S = app.S, place = S.here;
+  const done = [];
+  for (const t of TIMES) for (const z of ZONES) if (St.garmentDone(S, place, t.id, z.id)) done.push({ time: t.id, zone: z.id });
+  const el = sheet(`
+    <h3>Sing a step again</h3>
+    <p class="muted">Pick a garment, then the step. The new take replaces that step. Nothing moves forward or back.</p>
+    <div class="redo-list">${done.map((g) => `<button class="redo-g" data-zone="${g.zone}" data-time="${g.time}">${wardrobeThumbSvg({ ...St.garmentSpec(S, place, g.time, g.zone) })}<span><b>${esc(garmentName(g.time, g.zone))}</b><i>${esc(timeById(g.time).name)}</i></span></button>`).join("")}</div>
+    <button class="btn" data-a="close">Not now</button>`);
+  el.querySelector("[data-a=close]").onclick = () => closeSheet();
+  el.querySelectorAll(".redo-g").forEach((b) => (b.onclick = () => { closeSheet(true); app.screens.home.openGarment(b.dataset.zone, b.dataset.time); }));
 }
 
 app.screens.wardrobe = { render, leave: () => {} };
