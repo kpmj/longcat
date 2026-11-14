@@ -68,18 +68,26 @@ const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">$
 /* the head in head space. o.animate adds the blink class to the resting eyes */
 export function judgeHead(face, o = {}) {
   const p = typeof face === "object" && face ? face : printPose(face);
-  const ear = (sx, flick) => `<g transform="translate(${sx * 67} -71) rotate(${sx * 40 + (flick ? -34 : 0)})">${sh(ell(0, 0, 9, 11.5), J.dk)}${fl(ell(0, 1.5, 4, 6), J.ear, .9)}</g>`
+  const earArt = (sx, flick) => `<g transform="translate(${sx * 67} -71) rotate(${sx * 40 + (flick ? -34 : 0)})">${sh(ell(0, 0, 9, 11.5), J.dk)}${fl(ell(0, 1.5, 4, 6), J.ear, .9)}</g>`;
+  /* animated: each ear twitches now and then, out of step with the other */
+  const ear = (sx, flick) => (o.animate && !flick ? `<g class="lc-ear" style="animation-delay:${sx < 0 ? -2 : -5.6}s;animation-duration:${sx < 0 ? 7.5 : 9.5}s">${earArt(sx, flick)}</g>` : earArt(sx, flick))
     + (flick ? ln("M-88 -92q-8 6 -6 16M-96 -84q-6 5 -4 12", .6) : "");
   const nostril = sx => `<path d="${ell(0, 0, 5.6 * p.nostril, 2.8 * p.nostril)}" transform="translate(${sx * 15} 13) rotate(${sx * 26})" fill="${J.ink}"/>`;
   const dots = [[34, 31], [43, 40], [32, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.7"/><circle cx="${-x}" cy="${y}" r="1.7"/>`).join("");
   const brow = p.brow === "one" ? ln("M43 -45q9 -6 19 -2") : p.brow === "both" ? ln("M-62 -44q9 -6 19 -1M43 -45q10 -5 19 1") : "";
   const resting = p.l === "lid" && p.r === "lid";
   const eyes = `<g${o.animate && resting ? ` class="lc-blink"` : ""}>${eye(-52, p.l, p.look)}${eye(52, p.r, p.look)}</g>`;
-  const muzzle = `<g${p.chew ? ` transform="translate(3 2) rotate(3)"` : ""}>${fl(MUZZLE, J.muzzle)}${nostril(-1)}${nostril(1)}${ln("M0 20V36", .85)}<g fill="${J.dk}">${dots}</g>${MOUTH[p.mouth] || MOUTH.split}</g>`
+  /* at rest and animated, the judge yawns now and then: the resting eyes and mouth swap with shut eyes and an open mouth */
+  const idle = !!o.animate && resting && p.mouth === "split" && !p.chew && !p.tilt && !p.dy && !p.paws && !p.flick && !p.tear && p.nostril === 1 && !p.brow;
+  const mouthM = idle ? "" : MOUTH[p.mouth] || MOUTH.split;
+  const muzzle = `<g${p.chew ? ` transform="translate(3 2) rotate(3)"` : ""}>${fl(MUZZLE, J.muzzle)}${nostril(-1)}${nostril(1)}${ln("M0 20V36", .85)}<g fill="${J.dk}">${dots}</g>${mouthM}</g>`
     + (p.chew ? ln("M60 34q6 3 5 10", .6) : "");
+  const face2 = idle ? `<g class="lc-yawn-off">${MOUTH.split}${eyes}</g><g class="lc-yawn-on">${MOUTH.yawn}${eye(-52, "shut", [0, 0])}${eye(52, "shut", [0, 0])}</g>` : eyes;
   const tear = p.tear ? sh("M-58 -16q-6 8 0 14q6 -6 0 -14z", J.tear, .6) : "";
   const shade = fl("M60 -70C76 -58 80 -40 80 -28L86 30C88 52 78 68 58 76C74 58 74 10 60 -70Z", J.dk, .35);
-  const head = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yuzu(p.hop) + eyes + brow + tear;
+  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yuzu(p.hop) + face2 + brow + tear;
+  /* idle: the head shakes now and then and tips back with the yawn */
+  const head = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
   const tf = [p.tilt ? `rotate(${p.tilt} 0 68)` : "", p.dy ? `translate(0 ${p.dy})` : ""].filter(Boolean).join(" ");
   const ticks = p.ticks ? ln("M104 -40v20M98 -28l6 6l6 -6M-104 -40v20M-110 -28l6 6l6 -6", .7) : "";
   const sleep = p.zz && !o.noZz ? zz(98, -74, 2.1) : "";
@@ -115,3 +123,5 @@ export function faceIconSvg(face, opts = {}) {
   const paws = p.paws ? `<g transform="scale(.5)">${pawsScene(p, 0, p.paws === "clap" ? 118 : 150, 92)}</g>` : "";
   return svgDoc("-74 -76 148 148", judgeHead(p, { animate: !!(opts && opts.animate) }) + paws, ` width="${f(size)}" height="${f(size)}"`);
 }
+/* "z z" as cut lines instead of type, in any space; s scales it */
+export const zzPrint = (x, y, s = 1) => `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><path d="M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6" fill="none" stroke="${J.key}" stroke-width="${f(1.9 / s)}" stroke-linecap="round" stroke-linejoin="round"/></g>`;

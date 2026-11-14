@@ -7,7 +7,7 @@ export const STEPS = 12;
 export const ZONES = [
   { id: "scarf", name: "Scarf", where: "neck" },
   { id: "top", name: "Top", where: "chest to belly" },
-  { id: "bottom", name: "Lap", where: "lap" },
+  { id: "bottom", name: "Hat", where: "head" },
 ];
 export const ZONE_IDS = ZONES.map((z) => z.id);
 
@@ -21,9 +21,9 @@ export const TIME_IDS = TIMES.map((t) => t.id);
 
 /* Garment names per time and zone (design doc section 1). Every place uses the same nine names for now. */
 export const GARMENT_NAMES = {
-  morning: { scarf: "Thin scarf", top: "Light top", bottom: "Light blanket" },
-  golden: { scarf: "Scarf", top: "Vest", bottom: "Belly wrap" },
-  night: { scarf: "Thick scarf", top: "Sweater", bottom: "Wool blanket" },
+  morning: { scarf: "Thin scarf", top: "Light top", bottom: "Light cap" },
+  golden: { scarf: "Scarf", top: "Vest", bottom: "Cap" },
+  night: { scarf: "Thick scarf", top: "Sweater", bottom: "Wool hat" },
 };
 
 export const PATTERNS = [
@@ -125,7 +125,7 @@ export const PLACES = [
     letter: ["The rooftop pigeons invite the judge in out of the rain.", "The crate is dry."] },
   { id: "skilift", name: "Snowy cable car", at: "in the snowy cable car", seat: "a cable car cabin with no bar", hit: "a bell", miss: "snow sliding off a branch",
     lines: { morning: "The first cabin up. Frost on the window.", golden: "The sun is low on the summit. It sits up straight.", night: "It went up. It came down. It said nothing." },
-    letter: ["The snowman at the station invites the judge up the mountain.", "No bar across the cabin. The lap stays free."] },
+    letter: ["The snowman at the station invites the judge up the mountain.", "No bar across the cabin. Nothing in the way of the view."] },
 ];
 export const PLACE_IDS = PLACES.map((p) => p.id);
 export const placeById = (id) => PLACES.find((p) => p.id === id) || PLACES[0];
