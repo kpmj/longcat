@@ -1,4 +1,4 @@
-/* Note matching: the old Vocal Gym drill scorer (src/vocal_gym/static/scoring.js on main, the melody path of
+/* Note matching: the old Vocal Gym drill scorer (src/vocal_gym/static/scoring.js on main of the vocal_gym repository, the melody path of
    StreamingScorer), ported as it is (the designer, 2026-11-13: "I've tweaked how the drill responded and the accuracy to
    a good spot; reuse it"). Only the plan shape is Longcat's: targets are { midi, s, e } in seconds.
 

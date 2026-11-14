@@ -1,4 +1,4 @@
-/* Longcat art module. Pure functions returning SVG strings; see longcat/docs/art-contract.md and docs/art-style.md.
+/* Longcat art module. Pure functions returning SVG strings; see docs/art-contract.md and docs/art-style.md.
    Since 2026-11-14 the game draws with the woodblock redraw in ./print/ (judge, cats, garments, places, scene, lane,
    cards). The files beside this one are the first art: ./print still borrows from them (palette tables, coat
    patterns, caption wrapping, the place ids), and the gallery shows them for comparison. */

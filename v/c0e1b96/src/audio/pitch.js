@@ -1,4 +1,4 @@
-/* YIN pitch detection: the old Vocal Gym tracker (src/vocal_gym/static/yin.js on main), ported as it is
+/* YIN pitch detection: the old Vocal Gym tracker (src/vocal_gym/static/yin.js on main of the vocal_gym repository), ported as it is
    (the designer, 2026-11-13: "I've tweaked how the drill responded and the accuracy to a good spot; reuse it").
 
    Same constants and the same frame body: difference function, cumulative mean normalised difference, first dip
