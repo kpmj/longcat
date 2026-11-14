@@ -93,18 +93,17 @@ export function sceneParts(o = {}) {
   /* shelves sit lower than in the old scene so they clear the round window and the title */
   if (baskets[0]) shelves += plank(312, 240, L.wood) + basket(352, 240, baskets[0], L.wood, time, animate, newB === 0 ? arrive : null);
   if (baskets[1]) shelves += plank(8, 240, L.wood) + basket(48, 240, baskets[1], L.wood, time, animate, newB === 1 ? arrive : null);
-  if (waiting.length) {
-    const y = baskets[1] ? 152 : 240;
-    /* `arriving`: the new cats pop onto the shelf one after another */
-    shelves += plank(8, y, L.wood) + pile(48, y - 12, waiting, "normal", time, 1, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null);
-  }
+  /* the cats that are waiting sit on the judge's lap, not on a shelf at the side, so they do not cover the
+     background (the designer, 2026-11-14). The lap is free now that the lap garment is a hat. `arriving`: they pop onto the
+     lap one after another */
+  const waitingArt = waiting.length ? pile(200, 437, waiting, "normal", time, 1.15, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null) : "";
   /* a small breeze crosses in front of the judge: two lines of wind and a leaf */
   const breeze = animate && o.react === "shiver" ? `<g class="lc-breeze"><path d="M0 300q22 -9 44 0t44 0M30 324q18 -7 36 0t36 0" fill="none" stroke="#f8f2e2" stroke-width="2.4" stroke-linecap="round" opacity=".85"/><path transform="translate(104 300) rotate(30)" d="M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z" fill="#bf452d" stroke="${KEY}" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
   const cushion = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";
   const guides = o.guide == null ? [] : (o.guide === "all" ? ZONE_IDS : [].concat(o.guide)).map(zoneId).filter(Boolean);
   const guide = guides.map(z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); }).join("");
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
-  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${J.paws}`;
+  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
   return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, cushion };
 }
