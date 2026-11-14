@@ -137,6 +137,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
     <header class="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
       <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
+      <button class="btn ghost skip" data-act="skip">Skip demo</button>
     </header>
     <div class="lane-wrap" id="lane-wrap"></div>
     <div class="judge-wrap" id="judge-wrap">
@@ -144,7 +145,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
       <div class="fx" id="fx" aria-hidden="true"></div>
       <div class="combo-chip" id="combo" hidden></div>
     </div>
-    <div class="take-foot"><button class="btn ghost" data-act="skip">Skip the demo</button></div>`;
+    `;
   /* the note area takes the height the screen has left between the header and the judge's strip: its picture is
      drawn to that shape, at least as tall as it used to be */
   const wrap = $("#lane-wrap", root), box = wrap.getBoundingClientRect();
@@ -343,8 +344,14 @@ function paintJudge() {
   const el = document.getElementById("judge");
   if (!el) return;
   el.innerHTML = judgeBustSvg({ face: R.face, place: R.ctx.place, time: R.ctx.time, garments: R.wearing, rainbow: R.tier >= 3 });
-  /* the judge is a short wide strip now: fill it with the middle of the bust, the face */
-  el.firstElementChild?.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  /* the judge's box is as wide as the screen: fill it, and if it is shorter than the bust keep the body and its
+     garments and lose the sky above the head */
+  const svg = el.firstElementChild;
+  if (!svg) return;
+  svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
+  /* the bust is framed from the sky down to the chest (0 0 300 220): look a little lower, so more of the scarf and
+     the shoulders is in view and less empty sky. The fruit on a full hat still clears the top. */
+  svg.setAttribute("viewBox", "0 6 300 220");
 }
 
 function setFace(face, hold = 0.9) {

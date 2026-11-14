@@ -652,8 +652,13 @@ body { background: var(--sky, var(--soft)); }
 :root .gl-gutter { fill: #f6efe0; }
 /* about a third of the screen, and never taller than the whole bust at this width (300 : 220): head, shoulders
    and the cats on them, as the card used to show */
-:root .judge-wrap { flex: none; height: clamp(150px, 32dvh, 73.3vw); min-height: 0; max-height: 300px; border-radius: 0; }
+/* Third size, the designer's play test the same night: at a third of the screen the picture was cut to the face and a bit
+   of shoulder, with the scarf below the edge, "it feels like he's naked". The judge now gets the whole bust (its
+   picture is 300 : 220, so 73.3% of the width), as the card showed it, whenever the notes can keep 300 px; on a
+   shorter screen it is cut from the top, never from the body (take-screen.js paintJudge). */
+:root .judge-wrap { flex: none; height: min(73.3vw, 337px, max(150px, calc(100dvh - 380px))); min-height: 0; max-height: none; border-radius: 0; }
 :root .combo-chip { top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); border-radius: 8px; border: 1.5px solid var(--key); box-shadow: var(--flat); }
-:root .take-foot { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 2; min-height: 0; pointer-events: none; }
-:root .take-foot .btn { pointer-events: auto; }
+/* Skip the demo sits in the header, clear of the notes and of the judge's face (it was over the face) */
+:root .take-head > div { flex: 1 1 auto; min-width: 0; }
+:root .take-head .skip { flex: none; min-height: 40px; padding: 0 14px; white-space: nowrap; }
 :root .wake b { background: var(--brand); color: var(--brand-ink); }
