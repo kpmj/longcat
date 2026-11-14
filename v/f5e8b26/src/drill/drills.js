@@ -90,9 +90,9 @@ export function climbRounds(range, span, base, climb, nudge = 0) {
 /* The full plan of one take: notes with start/end in seconds from the first downbeat. A climbing drill has
    several rounds (plan.reps), a rest between them, and a cue of each next first note (plan.cues); the demo
    is the first round only (plan.demoCount notes, plan.demoTotal seconds). */
-/* The count-in: Ready, 3, 2, 1, Breathe. Five beats, not four (2026-11-14): the microphone opens on the first, which
-   is silent, so the phone has a beat to settle before the clicks; and the last is a breath, so nobody has to
-   start on a starting gun (take-screen.js). */
+/* The count-in: Ready, 3, 2, 1, and one beat that shows nothing. Five beats, not four (2026-11-14): the microphone
+   opens on the first, which is silent, so the phone has a beat to settle before the clicks; and the last is
+   empty, a beat to breathe, so nobody has to start on a starting gun (take-screen.js). */
 export const COUNT_BEATS = 5;
 export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null }) {
   const drill = given || drillForStep(step, time); // `drill` is for the dev drill editor: hear a drill before it is saved

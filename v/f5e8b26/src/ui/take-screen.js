@@ -277,11 +277,11 @@ function laneTip(id, ms, laneY = null) {
   tip(id, lane, { at: "below", x: PLAY_X / W, y: (laneY ?? R.headY + 18) * k + 12, ms });
 }
 
-/* Ready, 3, 2, 1, Breathe on the five count-in beats; the first note is the beat after, with nothing popping up at it.
-   the designer, 2026-11-14: "the player has to sing the first note the instant GO appears ... it feels rushed". GO used
-   to appear on the first note itself, so it worked as a starting gun: the singer waited for it and was late.
-   Now the last count beat is the breath a singer takes anyway, and it says so; the note arrives one beat
-   later, where the count has already told them it will. No timing changed, only what the beats say. */
+/* Ready, 3, 2, 1 and then one beat that shows nothing; the first note is the beat after that, with nothing popping
+   up at it. the designer, 2026-11-14: "the player has to sing the first note the instant GO appears ... it feels rushed".
+   GO used to appear on the first note itself, so it worked as a starting gun: the singer waited for it and was
+   late. For one deploy the empty beat said "Breathe"; the designer asked for it to go: "one more beat between the note
+   and 1, but we show nothing there". The beat is still heard as the metronome's soft tick (bookTicks). */
 function countdown(text, go = false) {
   const el = document.getElementById("countdown");
   if (!el) return;
@@ -403,7 +403,7 @@ function onNoteEnd(i, r) {
 const TICK_AHEAD = 0.12;
 function bookTicks() {
   const T = R.T, at = clock();
-  /* The count-in: di, di, Di on 3, 2, 1 and a soft tick on the breath. the designer, 2026-11-14: "the di di Di with
+  /* The count-in: di, di, Di on 3, 2, 1 and a soft tick on the empty beat before the first note. the designer, 2026-11-14: "the di di Di with
      3, 2, 1 is not synced". All four clicks used to be booked at once when the count began, at fixed moments of
      the audio clock; the microphone opens at that same moment, and when the phone's sound stumbled then, the
      clicks slid away from the numbers and stayed away. Now each click is booked just before its own beat, from
@@ -456,7 +456,7 @@ export function frame(dt) {
   for (const e of evs) {
     if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
-    else if (e.type === "beat") { const last = e.k === P.countBeats - 1; countdown(["Ready", "3", "2", "1", "Breathe"][e.k - (P.countBeats - 5)] || "", last); hint("", last ? "the first note is the next beat" : "sing as the notes reach the line"); }
+    else if (e.type === "beat") { countdown(["Ready", "3", "2", "1", ""][e.k - (P.countBeats - 5)] || ""); hint("", "sing as the notes reach the line"); }
     else if (e.type === "phase" && e.phase === "sing") { hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
