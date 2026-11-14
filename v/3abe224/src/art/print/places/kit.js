@@ -64,10 +64,11 @@ export function titleG(time, name) {
 const paperEdge = (m, line) => `<path d="M0 0H400V500H0ZM${m} ${m}V${500 - m}H${400 - m}V${m}Z" fill="${PAPER}" fill-rule="evenodd"/><rect x="${m}" y="${m}" width="${400 - 2 * m}" height="${500 - 2 * m}" fill="none" stroke="${line}" stroke-width="1.6"/>`;
 
 /* spec: { name, grounds: { morning, golden, night }, crop (square viewBox of the view for the window), bandY,
-     view(V, q), seat(c, q, time), band(c, y0, q, time), tones: { a, b, l } (the seat's own colours, morning),
+     view(V, q, time, animate), seat(c, q, time), band(c, y0, q, time, on), fx(c, q, time, on) -> { back, front } (optional),
+     tones: { a, b, l } (the seat's own colours, morning),
      floor: [fill, pattern colour] (the band's own colours, morning) } */
 export function makePlace(spec) {
-  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time);
+  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, animate);
   const bandY = spec.bandY || 474;
   function scene(time, R, animate) {
     const ground = spec.grounds[time], night = time === "night", ink = night ? PAPER : KEY, q = pen(KEY);
@@ -77,15 +78,21 @@ export function makePlace(spec) {
     const win = inset(cx - r, cy - r, 2 * r, 2 * r, spec.crop || "40 40 320 320", full(time, animate))
       + `<path d="M${cx - r - 1} ${cy - r - 1}h${2 * r + 2}v${2 * r + 2}h${-2 * r - 2}ZM${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z" fill="${ground}" fill-rule="evenodd"/>`
       + `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${KEY}" stroke-width="2.2"/><circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="${ink}" stroke-width=".9" opacity=".8"/>`;
-    const back = `<rect width="400" height="500" fill="${ground}"/>${specks}${win}`;
+    /* the place's own moving things (rain, snow, lanterns, a campfire ...): `on(name, style)` gives the class only when
+       animated, so a still picture shows the same things at rest. Clipped to the picture so a loop never shows outside it */
+    const on = (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
+    const fx = spec.fx ? spec.fx(c, q, time, on) : {};
+    /* animated: the window and the place's things answer a tap (the sun pops, hanging things swing, the fire flares) */
+    const tap = (kind, m) => (animate ? `<g data-tap="${kind}">${m}</g>` : m);
+    const back = `<rect width="400" height="500" fill="${ground}"/>${specks}${tap("window", win)}${fx.back ? tap("swing", inset(0, 0, 400, 500, "0 0 400 500", fx.back)) : ""}`;
     const seat = spec.seat(c, q, time, animate) + `<ellipse cx="200" cy="${bandY - 6}" rx="178" ry="11" fill="${KEY}" opacity=".14"/>`;
-    const front = spec.band({ fill: tint(spec.floor[0], time), mark: tint(spec.floor[1], time), k: KEY, paper: PAPER }, bandY, q, time);
+    const front = spec.band({ fill: tint(spec.floor[0], time), mark: tint(spec.floor[1], time), k: KEY, paper: PAPER }, bandY, q, time, on) + (fx.front ? tap("fire", fx.front) : "");
     return { back, seat, front, frame: paperEdge(8, KEY) + titleH(time, spec.name, ink), wall: ground, ink };
   }
   function landscape(time) {
     const V = VIEW[time], q = pen(V.line);
     const c = { a: V.d[3], b: V.d[2], l: V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
-    return { back: full(time), seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time),
+    return { back: full(time), seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time, () => ""),
       frame: paperEdge(10, IND[0]) + titleG(time, spec.name), wall: V.sky[0], ink: KEY };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));

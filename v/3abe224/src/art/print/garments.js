@@ -4,12 +4,12 @@
    - the three garments are a hat, a scarf and a top. The hat replaces the old lap garment: the game's zone id is still
      `bottom` (saves keep working), and this module draws it on the head. `hat` is accepted as the same zone.
    - an off note leaves a pill of fluff (foldMarkup in ./cat.js), not a fold.
-   Guests still come from ../guests.js until they are redrawn. */
+   Guests come from ./guests.js. */
 import { f, num, int, clamp, quad, sample, dPath, rng, hash } from "../util.js";
-import { FUR, lookOf, palOf, animalId, kindId, zoneId, timeId } from "../palettes.js";
+import { FUR, lookOf, animalId, kindId, zoneId, timeId } from "../palettes.js";
 import { ZONES as OLD, moodOf } from "../garments.js";
-import { headFor, tailFor } from "../guests.js";
-import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked } from "./cat.js";
+import { headFor, tailFor, palFor } from "./guests.js";
+import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
 import { zzPrint } from "./judge.js";
 
 /* rows lowest first: [y, sag, x0, x1]. The hat is a small cap of three rows between the judge's ears; it runs right
@@ -75,7 +75,7 @@ export function garmentLayers(g, ctx = {}) {
   const steps = int(g.steps, 0, 12, 0);
   if (!steps) return null;
   const Z = ZONES[zone], time = timeId(ctx.time), look = lookOf(g.look, zone === "hat" ? "bottom" : zone, time), animal = animalId(g.animal), kind = kindId(g.kind);
-  const F = FUR[look.fur], cat = animal === "cat", pal = cat ? palPrint(look) : palOf(animal, look), w = F.w, hd = Math.sign(Z.rows[0][3] - Z.rows[0][2]);
+  const F = FUR[look.fur], cat = animal === "cat", pal = palFor(animal, look), w = F.w, hd = Math.sign(Z.rows[0][3] - Z.rows[0][2]);
   const shapes = Array.isArray(g.shapes) ? g.shapes : [], tuftFlags = Array.isArray(g.tufts) ? g.tufts : [], folds = Array.isArray(g.folds) ? g.folds : [];
   const R = rng(hash(`${ctx.seed || 0}|${zone}`));
   const phase = Array.from({ length: 12 }, () => R() * Math.PI * 2);
@@ -127,11 +127,13 @@ export function garmentLayers(g, ctx = {}) {
   const hx = end.x + hd * Z.headDx, hy = end.y + Z.headDy - num(ctx.headLift);
   const tailG = ctx.animate && !tucked ? `<g class="lc-tail ${hd > 0 ? "lc-tail-l" : "lc-tail-r"}">${tail}</g>` : tail;
   const beat = { hat: 1.5, top: 7, scarf: 12.5 }[zone];
-  const headM = cat ? catHead(hx, hy, hd, face, .95, pal, kind, ctx.animate ? beat : null) : headFor(animal, kind, hx, hy, hd, face, .9, pal);
+  const headM = cat ? catHead(hx, hy, hd, face, .95, pal, kind, ctx.animate ? beat : null) : headFor(animal, kind, hx, hy, hd, face, .95, pal, ctx.animate ? beat : null);
   const head0 = pawPair(end.x + hd * 3, end.y + 12, hd, 1, pal) + headM;
   /* animated: an awake cat stretches now and then (each garment at its own moment); a sleeping one breathes */
-  const head = (ctx.animate ? `<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s">${head0}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
-  return { under, art: trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills, head, headAt: { x: hx, y: hy } };
+  /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */
+  const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}"><g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
+  const artAll = trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills;
+  return { under, art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${artAll}</g>` : artAll, head, headAt: { x: hx, y: hy } };
 }
 
 /* a dashed guide over the steps not yet worn (from `from` to 12) */

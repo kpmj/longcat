@@ -82,12 +82,16 @@ export function judgeHead(face, o = {}) {
   const mouthM = idle ? "" : MOUTH[p.mouth] || MOUTH.split;
   const muzzle = `<g${p.chew ? ` transform="translate(3 2) rotate(3)"` : ""}>${fl(MUZZLE, J.muzzle)}${nostril(-1)}${nostril(1)}${ln("M0 20V36", .85)}<g fill="${J.dk}">${dots}</g>${mouthM}</g>`
     + (p.chew ? ln("M60 34q6 3 5 10", .6) : "");
-  const face2 = idle ? `<g class="lc-yawn-off">${MOUTH.split}${eyes}</g><g class="lc-yawn-on">${MOUTH.yawn}${eye(-52, "shut", [0, 0])}${eye(52, "shut", [0, 0])}</g>` : eyes;
+  /* idle: a third face waits for a pat: eyes shut in arcs and a small smile (shown while lc-tapped) */
+  const face2 = idle ? `<g class="lc-face"><g class="lc-yawn-off">${MOUTH.split}${eyes}</g><g class="lc-yawn-on">${MOUTH.yawn}${eye(-52, "shut", [0, 0])}${eye(52, "shut", [0, 0])}</g></g><g class="lc-face-pet">${MOUTH.smile}${eye(-52, "happy", [0, 0])}${eye(52, "happy", [0, 0])}</g>` : eyes;
   const tear = p.tear ? sh("M-58 -16q-6 8 0 14q6 -6 0 -14z", J.tear, .6) : "";
   const shade = fl("M60 -70C76 -58 80 -40 80 -28L86 30C88 52 78 68 58 76C74 58 74 10 60 -70Z", J.dk, .35);
-  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yuzu(p.hop) + face2 + brow + tear;
-  /* idle: the head shakes now and then and tips back with the yawn */
-  const head = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
+  /* animated: the yuzu can be tapped on its own and hops */
+  const yz = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${yuzu(0)}</g>` : yuzu(0)}</g></g>` : yuzu(p.hop);
+  const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + yz + face2 + brow + tear;
+  /* idle: the head shakes now and then and tips back with the yawn. Animated: a pat makes it bob (lc-bobble) */
+  const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
+  const head = o.animate ? `<g class="lc-bobble">${head1}</g>` : head1;
   const tf = [p.tilt ? `rotate(${p.tilt} 0 68)` : "", p.dy ? `translate(0 ${p.dy})` : ""].filter(Boolean).join(" ");
   const ticks = p.ticks ? ln("M104 -40v20M98 -28l6 6l6 -6M-104 -40v20M-110 -28l6 6l6 -6", .7) : "";
   const sleep = p.zz && !o.noZz ? zz(98, -74, 2.1) : "";
@@ -102,19 +106,24 @@ function pawsScene(p, cx, cy, w = 128) {
   if (p.paws === "clap") return paw(cx - 26, cy, -12) + paw(cx + 26, cy, 12) + motion(cx, cy - 6, 1) + motion(cx, cy - 6, -1);
   if (p.paws === "applause") return paw(cx - w, cy - 64, -20) + paw(cx + w, cy - 64, 20) + motion(cx - w, cy - 64, -1) + motion(cx + w, cy - 64, 1);
   if (p.paws === "card") return card(cx + w * .8, cy - 60) + paw(cx + w * .8, cy - 56);
+  /* both paws over the tummy: the judge has nothing on and pretends that was the plan */
+  if (p.paws === "tummy") return `<g class="lc-tummy">${paw(cx - 36, cy + 102, 18)}${paw(cx + 36, cy + 102, -18)}</g>`;
   return "";
 }
 
 /* the seated judge in scene space (400 x 500): the same layers as ../judge.js judgeFigure */
 export function judgeFigure(face, o = {}) {
   const p = printPose(face);
+  if (o.paws === "tummy") p.paws = "tummy";
   const BODY = "M104 250C68 262 40 302 40 372V420C40 450 62 464 96 464H304C338 464 360 450 360 420V372C360 302 332 262 296 250Z";
   const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY);
   const lap = ln("M64 424Q128 404 194 414M206 414Q272 404 336 424", .6);
   const feet = [146, 254].map(x => `<g transform="translate(${x} 462)">${sh(ell(0, 0, 29, 11.5), J.dk)}${ln("M-9 -3.5v7M0 -4.5v8M9 -3.5v7", .6)}</g>`).join("");
   const head = `<g transform="translate(200 182) scale(2)">${judgeHead(p, o)}</g>`;
   const paws = pawsScene(p, 200, 270);
-  return { body, lap, feet, head, paws };
+  /* animated: head and body can be patted; they answer together through data-group */
+  const tap = m => (o.animate ? `<g data-tap="judge" data-group="judge">${m}</g>` : m);
+  return { body: tap(body), lap, feet, head: tap(head), paws };
 }
 
 /* the head making one face, like ../portrait.js faceIconSvg */

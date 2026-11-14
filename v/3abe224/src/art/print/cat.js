@@ -54,7 +54,11 @@ export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim =
   const s = f(dir * sc * 100) / 100 || .01, t = f(sc * 100) / 100 || .01;
   const marks = `<path d="M-4.6 -16v5M0 -17v6.2M4.6 -16v5" stroke="${pal.stripe}" stroke-width="1.9" stroke-linecap="round"/>`;
   const whisk = `<path d="M-13.5 4l-11 -1.8M-13.5 7l-10.4 1.8M13.5 4l11 -1.8M13.5 7l10.4 1.8" ${key(LWC * .38)} opacity=".75"/>`;
-  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${anim != null && (mood === "normal" || mood === "wide") ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal)}</g>` : catFace(mood, pal)}</g>`;
+  /* animated and awake: the face blinks, and a second, happy face waits for a pat (shown while lc-tapped) */
+  const blinks = anim != null && (mood === "normal" || mood === "wide");
+  const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal)}</g>` : catFace(mood, pal);
+  const face = anim != null && mood !== "sleep" ? `<g class="lc-face">${face0}</g><g class="lc-face-pet">${catFace("smug", pal)}</g>` : face0;
+  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}</g>`;
 }
 
 /* a key-lined tube: the line under, the fur over */
@@ -119,3 +123,6 @@ export function foldMarkup(q, w, pal = C, sc = 1) {
   return `<g class="lc-pill"><path d="M${f(x + r * .3)} ${f(y - r * .6)}q${f(r * 1.6)} ${f(-r * 2.4)} ${f(r * 2.3)} ${f(-r * .5)}q${f(r * .3)} ${f(r * 1.5)} ${f(-r * 1.2)} ${f(r)}" fill="none" ${key(LWC * .62 * sc)}/>`
     + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${pal.furDk}" ${key(LWC * .7 * sc)}/><path d="M${f(x - r * .5)} ${f(y - r * .1)}q${f(r * .5)} ${f(-r * .55)} ${f(r)} 0" fill="none" ${key(LWC * .4 * sc)}/></g>`;
 }
+
+/* three small hearts that rise from (x y) when the thing they belong to is patted; hidden otherwise (ART_CSS) */
+export const petHearts = (x, y, s = 1) => [[-9, 0, -8, 0], [2, -7, 5, .12], [12, 1, 10, .24]].map(([dx, dy, drift, d]) => `<g transform="translate(${f(x + dx * s)} ${f(y + dy * s)}) scale(${s})"><g class="lc-heart" style="--lc-x:${drift}px;animation-delay:${d}s"><path d="M0 4.500C-8 -2 -4.500 -8.500 0 -4C4.500 -8.500 8 -2 0 4.500Z" fill="#bf452d" ${key(1.1)}/></g></g>`).join("");

@@ -4,11 +4,11 @@
 import { f, num, int, rng, hash, svgDoc, inset, esc, txt, FONT, textWidth } from "../util.js";
 import { timeId, zoneId, ZONE_IDS, TIME_NAME } from "../palettes.js";
 import { placeLayers as oldPlaceLayers, placeId, PLACE_IDS, PLACE_UI as OLD_UI } from "../places/index.js";
-import { newYear } from "../places/newyear.js";
+import { newYear } from "./places/newyear.js";
 import { judgeFigure, zzPrint } from "./judge.js";
-import { pile } from "./loaf.js";
+import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
-import { garmentLayers, stepPoint, guideMarkup } from "./garments.js";
+import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
 import { onsen, onsenLandscape } from "./places/onsen.js";
 import { PLACES } from "./places/all.js";
 
@@ -18,11 +18,11 @@ export const woodOf = time => (time === "night" ? ["#8f7458", KEY, "#b39b7c"] : 
 const PAPER = "#efe6d2", RED = "#bf452d";
 const plank = (x, y, wood) => `<rect x="${x}" y="${y}" width="80" height="7" rx="2" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6"/><path d="M${x + 14} ${y + 7} l6 18 M${x + 66} ${y + 7} l-6 18" stroke="${KEY}" stroke-width="3" stroke-linecap="round"/>`;
 const tag = (cx, y, label) => { const w = 14 + textWidth(label, 10.5); return `<rect x="${f(cx - w / 2)}" y="${y}" width="${f(w)}" height="16" rx="1.5" fill="${PAPER}" stroke="${KEY}" stroke-width="1.3"/><text x="${cx}" y="${y + 12}" text-anchor="middle" ${FONT} font-weight="700" font-size="10.5" fill="${KEY}">${esc(label)}</text>`; };
-function basket(cx, y, b, wood, time, animate) {
+function basket(cx, y, b, wood, time, animate, arrive = null) {
   const t = timeId(b.time), cats = list(b.cats);
-  return `${pile(cx, y - 35, cats, "sleep", t, 1, animate)}<path d="M${cx - 30} ${y - 28} L${cx - 24} ${y} H${cx + 24} L${cx + 30} ${y - 28}Z" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6" stroke-linejoin="round"/>
+  return `${pile(cx, y - 35, cats, "sleep", t, 1, animate, arrive)}<path d="M${cx - 30} ${y - 28} L${cx - 24} ${y} H${cx + 24} L${cx + 30} ${y - 28}Z" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M${cx - 27} ${y - 19} H${cx + 27} M${cx - 25.5} ${y - 10} H${cx + 25.5} M${cx - 12} ${y - 26} L${cx - 10} ${y - 1} M${cx + 12} ${y - 26} L${cx + 10} ${y - 1} M${cx} ${y - 26} V${y - 1}" stroke="${KEY}" stroke-width=".9" opacity=".55" fill="none"/>
-    <rect x="${cx - 32}" y="${y - 32}" width="64" height="8" rx="3" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6"/>${tag(cx, y - 20, TIME_NAME[t])}${zzPrint(cx + 18, y - 60, 1.1)}`;
+    <rect x="${cx - 32}" y="${y - 32}" width="64" height="8" rx="3" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6"/>${tag(cx, y - 20, TIME_NAME[t])}${animate && arrive ? `<g class="lc-arrive" style="animation-delay:${f(Math.max(...arrive.filter(v => v != null)) + .7)}s">${zzPrint(cx + 18, y - 60, 1.1)}</g>` : zzPrint(cx + 18, y - 60, 1.1)}`;
 }
 /* the daily cushion: a small vermilion zabuton with its step number */
 function cushionMarkup(c) {
@@ -44,7 +44,7 @@ const list = v => (Array.isArray(v) ? v.filter(x => x && typeof x === "object") 
 export function sceneParts(o = {}) {
   const place = placeId(o.place), time = timeId(o.time), animate = o.animate !== false, seed = num(o.seed);
   const L = placeLayers(place, time, seed, animate, !!o.landscape);
-  const J = judgeFigure(o.face || "neutral", { animate });
+  const J = judgeFigure(o.face || "neutral", { animate, react: o.react, paws: o.paws });
   const seen = new Set(), worn = [], waiting = [];
   for (const g of list(o.garments)) {
     const z = zoneId(g.zone);
@@ -67,20 +67,45 @@ export function sceneParts(o = {}) {
   const garments = ok.map(l => l.under).join("") + ok.map(l => l.art).join("");
   const heads = ok.map(l => l.head).join("");
   const baskets = list(o.baskets).slice(0, 2);
+  /* the reset beat: `leaving` = the finished garments of the time that just ended. One by one (hat, scarf, top) each
+     lets go, a small cat runs in an arc to the newest basket (the last in `baskets`), pops in there and sleeps.
+     Still pictures and reduced motion show the end: nothing worn, three cats asleep */
+  const LEAVE_AT = { hat: .5, scarf: 1.5, top: 2.5 };
+  const leaving = animate ? list(o.leaving).filter(g => drawZone(g.zone) && int(g.steps, 0, 12, 0) > 0) : [];
+  const newB = leaving.length ? baskets.length - 1 : -1;
+  const bx = i => (i === 0 ? 352 : 48);
+  let leaveArt = "", runners = "", arrive = null;
+  if (newB >= 0) {
+    const cats = list(baskets[newB].cats), spots = PILE(Math.min(3, cats.length));
+    arrive = cats.map(() => .2);
+    for (const g of leaving) {
+      const z = drawZone(g.zone), d = LEAVE_AT[z], Lr = garmentLayers(g, { time, animate: false, seed });
+      if (!Lr) continue;
+      leaveArt += `<g class="lc-leave" style="animation-delay:${d}s">${Lr.art}${Lr.head}</g>`;
+      const k = Math.max(0, cats.findIndex(c => drawZone(c.zone) === z)), sp = spots[Math.min(k, spots.length - 1)];
+      const tx = bx(newB) + sp[0], ty = 205 + sp[1], dx = tx - Lr.headAt.x, dy = ty - Lr.headAt.y;
+      arrive[Math.min(k, arrive.length - 1)] = d + 1.2;
+      runners += `<g transform="translate(${f(Lr.headAt.x)} ${f(Lr.headAt.y)})"><g class="lc-run-x" style="--lc-dx:${f(dx)}px;animation-delay:${f(d + .3)}s"><g class="lc-run-y" style="--lc-dy:${f(dy)}px;animation-delay:${f(d + .3)}s"><g class="lc-scurry">${loaf(0, 0, dx < 0 ? -1 : 1, { zone: g.zone, look: g.look, kind: g.kind, animal: g.animal }, "normal", 1, g.zone, time)}</g></g></g></g>`;
+    }
+  }
   let shelves = "";
   /* shelves sit lower than in the old scene so they clear the round window and the title */
-  if (baskets[0]) shelves += plank(312, 240, L.wood) + basket(352, 240, baskets[0], L.wood, time, animate);
-  if (baskets[1]) shelves += plank(8, 240, L.wood) + basket(48, 240, baskets[1], L.wood, time, animate);
+  if (baskets[0]) shelves += plank(312, 240, L.wood) + basket(352, 240, baskets[0], L.wood, time, animate, newB === 0 ? arrive : null);
+  if (baskets[1]) shelves += plank(8, 240, L.wood) + basket(48, 240, baskets[1], L.wood, time, animate, newB === 1 ? arrive : null);
   if (waiting.length) {
     const y = baskets[1] ? 152 : 240;
-    shelves += plank(8, y, L.wood) + pile(48, y - 12, waiting, "normal", time, 1, animate);
+    /* `arriving`: the new cats pop onto the shelf one after another */
+    shelves += plank(8, y, L.wood) + pile(48, y - 12, waiting, "normal", time, 1, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null);
   }
+  /* a small breeze crosses in front of the judge: two lines of wind and a leaf */
+  const breeze = animate && o.react === "shiver" ? `<g class="lc-breeze"><path d="M0 300q22 -9 44 0t44 0M30 324q18 -7 36 0t36 0" fill="none" stroke="#f8f2e2" stroke-width="2.4" stroke-linecap="round" opacity=".85"/><path transform="translate(104 300) rotate(30)" d="M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z" fill="#bf452d" stroke="${KEY}" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
   const cushion = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";
   const guides = o.guide == null ? [] : (o.guide === "all" ? ZONE_IDS : [].concat(o.guide)).map(zoneId).filter(Boolean);
   const guide = guides.map(z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); }).join("");
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
-  const character = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${J.paws}`;
-  return { place, time, L, special, shelves, character: animate ? `<g class="lc-breathe">${character}</g>` : character, judge: J, garments, heads, cushion };
+  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${J.paws}`;
+  const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
+  return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, cushion };
 }
 export const sceneInner = o => { const p = sceneParts(o); return `${p.L.back}${p.special}${p.L.seat}${p.shelves}${p.character}${p.L.front}${p.L.frame || ""}`; };
 /* the picture is clipped to its own 400 x 500 (a nested svg clips by itself): the page shows the svg in boxes of other

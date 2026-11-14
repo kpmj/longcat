@@ -11,6 +11,16 @@ const ribs = (y0, c, step = 6) => `<path d="${rep(Math.ceil((500 - y0) / step), 
 const checks = (y0, c, s = 13) => `<g fill="${c}">${rep(Math.ceil(400 / s), i => rep(Math.ceil((500 - y0) / s), j => ((i + j) % 2 ? "" : `<rect x="${i * s}" y="${y0 + j * s}" width="${s}" height="${s}"/>`)))}</g>`;
 const diamonds = (y0, c) => `<g fill="${c}">${rep(17, i => `<path d="M${i * 26 - 6} ${y0 + 13}l13 -9l13 9l-13 9z"/>`)}</g>`;
 const dots = (y0, c) => `<g fill="${c}">${rep(28, i => `<circle cx="${i * 15 + (i % 2) * 4}" cy="${y0 + 8 + (i % 3) * 7}" r="1.8"/>`)}</g>`;
+/* ----- small moving things, shared ----- */
+const WARM = "#ebb229";
+/* straps hanging from a rail between the round window and the title; each sways on its own beat */
+const straps = (q, on) => q.l("M112 14H318", 3) + rep(5, i => `<g transform="translate(${130 + i * 42} 14)"><g${on("lc-sway", `animation-delay:${-i * .9}s;animation-duration:${3.2 + (i % 2) * .7}s`)}>${q.l("M0 0V20", 1.8)}${q.c(0, 27, 6.5, "none", 2.2)}</g></g>`);
+/* motes of dust drifting in the light */
+const motes = (c, on, list) => list.map(([x, y, r], i) => `<circle${on("lc-float", `--lc-x:${i % 2 ? 7 : -6}px;--lc-y:${-5 - (i % 3) * 3}px;animation-delay:${-i * 1.3}s;animation-duration:${6 + (i % 3) * 2}s`)} cx="${x}" cy="${y}" r="${r}" fill="${c.paper}" opacity=".75"/>`).join("");
+/* rain and snow as one path on a lattice, so a loop of one lattice step has no seam */
+const rainD = rep(30, gx => rep(28, gy => `M${gx * 15 + (gy % 2) * 7} ${gy * 20 - 40}l-4.500 12`));
+const snowD = rep(12, gx => rep(22, gy => { const x = gx * 40 + (gy % 2) * 20 + ((gy * 7) % 9), y = gy * 30 - 120; return `M${x} ${y}a1.800 1.800 0 1 0 3.600 0a1.800 1.800 0 1 0 -3.600 0`; }));
+
 /* a chair back that shows round the judge's body: rounded top, two arms, a base */
 const chairBack = (c, q, x = 36, top = 168, r = 62) => q.p(`M${x} 470V${top + r}Q${x} ${top} ${x + r} ${top}H${400 - x - r}Q${400 - x} ${top} ${400 - x} ${top + r}V470Z`, c.a, 2.2);
 const arms = (c, q) => q.r(6, 322, 50, 148, c.a, 2.2, 20) + q.r(344, 322, 50, 148, c.a, 2.2, 20) + q.r(24, 452, 352, 26, c.b, 2.2, 8);
@@ -29,6 +39,9 @@ const livingroom = makePlace({
       + (V.glow ? `<circle cx="30" cy="250" r="48" fill="${V.warm}" opacity="${V.glow}"/>` : "") + q.l("M30 268V470", 2.4) + q.p("M12 268L18 236H42L48 268Z", V.lit ? V.warm : d[5]);
   },
   seat: (c, q) => chairBack(c, q) + q.f("M86 206a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M196 194a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M306 206a4 4 0 1 0 8 0a4 4 0 1 0 -8 0", c.b) + arms(c, q),
+  /* a wall clock whose pendulum swings */
+  fx: (c, q, time, on) => ({ back: q.p("M36 122L60 104L84 122Z", c.b, 1.8) + q.r(40, 122, 40, 42, c.l, 1.8) + q.c(60, 140, 11, c.paper, 1.6) + q.l("M60 140v-7M60 140l5 3", 1.6)
+    + `<g transform="translate(60 164)"><g${on("lc-sway", "animation-duration:2.2s")}>${q.l("M0 0V22", 1.6)}${q.c(0, 26, 4.5, WARM, 1.5)}</g></g>` }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, diamonds(y0, c.mark)),
 });
 
@@ -46,6 +59,9 @@ const nightmarket = makePlace({
   },
   /* a red plastic stool: only its legs show below the lap */
   seat: (c, q) => q.p("M118 452L98 500H116L134 458Z", c.a, 2) + q.p("M282 452L302 500H284L266 458Z", c.a, 2) + q.r(112, 448, 176, 12, c.a, 2, 5),
+  /* a string of red lanterns that sway; they glow in the evening */
+  fx: (c, q, time, on) => ({ back: q.l("M104 14Q212 42 322 14", 1.4) + rep(5, i => { const t = (i + .5) / 5, x = 104 + 218 * t, y = 14 + 56 * t * (1 - t);
+    return `<g transform="translate(${f(x)} ${f(y)})"><g${on("lc-sway", `animation-delay:${-i * 1.1}s;animation-duration:${4 + (i % 2)}s`)}>${c.lit ? `<circle cy="12" r="16" fill="${WARM}" opacity=".28"/>` : ""}${q.e(0, 12, 8, 10, RED, 1.6)}${q.l("M-4.500 4h9M-4.500 20h9M0 0v2", 1.2)}</g></g>`; }) }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, checks(y0, c.mark, 16)),
 });
 
@@ -53,15 +69,16 @@ const nightmarket = makePlace({
 const train = makePlace({
   name: "車窗邊", grounds: { morning: "#cfd3bd", golden: "#d9965f", night: "#353b47" }, crop: "30 40 330 330",
   tones: { a: "#4f7a78", b: "#3a5f5e", l: "#efe6d2" }, floor: ["#6f7f8a", "#93a1aa"],
-  view(V, q) {
+  view(V, q, time, animate) {
     const d = V.d;
     return q.f("M0 0H400V500H0Z", d[4]) + q.r(30, 70, 340, 170, V.sky[1], 2.6, 14) + `<circle cx="${V.disc[1]}" cy="${Math.min(150, V.disc[2])}" r="18" fill="${V.disc[0]}"/>`
-      + q.f("M32 205Q110 140 190 190Q270 130 368 185V238H32Z", d[2]) + q.f("M32 222Q120 190 210 214Q290 196 368 216V238H32Z", d[1]) + q.l("M200 70V240", 3) + q.l("M96 70V240M304 70V240", 1.4, .5)
+      + `<svg x="32" y="72" width="336" height="166" viewBox="32 72 336 166"><g${animate ? ` class="lc-scroll" style="--lc-w:-336px"` : ""}>${[0, 336].map(dx => `<g transform="translate(${dx} 0)">${q.f("M32 205Q110 140 190 190Q270 130 368 205V238H32Z", d[2])}${q.f("M32 222Q120 190 210 214Q290 196 368 222V238H32Z", d[1])}</g>`).join("")}</g></svg>` + q.l("M200 70V240", 3) + q.l("M96 70V240M304 70V240", 1.4, .5)
       + q.l("M20 40H380", 3.2) + q.l("M60 40v14M200 40v14M340 40v14", 2) + q.r(250, 14, 70, 26, d[2], 1.6, 6) + q.r(90, 18, 50, 22, d[3], 1.6, 5)
       + q.r(0, 270, 400, 230, d[3], 0) + q.l("M0 270H400", 2) + q.r(0, 440, 400, 60, d[2], 1.6);
   },
   /* a window seat: a tall moquette back with a white cloth over the headrest */
   seat: (c, q) => chairBack(c, q, 30, 150, 40) + q.r(30, 150, 340, 46, c.l, 2, 14) + q.l("M30 196H370", 1.6) + q.f("M44 230h8v200h-8zM348 230h8v200h-8z", c.b, .6) + q.r(20, 452, 360, 24, c.b, 2.2, 8),
+  fx: (c, q, time, on) => ({ back: straps(q, on) }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, ribs(y0, c.mark)),
 });
 
@@ -79,7 +96,9 @@ const beach = makePlace({
   /* an upright beach chair: striped canvas behind the body, wooden legs below */
   seat: (c, q) => q.p("M70 470V214Q70 200 84 200H316Q330 200 330 214V470Z", c.a, 2.2) + rep(6, i => q.f(`M${86 + i * 42} 201h20v268h-20z`, c.b)) + q.p("M70 470V214Q70 200 84 200H316Q330 200 330 214V470Z", "none", 2.2)
     + q.p("M58 196h14v290h-14zM328 196h14v290h-14z", c.l, 2),
-  band: (c, y0, q) => floorBand(y0, c.fill, c.k, q.s(`M0 ${y0 + 9}${rep(10, () => "q10 -4 20 0t20 0")}M0 ${y0 + 19}${rep(10, () => "q10 -4 20 0t20 0")}`, c.mark, 1.4)),
+  /* two gulls drifting */
+  fx: (c, q, time, on) => ({ back: [[150, 34, 9], [268, 50, -7]].map(([x, y, dx], i) => `<g${on("lc-float", `--lc-x:${dx}px;--lc-y:-5px;animation-delay:${-i * 2.4}s;animation-duration:${7 + i * 2}s`)}>${q.l(`M${x} ${y}q7 -8 14 0q7 -8 14 0`, 1.8)}</g>`).join("") }),
+  band: (c, y0, q, time, on) => floorBand(y0, c.fill, c.k, `<g${on("lc-scroll", "--lc-w:-40px;animation-duration:5s")}>${q.s(`M0 ${y0 + 9}${rep(11, () => "q10 -4 20 0t20 0")}M0 ${y0 + 19}${rep(11, () => "q10 -4 20 0t20 0")}`, c.mark, 1.4)}</g>`),
 });
 
 /* ---------- 圖書館 ---------- */
@@ -94,6 +113,9 @@ const library = makePlace({
   },
   /* an armchair by the window: dark leather with buttons */
   seat: (c, q) => chairBack(c, q, 40, 160, 70) + q.f(rep(4, i => `M${88 + i * 72} ${214 - 14 * Math.sin((i + .5) / 4 * Math.PI)}a4 4 0 1 0 8 0a4 4 0 1 0 -8 0`), c.b) + arms(c, q),
+  /* a hanging lamp that barely sways, and dust in its light */
+  fx: (c, q, time, on) => ({ back: `<g transform="translate(150 8)"><g${on("lc-sway", "animation-duration:8s")}>${q.l("M0 0V24", 1.6)}${c.lit ? `<circle cy="38" r="26" fill="${WARM}" opacity=".22"/>` : ""}${q.p("M-16 40L-9 24H9L16 40Z", c.lit ? WARM : c.l, 1.8)}</g></g>`
+    + motes(c, on, [[122, 70, 1.6], [176, 84, 1.3], [140, 110, 1.8], [100, 150, 1.4], [296, 200, 1.6], [306, 120, 1.3], [118, 210, 1.5]]) }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, lines(y0, c.mark, 34, 1.4)),
 });
 
@@ -110,6 +132,9 @@ const camping = makePlace({
   },
   /* a folding chair: canvas back, crossed legs below the lap */
   seat: (c, q) => q.p("M78 440V232Q78 218 92 218H308Q322 218 322 232V440Z", c.a, 2.2) + q.l("M78 250H322", 1.4, .5) + q.l("M96 452L304 500M304 452L96 500", 5) + q.s("M96 452L304 500M304 452L96 500", c.l, 2.4),
+  /* a small campfire at the front: the flame flickers and sparks rise */
+  fx: (c, q, time, on) => ({ front: `<g transform="translate(34 472)">${c.lit ? `<circle cy="-8" r="26" fill="${WARM}" opacity=".25"/>` : ""}${q.l("M-14 6L14 -4M-14 -4L14 6", 4.5)}<g${on("lc-flame")}>${q.p("M0 2q-13 -14 -2 -28q2 9 7 5q0 -9 7 -14q9 20 -2 37Z", c.lit ? WARM : RED, 1.7)}</g>`
+    + rep(3, i => `<circle${on("lc-spark", `--lc-x:${[8, -6, 3][i]}px;animation-delay:${-i * .9}s`)} cx="${[2, -4, 6][i]}" cy="-28" r="1.6" fill="${WARM}"/>`) + `</g>` }),
   band: (c, y0, q) => floorBand(y0, c.fill, c.k, q.s(rep(20, i => `M${i * 21 + 4} ${y0 + 12}l-4 -8M${i * 21 + 4} ${y0 + 12}l1 -9M${i * 21 + 4} ${y0 + 12}l5 -7`), c.mark, 1.4)),
 });
 
@@ -125,6 +150,8 @@ const cinema = makePlace({
   },
   /* a red velvet seat: a rounded back, dark armrests */
   seat: (c, q) => chairBack(c, q, 44, 176, 54) + q.l("M72 236Q200 214 328 236", 1.6, .5) + q.r(18, 356, 42, 80, c.b, 2.2, 12) + q.r(340, 356, 42, 80, c.b, 2.2, 12) + q.r(30, 452, 340, 26, c.b, 2.2, 8),
+  /* the projector's beam from above, flickering, with dust in it */
+  fx: (c, q, time, on) => ({ back: `<g${on("lc-flicker", "animation-duration:1.7s")}><path d="M186 8H214L372 250H28Z" fill="${c.paper}" opacity=".16"/></g>` + motes(c, on, [[150, 60, 1.5], [248, 74, 1.3], [120, 130, 1.6], [286, 150, 1.5], [96, 190, 1.3], [312, 210, 1.6]]) }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, dots(y0, c.mark)),
 });
 
@@ -141,6 +168,7 @@ const bus = makePlace({
   },
   /* the back row: one long bench back across the bus, the judge in the middle seat */
   seat: (c, q) => q.r(-6, 232, 412, 240, c.a, 2.2, 22) + q.l("M48 244V452M352 244V452", 1.8, .6) + q.f(rep(9, i => `M${14 + i * 46} 262h18v6h-18z`), c.l, .8) + q.r(-6, 452, 412, 26, c.b, 2.2, 6),
+  fx: (c, q, time, on) => ({ back: straps(q, on) }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, ribs(y0, c.mark, 5)),
 });
 
@@ -159,6 +187,8 @@ const museum = makePlace({
   },
   /* a gallery bench: a wooden slab under the lap, two legs */
   seat: (c, q) => q.r(60, 462, 22, 38, c.b, 2) + q.r(318, 462, 22, 38, c.b, 2) + q.r(26, 448, 348, 18, c.a, 2.2, 4),
+  /* a hanging mobile that turns slowly */
+  fx: (c, q, time, on) => ({ back: `<g transform="translate(152 8)"><g${on("lc-sway", "animation-duration:9s")}>${q.l("M0 0V16M-34 16H34M-34 16V28M34 16V24", 1.5)}${q.c(-34, 35, 7, RED, 1.6)}<g transform="translate(34 24)"><g${on("lc-sway", "animation-duration:5s;animation-delay:-2s")}>${q.l("M-16 0H16M-16 0V8M16 0V10", 1.4)}${q.p("M-22 8h12l-6 11z", WARM, 1.5)}${q.p("M16 10a6.500 6.500 0 1 0 6 9a5 5 0 1 1 -6 -9z", "#33517a", 1.5)}</g></g></g></g>` }),
   band: (c, y0) => floorBand(y0, c.fill, c.k, lines(y0, c.mark, 50, 1.2) + `<path d="M0 ${y0 + 8}H400" stroke="${c.mark}" stroke-width="1"/>`),
 });
 
@@ -177,6 +207,8 @@ const rooftop = makePlace({
   },
   /* a wooden crate under the eaves: boards below the lap */
   seat: (c, q) => q.r(74, 446, 252, 54, c.a, 2.2, 3) + q.l("M74 464H326M74 482H326", 1.6) + q.l("M120 446V500M280 446V500", 1.6),
+  /* rain, behind the judge */
+  fx: (c, q, time, on) => ({ back: `<g${on("lc-rain")}><path d="${rainD}" fill="none" stroke="${c.paper}" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></g>` }),
   band: (c, y0, q) => floorBand(y0, c.fill, c.k, q.e(90, y0 + 10, 44, 5, c.mark, 0) + q.e(310, y0 + 12, 50, 5, c.mark, 0)),
 });
 
@@ -194,6 +226,8 @@ const skilift = makePlace({
   },
   /* the cabin: a red shell behind the judge with a window, no safety bar */
   seat: (c, q) => q.l("M200 96V132", 3) + q.p("M22 478V196Q22 132 86 132H314Q378 132 378 196V478Z", c.a, 2.4) + q.r(48, 158, 304, 96, c.l, 2.2, 16) + q.l("M200 158V254", 2) + q.r(14, 452, 372, 28, c.b, 2.2, 8),
+  /* snow, behind the judge: two layers at two speeds */
+  fx: (c, q, time, on) => ({ back: `<g${on("lc-snow")}><path d="${snowD}" fill="${c.paper}" opacity=".9"/></g><g transform="translate(13 40) scale(1.3)"><g${on("lc-snow", "animation-duration:14s")}><path d="${snowD}" fill="${c.paper}" opacity=".55"/></g></g>` }),
   band: (c, y0, q) => `<path d="M0 ${y0 + 6}${rep(8, () => "a25 9 0 0 1 50 0")}V500H0Z" fill="${c.fill}" stroke="${c.k}" stroke-width="1.6"/>` + q.s(`M30 ${y0 + 18}q10 -4 20 0M210 ${y0 + 20}q12 -4 24 0M330 ${y0 + 16}q10 -4 20 0`, c.mark, 1.6),
 });
 

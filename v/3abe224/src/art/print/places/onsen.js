@@ -42,7 +42,7 @@ const leaves = (animate) => [[112, 150, 20, 0], [300, 214, -40, 5.2], [262, 96, 
   ? `<g transform="translate(${x} 20)"><g class="lc-leaf" style="animation-delay:${-d}s;animation-duration:${15 + i * 2}s"><path d="${LEAF}" fill="${RED}" ${key(1.2)}/></g></g>`
   : i < 3 ? `<path transform="translate(${x} ${y}) rotate(${rot})" d="${LEAF}" fill="${RED}" ${key(1.2)}/>` : "")).join("");
 const steam = (x, y, s, P, animate) => `<g${animate ? ` class="lc-steam"` : ""} transform="translate(${x} ${y}) scale(${s})"><path d="M0 0c-10 -10 8 -17 0 -27c-8 -9 7 -15 1 -24M12 -3c-7 -8 6 -13 0 -21" fill="none" stroke="${P.steam}" stroke-width="${f(3.4 / s)}" stroke-linecap="round" opacity="${P.steamO}"/></g>`;
-const floatYuzu = (x, y, r, animate) => `<g transform="translate(${x} ${y})"><g${animate ? ` class="lc-bob" style="animation-delay:${-(x % 7) / 2}s"` : ""}><circle r="${r}" fill="#ebb229" ${key(1.4)}/><path d="M1 ${-r}q${f(r * .8)} ${f(-r * .8)} ${f(r * 1.5)} ${f(-r * .2)}q${f(-r * .8)} ${f(r * .6)} ${f(-r * 1.5)} ${f(r * .2)}z" fill="#5d8a63" ${key(1.1)}/></g></g>`;
+const floatYuzu = (x, y, r, animate) => `<g transform="translate(${x} ${y})"${animate ? ` data-tap="dunk"` : ""}><g class="lc-dunk"><g${animate ? ` class="lc-bob" style="animation-delay:${-(x % 7) / 2}s"` : ""}><circle r="${r}" fill="#ebb229" ${key(1.4)}/><path d="M1 ${-r}q${f(r * .8)} ${f(-r * .8)} ${f(r * 1.5)} ${f(-r * .2)}q${f(-r * .8)} ${f(r * .6)} ${f(-r * 1.5)} ${f(r * .2)}z" fill="#5d8a63" ${key(1.1)}/></g></g></g>`;
 
 /* the title: the place in three big characters, the series name small beside it, the time in a red seal, a small 貓 seal */
 export function title(time, name = "湯之里") {
@@ -57,7 +57,8 @@ export function onsen(time, R, animate) {
   const specks = `<g fill="${P.speck}" opacity=".8">${SPECK.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${f(r)}"/>`).join("")}</g>`;
   const lantern = (P.glow ? `<g${animate ? ` class="lc-flicker"` : ""}><circle cx="358" cy="312" r="46" fill="${P.lamp}" opacity="${P.glow}"/></g>` : "")
     + `<g fill="${P.stone}" ${key(2)}><path d="M340 446h36v16h-36Z"/><path d="M350 330h16v116h-16Z"/><path d="M340 296h36v34h-36Z"/><path d="M322 298L338 275H378L394 298Z"/><circle cx="358" cy="268" r="5"/></g><rect x="350" y="304" width="16" height="18" fill="${P.lamp}" ${key(1.4)}/>`;
-  const back = `<rect width="400" height="500" fill="${P.ground}"/>${specks}${windowView(P, animate)}${lantern}${leaves(animate)}<ellipse cx="200" cy="466" rx="178" ry="12" fill="${KEY}" opacity=".16"/>`
+  const tap = (kind, m) => (animate ? `<g data-tap="${kind}">${m}</g>` : m);
+  const back = `<rect width="400" height="500" fill="${P.ground}"/>${specks}${tap("window", windowView(P, animate))}${tap("lamp", lantern)}${leaves(animate)}<ellipse cx="200" cy="466" rx="178" ry="12" fill="${KEY}" opacity=".16"/>`
     + steam(26, 250, 1.1, P, animate) + steam(300, 232, 1, P, animate);
   /* the stone rim the judge sits on; the feet go in the water in front of it */
   const seat = `<g fill="${P.stone}" ${key(1.8)}>${[[18, 446, 30, 17], [384, 448, 30, 16], [64, 456, 34, 14], [336, 458, 34, 13], [132, 462, 40, 12], [268, 462, 40, 12]].map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`).join("")}</g><g fill="none" stroke="${P.stoneDk}" stroke-width="2" stroke-linecap="round">${[[18, 446, 30], [384, 448, 30], [64, 456, 34]].map(([x, y, rx]) => `<path d="M${x - rx * .5} ${y + 6}q${rx * .5} 5 ${rx} 0"/>`).join("")}</g>`;

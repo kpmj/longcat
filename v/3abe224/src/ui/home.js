@@ -60,6 +60,21 @@ export function renderHome(root) {
       ${cta}
       <p class="sub">${sub}</p>
     </section>`;
+  /* the scene answers a touch: pat a cat or the judge, tap the yuzu, the lamp, the round window (the art marks what can
+     be tapped with data-tap and does the rest in CSS; data-group makes several pieces answer as one) */
+  const sceneEl = $("#home-scene", root);
+  if (sceneEl) sceneEl.onclick = (e) => {
+    const t = e.target.closest ? e.target.closest("[data-tap]") : null;
+    if (!t || !sceneEl.contains(t)) return;
+    const group = t.dataset.group, els = group ? $$(`[data-group="${group}"]`, sceneEl) : [t];
+    for (const el of els) {
+      el.classList.remove("lc-tapped");
+      el.getBoundingClientRect(); // restart the animation when tapped again
+      el.classList.add("lc-tapped");
+      clearTimeout(el._lcTap);
+      el._lcTap = setTimeout(() => el.classList.remove("lc-tapped"), 1400);
+    }
+  };
   const sing = $("[data-act=sing]", root);
   if (sing) sing.onclick = () => show("take", { ctx: St.nextTake(S, place) });
   const pick = $("[data-act=pick]", root);

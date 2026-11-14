@@ -2,8 +2,8 @@
    The lane cat is re-rendered every animation frame, so it stays a handful of strokes: a key line under the fur,
    tufts as round-capped dashes for mid and long fur, the pattern as one dashed stroke, a cached head. */
 import { f, num, int, svgDoc } from "../util.js";
-import { lookOf, animalId, kindId, FUR, palOf } from "../palettes.js";
-import { headFor, tailFor } from "../guests.js";
+import { lookOf, animalId, kindId, FUR } from "../palettes.js";
+import { headFor, tailFor, palFor as guestPal } from "./guests.js";
 import { COATS, KEY, LWC, bodyMarkup, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked } from "./cat.js";
 
 const MOODS = ["listen", "sing", "smug", "squint", "wide", "sleep"];
@@ -14,8 +14,8 @@ const DASH = {
   rosettes: [0, 20, .4, "stripe", 1], spots: [0, 15, .3, "stripe", 1], freckles: [0, 8.5, .13, "stripe", 1],
 };
 const MARK = { ok: ["✓", "#3f7a55"], "~": ["~", "#a8741c"], "?": ["?", "#bf452d"] };
-/* cats wear the woodblock coats; guests keep their own colours until they are redrawn */
-const palFor = (animal, look) => (animal === "cat" ? COATS[look.palette] || COATS.ginger : palOf(animal, look));
+/* cats wear the woodblock coats; guests their own colours */
+const palFor = (animal, look) => guestPal(animal, look);
 const headOf = (animal, kind, x, y, dir, mood, sc, pal) => (animal === "cat" ? catHead(x, y, dir, mood, sc, pal, kind) : headFor(animal, kind, x, y, dir, mood, sc, pal));
 const tailOf = (animal, kind, x, y, dir, w, pal, tucked) => (animal === "cat" ? (tucked ? catTailTucked : catTail)(kind, x, y, dir, w, pal) : tailFor(animal, kind, x, y, dir, w, pal, tucked));
 

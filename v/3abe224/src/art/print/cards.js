@@ -9,7 +9,8 @@ import { sceneInner, placeLayers } from "./scene.js";
 import { judgeFigure } from "./judge.js";
 import { garmentLayers } from "./garments.js";
 import { loaf } from "./loaf.js";
-import { COATS, KEY, coatMarkup, straight, pawPair, catHead, catTail } from "./cat.js";
+import { COATS, KEY, coatMarkup, straight, pawPair, catHead, catTail, bodyMarkup } from "./cat.js";
+import { headFor, tailFor, GUEST_PAL } from "./guests.js";
 import { glyph } from "./lettering.js";
 import { PLACES } from "./places/all.js";
 
@@ -83,4 +84,13 @@ export function catKindSvg(kind, o = {}) {
   const k = kindId(kind), look = lookOf((o && o.look) || { fur: "short", pattern: "plain", palette: "ginger" }, "bottom", "morning"), pal = COATS[look.palette] || COATS.ginger;
   const art = `<g transform="translate(40 24) scale(1.2)">${catTail(k, 0, 0, -1, 8, pal)}</g><ellipse cx="10" cy="22" rx="32" ry="17" fill="${pal.fur}" stroke="${KEY}" stroke-width="2.2"/>${coatMarkup([{ pts: straight(-16, 20, 50), pattern: look.pattern }], 22, pal, 1)}<ellipse cx="6" cy="29" rx="20" ry="7" fill="${pal.belly}"/>${pawPair(-10, 38, 1, 1, pal)}${catHead(-12, -4, 1, "normal", 1.2, pal, k)}`;
   return svgDoc("0 0 120 100", `<g transform="translate(48 54) scale(.86)">${art}</g>`);
+}
+
+/* a special-month guest lying long */
+export function guestSvg(animal) {
+  const a = animalId(animal) === "cat" ? "dachshund" : animalId(animal), pal = GUEST_PAL[a];
+  const pts = Array.from({ length: 16 }, (_, i) => { const t = (i + .5) / 16; return { x: 34 + 88 * t, y: 76 - Math.sin(t * Math.PI) * 4, tx: 1, ty: 0 }; });
+  const spines = a === "dragon" ? [44, 58, 72, 86, 100, 114].map(x => `<path d="M${x - 6} ${f(67 - Math.sin(((x - 34) / 88) * Math.PI) * 4)}l6 -11l6 11z" fill="${pal.mane}" stroke="${KEY}" stroke-width="1.6" stroke-linejoin="round"/>`).join("") : "";
+  const art = `${tailFor(a, "point", 34, 78, 1, 9, pal, false)}${pawPair(44, 88, 1, .9, pal)}${spines}${bodyMarkup([pts], 22, pal)}${pawPair(118, 89, 1, 1, pal)}${headFor(a, "point", 130, 66, 1, "smug", 1, pal)}`;
+  return svgDoc("0 0 160 120", `<ellipse cx="84" cy="98" rx="62" ry="6" fill="${KEY}" opacity=".1"/>${art}`);
 }
