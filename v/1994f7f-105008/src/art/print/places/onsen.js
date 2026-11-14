@@ -65,7 +65,7 @@ export function onsen(time, R, animate) {
   const seat = `<g fill="${P.stone}" ${key(1.8)}>${[[18, 446, 30, 17], [384, 448, 30, 16], [64, 456, 34, 14], [336, 458, 34, 13], [132, 462, 40, 12], [268, 462, 40, 12]].map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`).join("")}</g><g fill="none" stroke="${P.stoneDk}" stroke-width="2" stroke-linecap="round">${[[18, 446, 30], [384, 448, 30], [64, 456, 34]].map(([x, y, rx]) => `<path d="M${x - rx * .5} ${y + 6}q${rx * .5} 5 ${rx} 0"/>`).join("")}</g>`;
   const front = waves(P, animate) + floatYuzu(84, 486, 8, animate) + floatYuzu(318, 489, 7, animate) + steam(40, 470, .8, P, animate) + steam(372, 466, .8, P, animate);
   const frame = `<path d="M0 0H400V500H0ZM8 8V492H392V8Z" fill="${PAPER}" fill-rule="evenodd"/><rect x="8" y="8" width="384" height="484" fill="none" ${key(1.6)}/>${title(time)}`;
-  return { back, seat, front, frame, wall: P.ground, ink: P.ink };
+  return { back, seat, front, frame, title: title(time), up: P.ground, down: { fill: P.water, line: KEY, water: true }, wall: P.ground, ink: P.ink };
 }
 
 /* ---------- G: the indigo landscape, for postcards ----------
@@ -122,5 +122,5 @@ export function onsenLandscape(time, animate = false) {
     + `<rect x="328" y="52" width="20" height="64" fill="${PAPER}" ${ikey(1.2)}/>${column("長貓十二景", 338, 56, 10, 11.5, IND[0])}`
     + `<rect x="357.5" y="122" width="19" height="19" fill="${PAPER}" stroke="${RED}" stroke-width="1.8"/>${glyph("貓", 367, 125, 12.5, RED)}`;
   const frame = `<path d="M0 0H400V500H0ZM10 10V490H390V10Z" fill="${PAPER}" fill-rule="evenodd"/><rect x="10" y="10" width="380" height="480" fill="none" ${ikey(1.5)}/>${titleG}`;
-  return { back, seat, front, frame, wall: P.sky[0], ink: P.ink };
+  return { back, seat, front, frame, title: titleG, up: P.sky[0], down: { fill: P.waterDk, line: P.line || IND[0], wave: P.wave, water: true }, wall: P.sky[0], ink: P.ink };
 }

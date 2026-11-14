@@ -3,7 +3,7 @@
    judge's learned faces, the singing days, and each month's postcards. Nothing in it ever goes down. */
 import {
   STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, LAUNCH, SPECIAL_MONTHS, GUEST_BY_ZONE, NEWYEAR_NIGHT_SCARF,
-  TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName,
+  TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName, kindFor,
 } from "./content.js";
 import { drillForStep } from "./drill/drills.js";
 
@@ -37,7 +37,7 @@ export function freshSave(real = new Date()) {
     created: dateKey(real),
     here: "onsen",
     onboarded: false,
-    settings: { range: null, nudge: 0, kinds: { scarf: "point", top: "point", bottom: "point" }, sound: true, music: true, letterNotify: false },
+    settings: { range: null, nudge: 0, sound: true, music: true, letterNotify: false },
     faces: 0,
     journal: [],
     takes: [],
@@ -55,7 +55,8 @@ export function migrate(o, real = new Date()) {
   if (!o || typeof o !== "object" || o.v !== VERSION) return base;
   const S = { ...base, ...o };
   S.settings = { ...base.settings, ...(o.settings || {}) };
-  S.settings.kinds = { ...base.settings.kinds, ...(o.settings?.kinds || {}) };
+  /* 2026-11-14: cat kinds are cast per month (content.js kindFor), no longer a setting; an old choice is dropped */
+  delete S.settings.kinds;
   S.dev = { ...base.dev, ...(o.dev || {}) };
   /* 2026-11-14: the recorded voice became the demo voice. A save from before it existed holds whichever synthesised
      voice was picked last; it moves to the recorded one once, and the Dev panel can still choose another. */
@@ -223,7 +224,42 @@ export function garmentSpec(S, place, time, zone, extra = {}) {
   const tufts = Array.from({ length: STEPS }, (_, i) => (i < n ? !!steps[i]?.tuft : false));
   const folds = Array.from({ length: STEPS }, (_, i) => (i < n && Array.isArray(steps[i]?.folds) ? steps[i].folds : null));
   const animal = animalFor(place, time, zone);
-  return { zone, look: garmentLook(place, time, zone), animal, kind: S.settings.kinds[zone] || "point", steps: n, shapes, tufts, folds, ...extra };
+  return { zone, look: lookOf(S, place, time, zone), animal, kind: kindFor(place, zone), steps: n, shapes, tufts, folds, ...extra };
+}
+
+/* ---------- coats (the designer, 2026-11-14) ----------
+   A coat is a pattern and a colour. Every garment of a month has its own designed coat (content.js garmentLook).
+   Finishing a garment collects its coat; a collected coat can then be put on any cat of that month, as often as
+   you like, and taken off again. Fur length is not part of the coat: it stays with the time of day (a thin scarf
+   in the morning, a thick one at night). Coats belong to their month (place): the next month starts with none
+   ("搜集的毛色 在'本月'可以自由換 下個月得再搜集一次"). Stored per month as coats[garment] = the garment it is
+   borrowed from; a garment wearing its own coat is not stored. */
+export const coatKey = (time, zone) => gkey(time, zone);
+const coatParts = (key) => { const [t, z] = String(key).split("."); return TIME_IDS.includes(t) && ZONE_IDS.includes(z) ? { time: t, zone: z } : null; };
+/* the coats collected at this place, in the order the garments are listed: [{ key, time, zone, look }] */
+export function collectedCoats(S, place) {
+  return TIME_IDS.flatMap((t) => ZONE_IDS.filter((z) => garmentDone(S, place, t, z)).map((z) => ({ key: gkey(t, z), time: t, zone: z, look: garmentLook(place, t, z) })));
+}
+/* which coat a garment wears: its own unless it borrowed one that is (still) collected */
+export function coatOf(S, place, time, zone) {
+  const own = gkey(time, zone), k = peek(S, place).coats?.[own], src = k && k !== own ? coatParts(k) : null;
+  return src && garmentDone(S, place, src.time, src.zone) ? k : own;
+}
+/* the look a garment has in a coat (key: the garment the coat comes from): for the wardrobe's swatches too */
+export const coatLook = (place, time, zone, key) => lookFrom(place, time, zone, key);
+const lookFrom = (place, time, zone, key) => {
+  const src = coatParts(key) || { time, zone }, coat = garmentLook(place, src.time, src.zone);
+  return { fur: garmentLook(place, time, zone).fur, pattern: coat.pattern, palette: coat.palette };
+};
+export const lookOf = (S, place, time, zone) => lookFrom(place, time, zone, coatOf(S, place, time, zone));
+/* put a collected coat on a garment (key = null or its own key: back to its own). False when the coat is not collected */
+export function setCoat(S, place, time, zone, key) {
+  const own = gkey(time, zone), m = monthOf(S, place);
+  if (!m.coats || typeof m.coats !== "object") m.coats = {};
+  if (!key || key === own) { delete m.coats[own]; return true; }
+  if (!collectedCoats(S, place).some((c) => c.key === key)) return false;
+  m.coats[own] = key;
+  return true;
 }
 
 export function basketsFor(S, place) {
@@ -231,7 +267,7 @@ export function basketsFor(S, place) {
   const upto = cur ? TIME_IDS.indexOf(cur) : TIME_IDS.length - 1; // month done: the night set stays on the judge
   return TIME_IDS.slice(0, upto).map((t) => ({
     time: t,
-    cats: ZONE_IDS.map((z) => ({ zone: z, look: garmentLook(place, t, z), kind: S.settings.kinds[z], animal: animalFor(place, t, z) })),
+    cats: ZONE_IDS.map((z) => ({ zone: z, look: lookOf(S, place, t, z), kind: kindFor(place, z), animal: animalFor(place, t, z) })),
   }));
 }
 
@@ -269,7 +305,10 @@ function newCard(S, place, kind, bg, set, real) {
   const m = monthOf(S, place);
   const card = {
     id: `${place}-${kind}-${m.cards.length + 1}-${Date.now().toString(36)}`, kind, place, bg, set: { ...set },
-    kinds: { ...S.settings.kinds }, caption: cardCaption(place, bg, set), date: todayKey(S, real),
+    /* a postcard keeps the cats and the coats as they were when it was taken, whatever is changed afterwards */
+    kinds: Object.fromEntries(ZONE_IDS.map((z) => [z, kindFor(place, z)])),
+    coats: Object.fromEntries(ZONE_IDS.map((z) => [z, coatOf(S, place, set[z], z)])),
+    caption: cardCaption(place, bg, set), date: todayKey(S, real),
   };
   m.cards.push(card);
   return card;
@@ -291,7 +330,8 @@ export function addMixCard(S, place, set, bg, real) {
 export function cardScene(S, card, extra = {}) {
   const garments = ZONE_IDS.map((z) => {
     const g = garmentSpec(S, card.place, card.set[z], z);
-    return { ...g, kind: card.kinds?.[z] || g.kind };
+    /* an older card has no coats: it shows each garment's own coat, as it was taken */
+    return { ...g, kind: card.kinds?.[z] || g.kind, look: lookFrom(card.place, card.set[z], z, card.coats?.[z] || gkey(card.set[z], z)) };
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }

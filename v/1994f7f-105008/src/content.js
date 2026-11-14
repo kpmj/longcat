@@ -34,7 +34,10 @@ export const PATTERNS = [
 ];
 export const PALETTE_NAMES = { grey: "grey", ginger: "ginger", cream: "cream" };
 
-/* The four cat kinds: a setting per body part, free, never progress (decided 2026-11-11). */
+/* The four cat kinds: ears and a tail. Until 2026-11-14 they were a free setting per body part. Now they are cast,
+   not chosen (the designer, 2026-11-14: "每個月有三個不同的貓種 … 玩家沒辦法選哪隻貓是哪個部位 我們可以自己決定 貓的部分沒有
+   解鎖或選擇自由"): every month has three different kinds, one per garment, set in KIND_CAST below. What the player
+   chooses is the coat (state.js, coats). */
 export const CAT_KINDS = [
   { id: "point", name: "Pointy ears · long tail", short: "Pointy", note: "a long tail curled at the tip" },
   { id: "big", name: "Big ears · thin tail", short: "Big ears", note: "ears set wide" },
@@ -86,9 +89,10 @@ export const DRILL = {
   arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
   penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
   /* the last step of every garment (the designer, 2026-11-14: "把 free drill 完全拿掉，換成剛剛討論的進階 drill"): the designer's own
-     example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Three rounds at the most
-     (up, top, back), since one round is already long. */
-  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75, climb: { by: 2, most: 1, back: true } },
+     example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Five rounds at the most
+     (two up, the top, two back): about 45 to 60 seconds. the designer, the same day: "最後一關算是最難的 所以 30-40 秒沒
+     問題", and of the five-round version, "50-60 seconds is good". */
+  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75, climb: { by: 2, most: 2, back: true } },
 };
 /* drills that no longer exist, for saves and drill-editor edits made before they went: the made-up melodies of
    step 12 became the climbing five */
@@ -261,6 +265,18 @@ export function garmentLook(placeId, timeId, zoneId) {
   const pattern = PATTERN_IDS[(p * 5 + ti * 3 + zi * 4) % PATTERN_IDS.length];
   const palette = PALETTE_ROT[(p + ti + zi * 2) % 3];
   return { fur, pattern, palette };
+}
+
+/* Each month's three cats, in the order of PLACE_IDS: [scarf, top, hat]. Three different kinds every month, a
+   different one left out from month to month, and no two months with the same cast in the same places. */
+const KIND_CAST = [
+  ["point", "big", "tuft"], ["small", "point", "big"], ["tuft", "small", "point"], ["big", "tuft", "small"],
+  ["big", "tuft", "point"], ["point", "small", "big"], ["point", "tuft", "small"], ["small", "big", "tuft"],
+  ["tuft", "point", "big"], ["big", "small", "point"], ["small", "point", "tuft"], ["tuft", "small", "big"],
+];
+export function kindFor(placeId, zoneId) {
+  const cast = KIND_CAST[Math.max(0, PLACE_IDS.indexOf(placeId)) % KIND_CAST.length];
+  return cast[Math.max(0, ["scarf", "top", "bottom"].indexOf(zoneId))];
 }
 
 export function garmentName(timeId, zoneId) {

@@ -94,7 +94,8 @@ export function makePlace(spec) {
     const back = `<rect width="400" height="500" fill="${ground}"/>${specks}${tap("window", win)}${fx.back ? tap("swing", inset(0, 0, 400, 500, "0 0 400 500", fx.back)) : ""}`;
     const seat = spec.seat(c, q, time, animate) + `<ellipse cx="200" cy="${bandY - 6}" rx="178" ry="11" fill="${KEY}" opacity=".14"/>`;
     const front = spec.band({ fill: tint(spec.floor[0], time), mark: tint(spec.floor[1], time), k: KEY, paper: PAPER }, bandY, q, time, on) + (fx.front ? tap("fire", fx.front) : "");
-    return { back, seat, front, frame: paperEdge(8, KEY) + titleH(time, spec.name, ink), wall: ground, ink };
+    const title = titleH(time, spec.name, ink);
+    return { back, seat, front, frame: paperEdge(8, KEY) + title, title, up: ground, down: { fill: tint(spec.floor[0], time), line: KEY, water: !!spec.water }, wall: ground, ink };
   }
   /* the landscape is still on postcards and thumbs; on the home page and in the wardrobe it is drawn with `animate`:
      the view's own things move, the place's fx are added where the view has no such thing already (spec.fxOnView),
@@ -105,7 +106,7 @@ export function makePlace(spec) {
     const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
     const view = full(time, animate) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
     return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
-      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), wall: V.sky[0], ink: KEY };
+      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: V.d[3], line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));
   return { scene, landscape, stamp, name: spec.name };
