@@ -26,7 +26,7 @@ function enterCount(T, over = 0) {
 }
 
 /* The demo ends on a beat, so the metronome runs on into the count-in without a hiccup. */
-export const demoEnd = (P) => Math.ceil((P.total + DEMO_TAIL) / P.beat - 1e-6) * P.beat;
+export const demoEnd = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAIL) / P.beat - 1e-6) * P.beat;
 
 /* Metronome beats that fall in [from, to) of the take's own clock: every beat while the phrase is hummed, and
    every beat from the first downbeat to the end of the last note while it is sung. The four count-in beats
@@ -36,7 +36,8 @@ export function ticksIn(T, from, to) {
   if (T.phase === "done") return out;
   const end = T.phase === "demo" ? demoEnd(P) - 1e-6 : P.total;
   for (let k = Math.max(0, Math.ceil(from / P.beat - 1e-6)); k * P.beat < to && k * P.beat <= end; k++) {
-    out.push({ t: k * P.beat, accent: k % P.perNote === 0 && k / P.perNote < P.notes.length });
+    /* a climbing drill rests between rounds, so its plan says which beats a note starts on */
+    out.push({ t: k * P.beat, accent: P.accents ? P.accents.has(k) : k % P.perNote === 0 && k / P.perNote < P.notes.length });
   }
   return out;
 }
@@ -55,7 +56,8 @@ export function stepTake(T, dt, frame = null) {
   if (T.phase === "done") return ev;
   T.t += dt;
   if (T.phase === "demo") {
-    for (let i = T.demoIdx + 1; i < P.notes.length && T.t >= P.notes[i].s; i++) { T.demoIdx = i; ev.push({ type: "demo-note", i }); }
+    /* the demo is the first round only: a climbing drill's later rounds are the same shape, higher */
+    for (let i = T.demoIdx + 1; i < (P.demoCount ?? P.notes.length) && T.t >= P.notes[i].s; i++) { T.demoIdx = i; ev.push({ type: "demo-note", i }); }
     if (T.t >= demoEnd(P)) { enterCount(T, T.t - demoEnd(P)); ev.push({ type: "phase", phase: "count" }); }
     return ev;
   }

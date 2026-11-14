@@ -55,7 +55,7 @@ function laneGrid(plan) {
     const y = yRaw(m);
     if (y < 12 || y > H - 12) continue;
     if (targets.has(m)) {
-      lines += `<line class="gl-line" x1="${GUTTER}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
+      lines += `<line class="gl-line" id="gll-${m}" x1="${GUTTER}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
       labels += `<text class="gl-label" id="gl-${m}" x="${GUTTER - 6}" y="${(y + 4).toFixed(1)}">${noteName(m)}</text>`;
     } else {
       lines += `<line class="gl-faint" x1="${GUTTER}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
@@ -79,11 +79,41 @@ function guideY(t) {
 }
 
 function laneNotes(plan) {
-  return plan.notes.map((n, i) => {
+  const bars = plan.notes.map((n, i) => {
     const x = n.s * PXS, w = Math.max(14, (n.e - n.s) * PXS - 3), y = yOf(n.midi);
     return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/><text x="${(x + 12).toFixed(1)}" y="${(y + 5).toFixed(1)}">${esc(plan.syl)}</text></g>`;
   }).join("");
+  /* a climbing drill: each later round is marked where it begins, "↑ 2 / 5" or "↓ 4 / 5" */
+  const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * PXS).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : "↓"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
+  return bars + tags;
 }
+
+/* ---------- rounds (a climbing drill) ----------
+   The round being sung, or the one coming: it changes as the last note of a round ends. */
+const roundAt = (P, t) => { const k = P.reps.findIndex((r) => t < r.e); return k === -1 ? P.reps.length - 1 : k; };
+/* The chart has a line for every pitch of every round, which is a crowd: only the round at hand keeps its
+   note names, the others' lines go faint. */
+function focusRound(k) {
+  const P = R.plan;
+  if (P.reps.length < 2 || k === R.round) return;
+  R.round = k;
+  const rep = P.reps[k], mine = new Set(P.notes.slice(rep.i0, rep.i0 + rep.n).map((n) => n.midi));
+  for (const m of new Set(P.notes.map((n) => n.midi))) {
+    document.getElementById(`gl-${m}`)?.classList.toggle("away", !mine.has(m));
+    document.getElementById(`gll-${m}`)?.classList.toggle("away", !mine.has(m));
+  }
+}
+/* In the rest before a round, the cat gives its first note, in the demo's own voice (demoNote also writes the
+   sound down for the self-hearing filter, so the phone's own cue is never taken for the singer). */
+function playCues() {
+  const P = R.plan, T = R.T;
+  while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
+    const c = P.cues[R.cue++];
+    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(app.S.dev.demoVoice, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl));
+    laneTip("climb", 3200, H - 70); // low on the lane, clear of the notes coming in
+  }
+}
+const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
 
 function render(root, { ctx, retake = false, outcome = null }) {
   const S = app.S;
@@ -91,7 +121,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [] };
+  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
   R.geo = geometry(plan);
   R.headY = yOf(plan.notes[0].midi);
   const grid = laneGrid(plan);
@@ -100,7 +130,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   root.innerHTML = `
     <header class="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
-      <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
+      <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
     </header>
     <div class="lane-wrap">
       <svg class="lane" id="lane" viewBox="0 0 ${W} ${H}" aria-label="Lane">
@@ -127,6 +157,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   R.tier = comboTier(app.combo || 0);
   paintJudge();
   showCombo(app.combo || 0, false);
+  focusRound(0);
   start();
 }
 
@@ -156,8 +187,8 @@ async function start() {
   if (!R) return;
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
-  /* the demo is the cat singing the phrase on its own sound */
-  R.plan.notes.forEach((n) => R.nodes.push(demoNote(app.S.dev.demoVoice, t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
+  /* the demo is the cat singing the phrase on its own sound; of a climbing drill, the first round only */
+  R.plan.notes.slice(0, R.plan.demoCount).forEach((n) => R.nodes.push(demoNote(app.S.dev.demoVoice, t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
   R.last = clock(); R.lastW = wall(); R.stall = 0;
   loop();
   setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
@@ -402,7 +433,7 @@ export function frame(dt) {
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
   for (const e of evs) {
-    if (e.type === "demo-note") hint("Listen first", `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
+    if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { countdown(["Ready", "3", "2", "1"][e.k] || ""); hint("", "sing as the notes reach the line"); }
     else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); }
@@ -411,9 +442,13 @@ export function frame(dt) {
   }
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
-    if (R.flash && T.t < R.flash.until) hint(R.flash.text, `“${P.syl}”`, R.flash.level);
+    const many = P.reps.length > 1, k = roundAt(P, T.t), rep = P.reps[k], resting = many && T.t < rep.s && k > 0;
+    const small = many ? `“${P.syl}” · ${roundWord(P, k)}` : `“${P.syl}”`;
+    if (many) { focusRound(k); playCues(); }
+    if (R.flash && T.t < R.flash.until) hint(R.flash.text, small, R.flash.level);
+    else if (resting) hint(rep.dir === "up" ? "A step higher" : "Back down", `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
     else if (R.silentFor > 1.4 && T.t < P.total) hint("Sing out", "the judge can’t hear you yet");
-    else hint("Sing", `“${P.syl}”`);
+    else hint("Sing", small);
   }
   if (R.face !== "neutral" && T.t > R.faceUntil) { setFace("neutral", 0); setLevel(""); }
   draw(v, dt);
@@ -506,7 +541,7 @@ function resultLine(grade, mood) {
 
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState() } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
@@ -550,7 +585,7 @@ function finish(grade) {
   const el = sheet(`
     <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
     <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, kind: g.kind, animal: g.animal })}</div>
-    <div class="note-dots" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${grade.notes.map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</div>
+    <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
     ${learned ? `<div class="learn">${faceIconSvg(learned.id, { size: 44 })}<p><b>New face: ${esc(learned.name)}</b><span>${S.faces >= STEPS ? "All twelve learned. A take where every note lands gets one of them now." : `Kept in the Album. ${STEPS - S.faces} more to learn.`}</span></p></div>` : ""}
     <div class="row"><button class="btn primary" data-a="ok">Keep it</button><button class="btn" data-a="retake">Sing this step again</button></div>

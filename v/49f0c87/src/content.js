@@ -51,7 +51,11 @@ export const GUESTS = {
 
 /* The drills (drill-ladder board, proposal 丙, the designer 2026-11-14). rel = semitones above the drill's root (the
    lowest note is placed in the singer's range, so a rel may be negative); dur = seconds per note at golden hour.
-   What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below). */
+   What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
+   climb (the designer, 2026-11-14: more reps on the harder steps, the 10th and 11th): the drill is sung in rounds, each
+   `by` semitones higher, up to the top of the singer's range (`most` rounds up at the most), then back down.
+   Steps 10 and 11 of every ladder climb; drills.js climbRounds places the rounds. `most` is set so a take stays
+   under about 40 seconds for a wide range: long rounds climb fewer times. */
 export const DRILL = {
   long: { name: "Long note", rel: [0], dur: 2.4 },
   long2: { name: "Same note twice", rel: [0, 0], dur: 1.6 },
@@ -64,22 +68,22 @@ export const DRILL = {
   doremi: { name: "Do–Re–Mi", rel: [0, 2, 4], dur: 1.0 },
   down3: { name: "Three down", rel: [4, 2, 0], dur: 1.0 },
   arc: { name: "Up and back", rel: [0, 2, 4, 2, 0], dur: 0.9 },
-  fiveup: { name: "Five up", rel: [0, 2, 4, 5, 7], dur: 0.85 },
+  fiveup: { name: "Five up", rel: [0, 2, 4, 5, 7], dur: 0.85, climb: { by: 2, most: 2, back: true } },
   fivedown: { name: "Five down", rel: [7, 5, 4, 2, 0], dur: 0.85 },
   five: { name: "Five-note scale", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
   fast5: { name: "Fast five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
   scaleup: { name: "Scale", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
-  scaledown: { name: "Scale down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7 },
+  scaledown: { name: "Scale down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7, climb: { by: 2, most: 1, back: true } },
   third: { name: "Third", rel: [0, 4], dur: 1.0 },
-  thirdback: { name: "Third and back", rel: [0, 4, 0], dur: 1.0 },
+  thirdback: { name: "Third and back", rel: [0, 4, 0], dur: 1.0, climb: { by: 2, most: 3, back: true } },
   arp: { name: "Arpeggio", rel: [0, 4, 7], dur: 0.9 },
   arpdown: { name: "Arpeggio down", rel: [7, 4, 0], dur: 0.9 },
   arpud: { name: "Arpeggio and back", rel: [0, 4, 7, 4, 0], dur: 0.85 },
   fifth: { name: "Fifth", rel: [0, 7], dur: 1.1 },
   skips: { name: "Skips", rel: [0, 4, 2, 5, 4], dur: 0.9 },
-  octave: { name: "Octave", rel: [0, 12], dur: 1.2 },
-  octdown: { name: "Octave down", rel: [12, 0], dur: 1.2 },
-  arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
+  octave: { name: "Octave", rel: [0, 12], dur: 1.2, climb: { by: 2, most: 3, back: true } },
+  octdown: { name: "Octave down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
+  arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
   penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
   free5: { name: "Short melody", free: { notes: 5, top: 2 }, dur: 0.9 },
   free: { name: "Free melody", free: { notes: 8, top: 7 }, dur: 0.8 },
@@ -99,11 +103,18 @@ export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(
 /* The drill editor (dev tools, the designer 2026-11-14): the designer moves and edits drills on the phone. The edits live in the
    save (S.dev.drillEdits) and are laid over the tables above when the game starts and after every change, so
    everything that reads DRILL / LADDERS sees them. Shape: { ladders: { morning: [twelve ids] }, drills: { id:
-   { name, rel, dur } | { name, free: { notes, top }, dur } } }. Nothing here is graded differently. */
+   { name, rel, dur, climb? } | { name, free: { notes, top }, dur } } }. Nothing here is graded differently. */
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const BUILT_IN = { drills: clone(DRILL), ladders: clone(LADDERS) };
 export const builtInDrills = () => clone(BUILT_IN);
-export const DRILL_LIMITS = { notes: 16, low: -12, high: 24, span: 19, durMin: 0.3, durMax: 8 };
+export const DRILL_LIMITS = { notes: 16, low: -12, high: 24, span: 19, durMin: 0.3, durMax: 8, climbBy: 4, climbMost: 7 };
+/* a drill's climb from untrusted input: { by, most, back }, or null for none */
+export function cleanClimb(c) {
+  if (!c || typeof c !== "object") return null;
+  const by = Math.round(Number(c.by)), most = Math.round(Number(c.most));
+  if (!(by >= 1 && by <= DRILL_LIMITS.climbBy && most >= 1 && most <= DRILL_LIMITS.climbMost)) return null;
+  return { by, most, back: c.back !== false };
+}
 
 /* One drill from untrusted input (a save, or text pasted into the editor); null when it cannot be sung. */
 export function cleanDrill(d) {
@@ -120,7 +131,8 @@ export function cleanDrill(d) {
   const rel = d.rel.map(Number);
   if (rel.some((r) => !Number.isInteger(r) || r < L.low || r > L.high)) return null;
   if (Math.max(...rel) - Math.min(...rel) > L.span) return null;
-  return { name, rel, dur };
+  const climb = cleanClimb(d.climb);
+  return climb ? { name, rel, dur, climb } : { name, rel, dur };
 }
 /* The whole set of edits, cleaned: anything that does not fit is dropped, never half applied. */
 export function cleanDrillEdits(e) {

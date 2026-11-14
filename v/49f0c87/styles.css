@@ -484,3 +484,14 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .de-f select:focus-visible, textarea:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .de-info { font-weight: 700; min-height: 1.5em; }
 .de-info.bad { color: var(--coral); }
+
+/* ---------- climbing drills: rounds ---------- */
+.rep-tag { font-family: var(--body); font-weight: 800; font-size: 12px; fill: #8a6a3a; }
+.gl-label.away { opacity: 0; }
+.gl-line.away { stroke: #ecdfc4; stroke-width: 1; stroke-dasharray: 2 5; }
+.note-dots > span { display: contents; }
+.note-dots.rounds { flex-direction: column; align-items: center; gap: 4px; }
+.note-dots.rounds > span { display: flex; gap: 4px; }
+.note-dots.rounds .nd { width: 22px; height: 22px; font-size: 12px; }
+.hint span { text-align: center; padding: 0 12px; }
+.toggle input { flex: none; }
