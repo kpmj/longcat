@@ -647,7 +647,7 @@ function finish(grade) {
     <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
     ${learned ? `<div class="learn">${faceIconSvg(learned.id, { size: 44 })}<p><b>New face: ${esc(learned.name)}</b><span>${S.faces >= STEPS ? "All twelve learned. A take where every note lands gets one of them now." : `Kept in the Album. ${STEPS - S.faces} more to learn.`}</span></p></div>` : ""}
-    <div class="row"><button class="btn primary" data-a="ok">Keep it</button><button class="btn" data-a="retake">Sing this step again</button></div>
+    <div class="row"><button class="btn" data-a="retake">Sing this step again</button><button class="btn primary" data-a="ok">Keep it</button></div>
     ${keyfix ? `<p class="keyfix" id="keyfix">Felt out of reach? <button data-a="lower" ${S.settings.nudge <= -5 ? "disabled" : ""}>Lower the key</button> · <button data-a="higher" ${S.settings.nudge >= 5 ? "disabled" : ""}>Raise the key</button></p>` : ""}`, { dismissable: false });
   el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); accept(ctx, outcome); };
   el.querySelector("[data-a=retake]").onclick = () => { closeSheet(true); show("take", { ctx, retake: true, outcome }); };
