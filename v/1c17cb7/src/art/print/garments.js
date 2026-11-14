@@ -129,13 +129,11 @@ export function garmentLayers(g, ctx = {}) {
   /* The step just sung. the designer, 2026-11-14: the wide cream light under the piece "seems a little distracting"; of five
      options (docs/design/longcat-cat-highlight-options.html) the designer chose B with a little of A.
      B: the whole cat hops once and three print sparkles twinkle for two seconds, then they are gone (only when
-     animated). A, a little: a thin warm rim hugs the new piece and the cat's head, a few pixels wide, amber and not
-     white, and it does not pulse. It is there for anyone who missed the two seconds; the page fades it at the next
-     touch (class lc-rim-off on the picture's parent, see home.js). */
+     animated). The little of A, a thin amber rim round the new piece, came out again the same day: the designer asked for it
+     to be removed. Nothing is drawn under or round the cat; with reduced motion the step just sung is not marked. */
   let mark = "";
   if (newSeg) {
     const a = newSeg[0], b = newSeg[newSeg.length - 1], mid = newSeg[newSeg.length >> 1], T = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    under += `<g class="lc-new-rim" opacity=".9"><path d="${dPath(newSeg)}" stroke="#f3bd4e" stroke-width="${f(w + 11)}" fill="none" stroke-linecap="round"/>${glow === steps ? `<ellipse cx="${f(hx)}" cy="${f(hy + 2)}" rx="24" ry="20.5" fill="#f3bd4e"/>` : ""}</g>`;
     const star = (x, y, k, i) => `<g transform="translate(${f(x)} ${f(y)})"><path class="lc-new-spark" style="animation-delay:${f(.25 + i * .18)}s" d="M0 ${f(-7 * k)}Q${f(1.2 * k)} ${f(-1.2 * k)} ${f(7 * k)} 0Q${f(1.2 * k)} ${f(1.2 * k)} 0 ${f(7 * k)}Q${f(-1.2 * k)} ${f(1.2 * k)} ${f(-7 * k)} 0Q${f(-1.2 * k)} ${f(-1.2 * k)} 0 ${f(-7 * k)}Z" fill="#efe6d2" stroke="${KEY}" stroke-width="1.3" stroke-linejoin="round"/></g>`;
     if (ctx.animate) mark = star(hx + (b.x - a.x) / T * 29, hy - 15, 1, 0) + star(a.x - hd * 6, a.y - w * .5 - 14, .8, 1) + star(mid.x, mid.y - w * .5 - 20, 1.15, 2);
   }

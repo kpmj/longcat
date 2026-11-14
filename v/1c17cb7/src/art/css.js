@@ -17,10 +17,8 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 .lc-tapped .lc-rider [data-tap]:not(.lc-tapped) .lc-nuzzle { animation: none; }
 /* the reset beat (docs/art-style.md): a runner is hidden except while it runs */
 .lc-run-x, .lc-breeze { opacity: 0; }
-/* a sparkle beside the step just sung shows only while it twinkles; with reduced motion only the rim is there */
+/* a sparkle beside the step just sung shows only while it twinkles; with reduced motion nothing marks the step */
 .lc-new-spark { transform-box: fill-box; transform-origin: 50% 50%; transform: scale(0); }
-.lc-new-rim { transition: opacity .5s ease-out; }
-.lc-rim-off .lc-new-rim { opacity: 0; }
 /* a shooting star shows only while it flies */
 .lc-shoot { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
@@ -42,7 +40,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-steam { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-steam 7s ease-in-out infinite; }
   .lc-steam:nth-of-type(2n) { animation-duration: 9s; animation-delay: -3s; }
   .lc-glow { animation: lc-glow 1.8s ease-in-out infinite; }
-  /* the step just sung: the cat hops once and three sparkles twinkle and go; its thin rim fades at the next touch */
+  /* the step just sung: the cat hops once and three sparkles twinkle and go; nothing stays */
   .lc-new-hop { animation: lc-new-hop .6s cubic-bezier(.3, 0, .3, 1) .2s both; }
   .lc-new-spark { animation: lc-new-spark 2s ease-in-out both; }
   /* the garment just chosen (its card on the home page, Wear this one): its cat hops once and nothing stays on the

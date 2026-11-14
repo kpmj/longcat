@@ -64,8 +64,6 @@ export function renderHome(root) {
       <p class="sub">${sub}</p>
     </section>`;
   wireTaps($("#home-scene", root)); // pat a cat or the judge, tap the yuzu, the lamp, the sun
-  /* the thin rim round the step just sung stays until the next touch anywhere, then fades (art/print/garments.js) */
-  if (app.props.glow) addEventListener("pointerdown", () => { const sc = document.getElementById("home-scene"); if (sc) sc.classList.add("lc-rim-off"); }, { once: true });
   /* the home page has its own quiet music, in the colour of the time of day; it stops when the page is left */
   if (musicOn(S)) startMusic(shownTime); else stopMusic();
   /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
