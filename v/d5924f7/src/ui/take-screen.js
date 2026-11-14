@@ -30,7 +30,9 @@ const HOP = 0.16; // the demo head leaves for the next note this long before it 
    phones keep up). Within a note it follows the voice quickly; landing on another note it takes a little
    longer (the designer, 2026-11-14: "it feels a bit rushed ... add a very slight delay when landing on the next note"). */
 const FOLLOW = 0.02; // seconds: following the voice within a note
-const LAND = 0.065; // seconds: moving to another note (about 0.25 s to settle; the designer, later: "still a little rushed")
+const LAND = 0.08; // seconds: moving to another note. 0.045, then 0.065 ("still a little rushed"), then 0.08 ("should
+// probably move a bit slower ... it's very slight though", 2026-11-14). The head now takes about a quarter slower to
+// cross to the next note; within a semitone of it, it follows the voice at FOLLOW again.
 let R = null;
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
