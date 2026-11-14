@@ -13,7 +13,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay } from "../audio/synth.js";
+import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { demoVoice } from "../audio/demo-voices.js";
@@ -194,6 +194,7 @@ async function start() {
   hint("Listen first", "");
   await sayOnce();
   if (!R) return;
+  holdAudio(true); // from here to the end of the take nothing may swap the context under the microphone
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
   /* the demo is the cat singing the phrase on its own sound; of a climbing drill, the first round only */
@@ -260,6 +261,7 @@ function micProblem() {
 function stopNodes() { R.nodes.forEach((n) => n && n.stop && n.stop()); R.nodes = []; }
 function stop() {
   if (!R) return;
+  holdAudio(false); markAudioStale(); // the next touch makes a fresh sound context (synth.js, "Healing")
   cancelAnimationFrame(R.raf);
   stopNodes();
   closeMic();
@@ -571,6 +573,7 @@ function resultLine(grade, mood) {
 
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
+  holdAudio(false); markAudioStale();
   try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();

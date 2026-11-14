@@ -3,6 +3,7 @@
    Settings is the gear in the top bar. Nothing here counts streaks or shows a score. */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } from "./app.js";
 import { startMusic, stopMusic } from "../audio/ambient.js";
+import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
@@ -75,7 +76,9 @@ export function renderHome(root) {
     const on = musicOn(S);
     mb.classList.toggle("off", !on);
     mb.setAttribute("aria-pressed", String(on));
-    if (on) startMusic(shownTime); else stopMusic();
+    /* turning the music on also makes a fresh sound context: when a phone has gone silent, off and on again is what
+       a player tries, and this makes that the cure (play-test, 2026-11-14) */
+    if (on) { rebuildAudio(); startMusic(shownTime); } else stopMusic();
     toast(on ? "Music on" : "Music off");
   };
   const sing = $("[data-act=sing]", root);

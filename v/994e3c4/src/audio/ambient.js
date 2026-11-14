@@ -10,6 +10,9 @@ function ctx() {
   const c = audioContext();
   if (!c) return null;
   if (c !== ac) {
+    /* a new context (synth.js makes one when the phone's sound got stuck): nothing of the old one can play on it,
+       so the music starts over from "not playing" */
+    if (ac) { playing = false; clearInterval(timer); timer = null; clearTimeout(haltTimer); haltTimer = null; armed = false; }
     ac = c;
     /* a limiter of its own, like the one on the game's master: music, a tap and one of the game's chimes can land at
        the same moment, and together they must not clip on a phone speaker (advice from the sound session) */
@@ -204,6 +207,8 @@ export function stopMusic() { wanted = false; fadeOut(false); }
 export const musicState = () => ({ wanted, playing, step, bpm: mood.bpm });
 /* the two buses, for measuring levels in the dev tools */
 export const ambientNodes = () => (ctx() ? { bus, musicBus } : null);
+/* the game made a fresh sound context: if the music is wanted, it begins again on the new one */
+if (typeof addEventListener === "function") addEventListener("longcat-audio", () => { ctx(); if (wanted) begin(); });
 /* no music while the page is in the background */
 if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => {
   if (document.hidden) fadeOut(true); else if (wanted) { clearTimeout(haltTimer); if (playing) startMusic(Object.keys(MOOD).find((k) => MOOD[k] === mood)); else begin(); }

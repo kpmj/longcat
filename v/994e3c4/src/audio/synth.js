@@ -60,7 +60,7 @@ function kick(force = false) {
   try { const p = ac.resume(); if (p && p.catch) p.catch(() => {}); } catch { /* not allowed yet */ }
 }
 if (typeof addEventListener === "function" && typeof document !== "undefined") {
-  for (const ev of ["pointerdown", "touchend", "click", "keydown"]) addEventListener(ev, () => kick(true), true);
+  for (const ev of ["pointerdown", "touchend", "click", "keydown"]) addEventListener(ev, () => heal(), true);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) kick(true); });
 }
 export const audioState = () => (ac ? ac.state : "none");
@@ -75,13 +75,37 @@ export async function wakeAudio(ms = 700) {
   while (ac.state !== "running" && Date.now() < end) await new Promise((r) => setTimeout(r, 40));
   return ac.state === "running";
 }
-/* the last resort, inside a tap: throw the paused context away and make a new one */
+/* Throw the context away and make a new one. Only inside a touch, where a phone lets sound start. The old one is
+   closed a moment later, so a chime still ringing is not cut off. Whoever keeps nodes of their own (the home
+   music) hears about it through the "longcat-audio" event. */
 export function rebuildAudio() {
   const old = ac;
   ac = null; master = null; fx = null; fxTone = null; noiseBuf = null;
   heard.sounds.length = 0;
-  try { if (old) old.close(); } catch { /* already closed */ }
-  return audioContext();
+  stale = false; stuckAt = 0;
+  if (old) setTimeout(() => { try { old.close(); } catch { /* already closed */ } }, 1500);
+  const fresh = audioContext();
+  try { if (typeof dispatchEvent === "function") dispatchEvent(new Event("longcat-audio")); } catch { /* no window */ }
+  return fresh;
+}
+
+/* Healing, on every touch. Play-test, 2026-11-14 (a second recording): the home page had no sound at all, and
+   turning the music off and on did nothing. Resuming is not always enough on an iPhone: after the microphone has
+   been used, or when something else took the sound, the context can stay stuck, or say it runs and play nothing.
+   A fresh context is what brings sound back, so one is made, inside the touch:
+     - when a take has just ended (the microphone was open: markAudioStale), and
+     - when the context was already found not running at an earlier touch, and resuming did not help.
+   Never while a take holds the sound (holdAudio): its microphone is wired to the context. */
+let stale = false, held = false, stuckAt = 0;
+export const markAudioStale = () => { stale = true; };
+export const holdAudio = (on) => { held = !!on; };
+function heal() {
+  if (!ac || held) return kick(true);
+  if (stale) return void rebuildAudio();
+  if (ac.state === "running" || ac.state === "closed") { stuckAt = 0; return; }
+  if (stuckAt && Date.now() - stuckAt > 600) return void rebuildAudio();
+  if (!stuckAt) stuckAt = Date.now();
+  kick(true);
 }
 export function setMuted(m) { muted = !!m; }
 
