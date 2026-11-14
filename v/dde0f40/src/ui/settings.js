@@ -1,6 +1,6 @@
 /* Settings: cat kinds per body part (free, a setting, never progress), the singer's range and key, sound,
    the monthly letter, and the dev tools the designer uses to walk the whole month quickly. */
-import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES } from "./app.js";
+import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
 import * as St from "../state.js";
 import { catKindSvg } from "../art/index.js";
 import { CAT_KINDS, ZONES, timeById, garmentName } from "../content.js";
@@ -30,7 +30,7 @@ function render(root) {
       </div>
       <div class="card">
         <h4>Sound and letters</h4>
-        <label class="toggle"><input type="checkbox" data-a="sound" ${S.settings.sound ? "checked" : ""}><span>Game sound (demo hum, effects)</span></label>
+        <label class="toggle"><input type="checkbox" data-a="sound" ${S.settings.sound ? "checked" : ""}><span>Game sound (demo hum, metronome, effects)</span></label>
         <label class="toggle"><input type="checkbox" data-a="letters" ${S.settings.letterNotify ? "checked" : ""}><span>Notify me when the monthly letter arrives</span></label>
         <p class="muted small">Only the monthly letter, never daily reminders. Phone notifications aren’t built yet: for now the letter only shows up in the game.</p>
       </div>
@@ -70,6 +70,8 @@ export function openDev() {
     <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
     <h4>Voice source</h4>
     <div class="radio">${VOICE_MODES.map((v) => `<label><input type="radio" name="voice" value="${v.id}" ${S.dev.voice === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Cat body on short notes (trying options)</h4>
+    <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.lane || "trace") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Progress (${esc(place)} · ${time ? timeById(time).name : "all nine"}${nt ? ` · ${garmentName(nt.time, nt.zone)}, step ${nt.step}` : ""})</h4>
     <div class="grid2">
       <button class="btn small" data-a="one" ${nt ? "" : "disabled"}>Count this step</button>
@@ -86,6 +88,7 @@ export function openDev() {
     </div>
     <h4>Last five takes</h4>
     <p class="muted small mono">${last || "none yet"}</p>`, { tall: true });
+  $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.lane = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=voice]", el).forEach((i) => (i.onchange = () => { S.dev.voice = i.value; app.save(); toast(`Voice source: ${VOICE_MODES.find((v) => v.id === i.value).name}`); }));
   const done = (out, name = "") => {
     app.save();

@@ -1,6 +1,6 @@
 /* One take as a small state machine, free of DOM and audio so tests can run it with synthetic voices.
    Flow (same as the meme-games prototypes): the phrase is hummed once in tempo (demo), four count-in beats,
-   then the player sings it unaccompanied past a playhead. The caller drives it with step(dt, frame).
+   then the player sings it past a playhead with only the metronome under them. The caller drives it with step(dt, frame).
    While singing, every frame goes to the old Vocal Gym note matcher (./match.js); a note's verdict arrives
    once the singer is past it. */
 import { gradeTake, heardShare } from "./grade.js";
@@ -18,10 +18,26 @@ export function skipDemo(T) {
   if (T.phase === "demo") enterCount(T);
   return T;
 }
-function enterCount(T) {
+function enterCount(T, over = 0) {
   T.phase = "count";
-  T.t = -T.plan.beat * T.plan.countBeats;
+  T.t = -T.plan.beat * T.plan.countBeats + over;
   T.beatIdx = -1;
+}
+
+/* The demo ends on a beat, so the metronome runs on into the count-in without a hiccup. */
+export const demoEnd = (P) => Math.ceil((P.total + DEMO_TAIL) / P.beat - 1e-6) * P.beat;
+
+/* Metronome beats that fall in [from, to) of the take's own clock: every beat while the phrase is hummed, and
+   every beat from the first downbeat to the end of the last note while it is sung. The four count-in beats
+   are not here: they are the count-in clicks. accent = a note starts on this beat. */
+export function ticksIn(T, from, to) {
+  const P = T.plan, out = [];
+  if (T.phase === "done") return out;
+  const end = T.phase === "demo" ? demoEnd(P) - 1e-6 : P.total;
+  for (let k = Math.max(0, Math.ceil(from / P.beat - 1e-6)); k * P.beat < to && k * P.beat <= end; k++) {
+    out.push({ t: k * P.beat, accent: k % P.perNote === 0 && k / P.perNote < P.notes.length });
+  }
+  return out;
 }
 
 export function currentIndex(T) {
@@ -39,7 +55,7 @@ export function stepTake(T, dt, frame = null) {
   T.t += dt;
   if (T.phase === "demo") {
     for (let i = T.demoIdx + 1; i < P.notes.length && T.t >= P.notes[i].s; i++) { T.demoIdx = i; ev.push({ type: "demo-note", i }); }
-    if (T.t >= P.total + DEMO_TAIL) { enterCount(T); ev.push({ type: "phase", phase: "count" }); }
+    if (T.t >= demoEnd(P)) { enterCount(T, T.t - demoEnd(P)); ev.push({ type: "phase", phase: "count" }); }
     return ev;
   }
   if (T.phase === "count") {

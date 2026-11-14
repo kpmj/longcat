@@ -7,6 +7,7 @@ import { DRILLS, STEPS } from "../content.js";
 export const DEFAULT_RANGE = { low: 48, high: 67 }; // C3–G4: used until the range finder has run
 const EDGE = 2; // keep this many semitones away from the edges the singer reached
 export const GAP = 0.08; // silence between notes, seconds
+export const BEAT_AIM = 0.66; // seconds: notes up to about a second apart get one beat each, longer ones get beats in between
 
 /* rootShift moves the drill relative to the standard position; speed < 1 is slower; noteFrac < 1 leaves
    more air between notes. Night keeps the standard voicing threshold until real-voice tests (doc section 6). */
@@ -73,6 +74,9 @@ export function planTake({ step, time = "golden", range, nudge = 0, seed = "" })
     s += slot + GAP;
   });
   const total = notes[notes.length - 1].e;
-  const beat = Math.min(0.75, Math.max(0.5, slot));
-  return { step, drill, time, root, notes, total, beat, countBeats: 4 };
+  /* The metronome: every note starts on a beat. Notes up to about a second apart get one beat each; slower
+     drills get two or more beats to a note. The count-in runs at the same beat, so the tempo never changes
+     within a take. */
+  const every = slot + GAP, perNote = Math.max(1, Math.round(every / BEAT_AIM));
+  return { step, drill, time, root, notes, total, beat: every / perNote, perNote, countBeats: 4 };
 }

@@ -43,7 +43,7 @@ export function freshSave(real = new Date()) {
     takes: [],
     months: {},
     letters: [],
-    dev: { dayOffset: 0, voice: "mic", panel: false },
+    dev: { dayOffset: 0, voice: "mic", panel: false, lane: "trace" },
   };
 }
 

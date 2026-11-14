@@ -8,11 +8,11 @@
 import { app, show, sheet, closeSheet, esc, $, readVoice, prepareVoice, touchVoice } from "./app.js";
 import * as St from "../state.js";
 import { planTake } from "../drill/drills.js";
-import { createTake, stepTake, skipDemo, currentIndex, DEMO_LEAD } from "../drill/take.js";
+import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from "../drill/take.js";
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { onNote, leapt } from "./lane-body.js";
-import { hum, click, placeSfx, noteCue, chime, audioContext, now } from "../audio/synth.js";
+import { laneShape } from "./lane-body.js";
+import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now } from "../audio/synth.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
@@ -79,7 +79,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const plan = planTake({ step: ctx.step, time: ctx.time, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0 };
+  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1 };
   R.geo = geometry(plan);
   R.headY = yOf(plan.notes[0].midi);
   const grid = laneGrid(plan);
@@ -118,7 +118,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
 }
 
 /* LATER (decision 5, fix 4 of the list): the judge humming along under the singer is not built; the
-   take stays "hear it once, then sing unaccompanied". See docs/later.md. */
+   take stays "hear it once, then sing with only the metronome". See docs/later.md. */
 async function start() {
   const ok = await prepareVoice();
   if (!R) return;
@@ -149,8 +149,8 @@ function stop() {
 }
 
 function onCount() {
-  const b = R.plan.beat, t = clock();
-  for (let k = 0; k < R.plan.countBeats; k++) click(t + k * b, k === R.plan.countBeats - 1);
+  const b = R.plan.beat, t = clock() - (R.T.t + b * R.plan.countBeats); // when the count-in began, on the beat
+  for (let k = 0; k < R.plan.countBeats; k++) click(Math.max(clock(), t + k * b), k === R.plan.countBeats - 1);
   const skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
 }
@@ -270,6 +270,20 @@ function onNoteEnd(i, r) {
   }
 }
 
+/* The metronome runs under the demo and the singing (the designer, 2026-11-13: "add the 節拍器 in the background the
+   whole time so when the user is doing their part they can follow it"). Beats are booked a little ahead on
+   the audio clock so they do not wobble with the frame rate; R.ticked is the last moment already booked. */
+const TICK_AHEAD = 0.12;
+function bookTicks() {
+  const T = R.T, at = clock();
+  for (const k of ticksIn(T, T.t, T.t + TICK_AHEAD)) {
+    const when = at + (k.t - T.t);
+    if (when <= R.ticked + 0.02) continue;
+    tick(when, k.accent);
+    R.ticked = when;
+  }
+}
+
 function loop() {
   if (!R) return;
   const t = clock();
@@ -286,6 +300,7 @@ export function frame(dt) {
   const i = currentIndex(T);
   const v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
   const evs = stepTake(T, dt, v);
+  if (T.phase !== "done") bookTicks();
   for (const e of evs) {
     if (e.type === "demo-note") hint("Listen first", `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
@@ -321,21 +336,7 @@ function draw(v, dt = 1 / 60) {
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
   /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
-  const on = onNote(voiced, P.notes, T.matcher.latency);
-  const threads = [[]], subs = [[]];
-  let tail = null, firstOn = true, prev = null;
-  voiced.forEach((f, i) => {
-    const x = PLAY_X - (T.t - f.t) * PXS;
-    if (f.midi == null) { if (threads[threads.length - 1].length) threads.push([]); if (subs[subs.length - 1].length) subs.push([]); return; }
-    if (x < -30) { if (on[i]) firstOn = false; return; }
-    const p = { x, y: yOf(f.midi) };
-    threads[threads.length - 1].push(p);
-    if (!on[i] || (prev != null && leapt(prev, f.midi))) { if (subs[subs.length - 1].length) subs.push([]); }
-    prev = on[i] ? f.midi : null;
-    if (!on[i]) return;
-    if (firstOn) { tail = p; firstOn = false; } // the tail belongs to where the cat began, not to every piece
-    subs[subs.length - 1].push(p);
-  });
+  const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.lane, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
   else {
     const want = v ? yOf(v.midi) : guideY(T.t);
@@ -343,15 +344,17 @@ function draw(v, dt = 1 / 60) {
     R.headY += (want - R.headY) * k;
   }
   markGrid(v ? v.midi : null);
-  const lastThread = threads[threads.length - 1], last = subs[subs.length - 1];
-  if (v && lastThread.length) lastThread.push({ x: PLAY_X, y: R.headY });
-  if (v && last.length && on[on.length - 1]) last.push({ x: PLAY_X, y: R.headY });
+  /* join the newest end of the line to the head, which eases after the voice */
+  const sung = voiced.length && voiced[voiced.length - 1].midi != null;
+  const joinTo = (list) => { const l = list[list.length - 1]; if (v && sung && l && PLAY_X - l[l.length - 1].x < 4) l.push({ x: PLAY_X, y: R.headY }); };
+  joinTo(shape.threads);
+  if (shape.headJoins) joinTo(shape.subs);
   let mood = R.mood;
   if (T.t > R.moodUntil) mood = T.phase === "sing" && v ? "sing" : "listen";
   const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
   const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 1.5 : 0;
   const el = document.getElementById("lane-cat");
-  if (el) el.innerHTML = laneCatSvg({ subs: subs.filter((s) => s.length > 1), threads: threads.filter((s) => s.length > 1), head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
+  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
 }
 
 function wireTouch(root) {

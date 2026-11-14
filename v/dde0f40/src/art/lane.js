@@ -54,16 +54,18 @@ export function laneCatSvg(o = {}) {
   let out = "";
   if (o.tail && typeof o.tail === "object") out += tailFor(animal, kind, num(o.tail.x), num(o.tail.y), dir, w * .45, pal, mood === "sleep");
   /* the thread: the sung line where the voice is between notes, drawn under the body */
-  if (td) out += `<path d="${td}" stroke="${pal.furDk}" stroke-width="${f(w * .4)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5"/>`
-    + `<path d="${td}" stroke="${pal.fur}" stroke-width="${f(w * .26)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  const tw = o.slim ? w * .52 : w * .26; // slim: the thread is the whole body, so it is drawn wider
+  if (td) out += `<path d="${td}" stroke="${pal.furDk}" stroke-width="${f(tw + w * .14)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5"/>`
+    + `<path d="${td}" stroke="${pal.fur}" stroke-width="${f(tw)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
+    + (o.slim ? `<path d="${td}" transform="translate(0 ${f(tw * .22)})" stroke="${pal.belly}" stroke-width="${f(tw * .3)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".85"/>` : "");
   if (d) {
     out += `<path d="${d}" stroke="${pal.furDk}" stroke-width="${f(w + 5)}" stroke-dasharray="0 ${f(w * .42)}" stroke-linecap="round" fill="none" opacity=".45"/>`
       + `<path d="${d}" stroke="${pal.fur}" stroke-width="${f(w + 3)}" stroke-dasharray="0 ${f(w * .42)}" stroke-linecap="round" fill="none"/>`
       + `<path d="${d}" stroke="${pal.fur}" stroke-width="${f(w)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
       + `<path d="${d}" transform="translate(0 ${f(w * .26)})" stroke="${pal.belly}" stroke-width="${f(w * .34)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".85"/>`;
     const D = DASH[look.pattern];
-    if (look.pattern === "twotone") out += `<path d="${d}" stroke="${pal.furDk}" stroke-width="${f(w * .9)}" stroke-dasharray="0 ${f(len / 2)} ${f(len + 1)}" stroke-linecap="round" fill="none"/>`;
-    else if (D) out += `<path d="${d}" stroke="${pal[D[3]]}" stroke-width="${f(w * D[2])}" stroke-dasharray="${f(D[0] * sc)} ${f(D[1] * sc)}" stroke-dashoffset="${f(-D[1] * sc / 2)}"${D[4] ? ` stroke-linecap="round"` : ""} fill="none" opacity="${animal === "cat" ? .9 : .5}"/>`;
+    if (look.pattern === "twotone") out += `<path d="${d}" stroke="${pal.furDk}" stroke-width="${f(w * .9)}" stroke-dasharray="0 ${f(len / 2)} ${f(len + 1)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+    else if (D) out += `<path d="${d}" stroke="${pal[D[3]]}" stroke-width="${f(w * D[2])}" stroke-dasharray="${f(D[0] * sc)} ${f(D[1] * sc)}" stroke-dashoffset="${f(-D[1] * sc / 2)}"${D[4] ? ` stroke-linecap="round"` : ""} stroke-linejoin="round" fill="none" opacity="${animal === "cat" ? .9 : .5}"/>`;
   }
   if (head) out += `<g transform="translate(${f(head.x)} ${f(head.y)})">${cachedHead(animal, kind, mood, look.palette, dir, Math.round(.85 * sc * 100) / 100)}</g>`;
   const marks = Array.isArray(o.marks) ? o.marks : [];

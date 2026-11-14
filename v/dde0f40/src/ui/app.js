@@ -97,6 +97,13 @@ export function toast(msg) {
    god = sings everything in tune, human = a little flat and shaky (still on the note), wobbly = drifts a
    semitone either side (close), tufty = one clear miss per phrase, half = stops halfway, silent = nothing,
    touch = press the lane. */
+/* How the lane draws the cat when the notes are short: options being tried (see lane-body.js). */
+export const LANE_MODES = [
+  { id: "trace", name: "As now: fat on notes, thread between" },
+  { id: "snap", name: "A · Body lies flat on the note line" },
+  { id: "slim", name: "B · One slim body, no fat pieces" },
+  { id: "stub", name: "C · Short cat: head and a little body" },
+];
 export const VOICE_MODES = [
   { id: "mic", name: "Microphone" },
   { id: "god", name: "Auto-singer, in tune" },
