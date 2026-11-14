@@ -1,19 +1,18 @@
 /* Longcat · mobile-first, one column, no-scroll screens with sheets and a five-tab dock.
    Warm paper palette carried over from the design board the designer approved. */
 :root {
-  --paper: #f6efe0; --card: #fffdf6; --ink: #42382f; --muted: #8a7a68; --line: #e5d9c2; --soft: #efe5d0;
-  --brand: #1d3150; --brand-ink: #fffaf0; --leaf: #5c7d4b; --amber: #d08a2c; --coral: #d85a30;
+  /* The print's paper, its ink and its two colours (pages-restyle board, 2026-11-14). One look, whatever the phone
+     is set to: the game does not follow the dark theme. --key is the dark line round every surface, --flat the
+     shadow under it; --sky, --sky2 and --sun are set on <body> for the place and time (app.js). */
+  --paper: #f6efe0; --card: #fffdf6; --ink: #3e2a3c; --muted: #7a6470; --line: rgba(62, 42, 60, .2); --soft: #ebe1cc;
+  --brand: #1d3150; --brand-ink: #f6efe0; --leaf: #4f7040; --amber: #c9862a; --coral: #bf452d;
+  --key: #3e2a3c; --flat: 0 2.5px 0 rgba(62, 42, 60, .38);
+  --sky: #d27a58; --sky2: #e8a468; --sun: #fdf3cf;
   --morning: #f3e6d6; --golden: #f6cf8f; --night: #2d394d;
   --display: "Fredoka", ui-rounded, "Nunito", system-ui, sans-serif;
   --body: "Nunito", "Helvetica Neue", system-ui, sans-serif;
   --dock-h: 66px;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #201a15; --card: #2b241e; --ink: #f0e7d8; --muted: #bba891; --line: #423830; --soft: #352c24;
-    --brand: #a9bfe8; --brand-ink: #0f1a30; --leaf: #93b57e; --amber: #e5a955; --coral: #f0906c; color-scheme: dark;
-  }
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -541,6 +540,120 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .dock-sing:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
 .dock .tab { font-size: 11px; }
 /* on Home the row is the lower half of the paper sheet */
-body.is-home .dock { --card: #f6efe0; --soft: #e9dfc8; --muted: #7a6470; --brand: #1d3150; background: #f6efe0; border-top-color: transparent; color: #3e2a3c; }
+body.is-home .dock { border-top-color: transparent; }
 /* no Dev button over the picture: the dev tools are at the bottom of Settings (the designer, 2026-11-14) */
 body.is-home .dev-fab { display: none; }
+
+/* ================= the paper look on every page (pages-restyle board, the designer approved 2026-11-14) =================
+   A picture, and a sheet of the print's paper over it. One surface (paper, a dark key line, a flat shadow like a
+   second block), one primary colour (the indigo of the title block, for the one main action), vermilion only as
+   a mark (progress, a sung step, "Here"). The game no longer follows the phone's dark theme: these colours are
+   its own. Every tab opens with a strip of the sky of the place and time the player is in (--sky, --sky2, --sun,
+   set on <body> by app.js) and its content sits on a sheet that rises over it. */
+body { background: var(--sky, var(--soft)); }
+
+/* ---------- buttons and small controls ---------- */
+:root .btn { background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); color: var(--ink); border-radius: 14px; }
+:root .btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); box-shadow: 0 3px 0 rgba(10, 16, 30, .45); }
+:root .btn.ghost { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); color: var(--ink); min-height: 40px; border-radius: 20px; font-size: 14px; }
+:root .btn.small { box-shadow: 0 2px 0 rgba(62, 42, 60, .3); border-radius: 12px; }
+:root .btn.danger { background: var(--coral); color: #fff8ea; border-color: var(--coral); box-shadow: 0 3px 0 rgba(120, 40, 24, .45); }
+:root .btn.danger-line { color: var(--coral); border-color: var(--coral); box-shadow: 0 2px 0 rgba(191, 69, 45, .3); }
+:root .btn:active:not(:disabled) { transform: translateY(1px); }
+:root .icon-btn { width: 44px; height: 44px; background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); color: var(--ink); }
+:root .toggle input { accent-color: var(--brand); width: 22px; height: 22px; }
+
+/* ---------- the bottom row: the same paper on every tab ---------- */
+:root .dock { background: var(--paper); color: var(--ink); border-top: 1.5px solid var(--line); }
+:root body.is-home .dock { border-top-color: transparent; }
+:root .dock-sing { box-shadow: 0 3px 0 rgba(10, 16, 30, .45); }
+:root .dock-sing:active { box-shadow: 0 2px 0 rgba(10, 16, 30, .45); }
+
+/* ---------- sheets ---------- */
+:root .scrim { background: rgba(30, 20, 30, .42); }
+:root .sheet { background: var(--paper); color: var(--ink); border-top: 1.5px solid var(--key); border-radius: 22px 22px 0 0; box-shadow: 0 -2.5px 0 rgba(62, 42, 60, .2); }
+:root .grab { background: rgba(62, 42, 60, .25); height: 4px; }
+:root .seg { background: var(--card); border: 1.5px solid var(--line); }
+:root .learn, :root .learned { background: var(--card); border: 1.5px solid var(--line); }
+/* the Garment sheet: twelve steps drawn like Home's cells; a sung step wears the same vermilion as a filled tick */
+:root .ghead svg { background: var(--card); border: 1.5px solid var(--line); }
+:root .gstep { background: var(--card); border: 1.5px solid var(--line); color: var(--ink); }
+:root .gstep.done { background: var(--card); border-color: var(--line); color: var(--ink); box-shadow: inset 0 4px 0 var(--coral); padding-top: 8px; }
+:root .gstep.done span { color: var(--muted); }
+:root .gstep.fold { background: var(--card); border: 1.5px dashed var(--coral); color: var(--ink); box-shadow: none; }
+:root .gstep.fold span { color: var(--muted); }
+:root .gstep.next { border-color: var(--key); box-shadow: var(--flat); }
+:root .gstep.todo { opacity: .5; }
+:root .pick { background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); }
+:root .time-g { background: var(--card); border: 1.5px solid var(--line); }
+
+/* ---------- a tab: a strip of sky, then the sheet ---------- */
+:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar {
+  position: relative; flex: none; align-items: flex-start;
+  margin: calc(-8px - env(safe-area-inset-top, 0px)) calc(-1 * max(14px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(14px, env(safe-area-inset-left, 0px)));
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 34px max(14px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(var(--sky) 0 48%, var(--sky2) 48%);
+}
+/* the sun (or the moon) of that time of day, going down behind the sheet */
+:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar::before { content: ""; position: absolute; right: 44px; bottom: -6px; width: 58px; height: 58px; border-radius: 50%; background: var(--sun); }
+:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--paper); border-top: 1.5px solid var(--key); border-radius: 22px 22px 0 0; }
+:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar > * { position: relative; z-index: 1; }
+/* the page's name in the same pill as Home's place and time */
+:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar .where { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 16px; flex-wrap: nowrap; }
+:root .topbar .place { font-size: 17px; }
+:root .topbar .where .time-chip { background: none; border: 0; padding: 0; font-size: 13.5px; color: var(--muted); }
+:root :is(.screen-settings, .screen-drills) > .topbar .where { padding-left: 4px; }
+:root :is(.screen-settings, .screen-drills) > .topbar .icon-btn { border: 0; box-shadow: none; background: none; width: 36px; height: 36px; }
+:root .screen-album > .topbar > :last-child:not(.where) { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+
+/* the two-way switch */
+:root .segs { background: var(--soft); border: 1.5px solid var(--key); border-radius: 22px; padding: 3px; }
+:root .segs button { border-radius: 18px; color: var(--muted); min-height: 36px; }
+:root .segs button.on { background: var(--brand); color: var(--brand-ink); box-shadow: none; }
+
+/* ---------- Wardrobe ---------- */
+:root .scene-wrap.small { background: var(--soft); border: 1.5px solid var(--line); border-radius: 16px; }
+:root :is(.wcell, .coat) { background: var(--card); border: 1.5px solid var(--line); }
+:root :is(.wcell, .coat).on { background: var(--card); border-color: var(--key); box-shadow: var(--flat); }
+:root .wcell svg { max-width: 44px; }
+:root .bgchip { border: 1.5px solid var(--line); }
+:root .bgchip.on { outline: none; border-color: var(--key); box-shadow: var(--flat); }
+:root .nap .seg { border: 1.5px solid var(--line); }
+/* Sing is the one indigo button on a tab. Taking the postcard is a paper button on the picture it takes, which
+   also gives the three rows room: the page no longer runs under the bottom row. */
+.scene-pic { position: relative; flex: none; }
+.screen-wardrobe .scene-pic .scene-wrap.small { height: min(86vw, 330px, calc(100dvh - 500px)); }
+:root .scene-pic .shoot { position: absolute; right: 12px; bottom: 12px; min-height: 42px; padding: 0 16px; font-size: 14.5px; border-radius: 21px; background: var(--paper); }
+.scene-pic .shoot::before { content: "◉"; font-size: 13px; color: var(--coral); }
+
+/* ---------- Album and Places ---------- */
+:root .month { background: none; border: 0; border-radius: 0; padding: 2px 0 8px; }
+:root .pc { border-radius: 4px; border: 1.5px solid var(--key); box-shadow: 0 3px 0 rgba(62, 42, 60, .3); background: var(--card); }
+:root .pc.empty { border: 1.5px dashed rgba(62, 42, 60, .3); box-shadow: none; background: none; color: var(--muted); }
+:root .place-row { background: var(--card); border: 1.5px solid var(--line); border-radius: 16px; }
+:root .place-row.here { border-color: var(--key); box-shadow: var(--flat); }
+:root .badge { background: var(--coral); color: #fff8ea; border-radius: 6px; }
+
+/* ---------- Settings: groups on the sheet, divided by a line, not boxes in a box ---------- */
+:root .settings .card { background: none; border: 0; border-bottom: 1.5px solid var(--line); border-radius: 0; padding: 2px 2px 14px; }
+:root .settings .card:last-of-type { border-bottom: 0; }
+:root .settings .card h4 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-family: var(--body); font-weight: 800; }
+
+/* ---------- singing: the notes are the page; the judge is a strip at the bottom ----------
+   the designer, 2026-11-14: "不太需要顯現出這麼多評審的身體，會讓唱 drill 分心，應該 focus 在 drill 的 UI". The note area
+   takes all the height the screen has left (take-screen.js sizes its picture to fit); the judge keeps the room
+   it had as a card. (A first version cut it to a strip with only the face; the designer, later the same day: "現在只剩一顆頭
+   感覺有點太小了", the judge's body can show as much as in the original.) */
+:root .screen.screen-take { padding: 0; gap: 0; background: var(--paper); }
+:root .take-head { flex: none; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px)); }
+:root .lane-wrap { flex: 1 1 auto; min-height: 0; border-radius: 0; border: 0; border-top: 1.5px solid var(--line); border-bottom: 1.5px solid var(--key); background: var(--card); box-shadow: 0 2.5px 0 rgba(62, 42, 60, .2); z-index: 1; }
+:root .lane { display: block; width: 100%; height: 100%; }
+:root .lane-bg { fill: #fffdf6; }
+:root .gl-gutter { fill: #f6efe0; }
+/* about a third of the screen, and never taller than the whole bust at this width (300 : 220): head, shoulders
+   and the cats on them, as the card used to show */
+:root .judge-wrap { flex: none; height: clamp(150px, 32dvh, 73.3vw); min-height: 0; max-height: 300px; border-radius: 0; }
+:root .combo-chip { top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); border-radius: 8px; border: 1.5px solid var(--key); box-shadow: var(--flat); }
+:root .take-foot { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); z-index: 2; min-height: 0; pointer-events: none; }
+:root .take-foot .btn { pointer-events: auto; }
+:root .wake b { background: var(--brand); color: var(--brand-ink); }

@@ -25,7 +25,10 @@ import { tip, hideTip } from "./tips.js";
 import { micBlocked } from "./onboarding.js";
 import { openMicTest } from "./settings.js";
 
-const W = 390, H = 300, PLAY_X = 118, PXS = 92, MID_Y = 150, GUTTER = 40;
+const W = 390, PLAY_X = 118, PXS = 92, GUTTER = 40;
+/* The lane's height, in its own units (it is always W wide): set for each take from the room the screen has, so
+   the notes get the page and the judge a strip (the designer, 2026-11-14). 300 is the least, as it was when it was fixed. */
+let H = 300, MID_Y = 150;
 const HOP = 0.16; // the demo head leaves for the next note this long before it arrives, and lands on time
 /* The head moves like a soft spring: it starts gently and settles without overshooting (time based, so
    phones keep up). Within a note it follows the voice quickly; landing on another note it takes a little
@@ -42,7 +45,10 @@ const wall = () => performance.now() / 1000;
 function geometry(plan) {
   const ms = plan.notes.map((n) => n.midi);
   const lo = Math.min(...ms), hi = Math.max(...ms);
-  const step = Math.max(9, Math.min(18, 170 / Math.max(4, hi - lo)));
+  /* A taller lane gives wide drills (an octave, a climb) more room per semitone. The cap stays near what it was:
+     the head follows the real voice, and more pixels per semitone would make every waver look bigger (the designer asked
+     for a calmer head, 2026-11-14). */
+  const step = Math.max(9, Math.min(20, (H - 130) / Math.max(4, hi - lo)));
   return { mid: (lo + hi) / 2, step };
 }
 const yRaw = (m) => MID_Y - (m - R.geo.mid) * R.geo.step;
@@ -125,9 +131,6 @@ function render(root, { ctx, retake = false, outcome = null }) {
   const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
-  R.geo = geometry(plan);
-  R.headY = yOf(plan.notes[0].midi);
-  const grid = laneGrid(plan);
   R.wearing = ["scarf", "top", "bottom"].map((z) => St.garmentSpec(S, ctx.place, ctx.time, z));
   const name = garmentName(ctx.time, ctx.zone);
   root.innerHTML = `
@@ -135,7 +138,22 @@ function render(root, { ctx, retake = false, outcome = null }) {
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
       <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
     </header>
-    <div class="lane-wrap">
+    <div class="lane-wrap" id="lane-wrap"></div>
+    <div class="judge-wrap" id="judge-wrap">
+      <div class="judge-art" id="judge"></div>
+      <div class="fx" id="fx" aria-hidden="true"></div>
+      <div class="combo-chip" id="combo" hidden></div>
+    </div>
+    <div class="take-foot"><button class="btn ghost" data-act="skip">Skip the demo</button></div>`;
+  /* the note area takes the height the screen has left between the header and the judge's strip: its picture is
+     drawn to that shape, at least as tall as it used to be */
+  const wrap = $("#lane-wrap", root), box = wrap.getBoundingClientRect();
+  H = box.width > 0 && box.height > 0 ? Math.max(300, Math.min(720, Math.round((W * box.height) / box.width))) : 300;
+  MID_Y = H / 2;
+  R.geo = geometry(plan);
+  R.headY = yOf(plan.notes[0].midi);
+  const grid = laneGrid(plan);
+  wrap.innerHTML = `
       <svg class="lane" id="lane" viewBox="0 0 ${W} ${H}" aria-label="Lane">
         <rect width="${W}" height="${H}" class="lane-bg"/>
         <g id="lane-grid">${grid.lines}</g>
@@ -146,14 +164,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
       </svg>
       <div class="countdown" id="countdown" aria-live="polite"></div>
       <div class="say" id="say" hidden></div>
-      <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>
-    </div>
-    <div class="judge-wrap" id="judge-wrap">
-      <div class="judge-art" id="judge"></div>
-      <div class="fx" id="fx" aria-hidden="true"></div>
-      <div class="combo-chip" id="combo" hidden></div>
-    </div>
-    <div class="take-foot"><button class="btn ghost" data-act="skip">Skip the demo</button></div>`;
+      <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>`;
   $("[data-act=close]", root).onclick = () => { stop(); show("home"); };
   $("[data-act=skip]", root).onclick = () => { if (R.started && R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
   wireTouch(root);
@@ -330,7 +341,10 @@ function hint(big, small = "", level = "") {
 
 function paintJudge() {
   const el = document.getElementById("judge");
-  if (el) el.innerHTML = judgeBustSvg({ face: R.face, place: R.ctx.place, time: R.ctx.time, garments: R.wearing, rainbow: R.tier >= 3 });
+  if (!el) return;
+  el.innerHTML = judgeBustSvg({ face: R.face, place: R.ctx.place, time: R.ctx.time, garments: R.wearing, rainbow: R.tier >= 3 });
+  /* the judge is a short wide strip now: fill it with the middle of the bust, the face */
+  el.firstElementChild?.setAttribute("preserveAspectRatio", "xMidYMid slice");
 }
 
 function setFace(face, hold = 0.9) {

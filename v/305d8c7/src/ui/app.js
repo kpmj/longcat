@@ -1,6 +1,7 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
-import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen, currentTime, nextTake, beatPending } from "../state.js";
+import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen, currentTime, nextTake, beatPending, homeScene } from "../state.js";
+import { sceneParts } from "../art/index.js";
 import { tapSound, stopMusic } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
@@ -44,6 +45,23 @@ const DOCK = [
   { id: "album", label: "Album", icon: "▤" },
   { id: "places", label: "Places", icon: "✉" },
 ];
+/* The sky of where the player is, for the strip at the top of every tab: the colour at the top of that place's
+   picture at that time of day (the art's L.up), a paler band under it, and the sun or moon of that time. */
+const SKY = { morning: ["#5d7ea3", "#c9553f"], golden: ["#d27a58", "#fdf3cf"], night: ["#0e1a30", "#f2ecd6"] };
+const skyOf = {};
+const mixHex = (a, b, t) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t).toString(16).padStart(2, "0")).join("");
+function paintSky() {
+  const S = app.S, place = S.here, time = currentTime(S, place) || "night", k = `${place}.${time}`;
+  if (!skyOf[k]) {
+    let up = null;
+    try { up = sceneParts(homeScene(S, place, app.real(), { animate: false })).L.up; } catch { /* a place with no picture yet */ }
+    const sky = /^#[0-9a-fA-F]{6}$/.test(up || "") ? up : SKY[time][0];
+    skyOf[k] = [sky, mixHex(sky, "#f6efe0", 0.32), SKY[time][1]];
+  }
+  const [sky, sky2, sun] = skyOf[k], st = document.body.style;
+  st.setProperty("--sky", sky); st.setProperty("--sky2", sky2); st.setProperty("--sun", sun);
+}
+
 export function show(name, props = {}) {
   const prev = app.screen;
   if (prev && app.screens[prev]?.leave) app.screens[prev].leave();
@@ -62,6 +80,7 @@ export function show(name, props = {}) {
   $("#dock").hidden = !!full;
   document.body.classList.toggle("is-full", !!full);
   document.body.classList.toggle("is-home", name === "home");
+  paintSky();
   app.badge = { places: unreadLetters(app.S, app.real()).length > 0, wardrobe: newIn(app.S, "wardrobe"), album: newIn(app.S, "album") };
   renderDock();
   def?.render(root, props);
