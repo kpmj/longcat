@@ -126,25 +126,18 @@ export function garmentLayers(g, ctx = {}) {
   const hind = zone === "hat" ? "" : pawPair(first.x + hd * 12, first.y + w * .5, hd, .9, pal);
   const hx = end.x + hd * Z.headDx, hy = end.y + Z.headDy - num(ctx.headLift);
   const tailG = ctx.animate && !tucked ? `<g class="lc-tail ${hd > 0 ? "lc-tail-l" : "lc-tail-r"}">${tail}</g>` : tail;
-  /* The step just sung. the designer, 2026-11-14: the cream light under the piece "seems a little distracting"; of five
-     options (docs/design/longcat-cat-highlight-options.html) the designer chose B + C. Nothing is drawn under the cat any
-     more. B: the whole cat hops once and three print sparkles twinkle for two seconds, then nothing stays (only
-     when animated). C: a small red seal, 新, is stamped beside the piece and stays until the picture is drawn
-     again, clear of the cat's own head. */
+  /* The step just sung. the designer, 2026-11-14: the wide cream light under the piece "seems a little distracting"; of five
+     options (docs/design/longcat-cat-highlight-options.html) the designer chose B with a little of A.
+     B: the whole cat hops once and three print sparkles twinkle for two seconds, then they are gone (only when
+     animated). A, a little: a thin warm rim hugs the new piece and the cat's head, a few pixels wide, amber and not
+     white, and it does not pulse. It is there for anyone who missed the two seconds; the page fades it at the next
+     touch (class lc-rim-off on the picture's parent, see home.js). */
   let mark = "";
   if (newSeg) {
-    const a = newSeg[0], b = newSeg[newSeg.length - 1], mid = newSeg[newSeg.length >> 1];
-    const away = (p, d) => { const L = Math.hypot(p.x - 200, p.y - 250) || 1; return { x: p.x + (p.x - 200) / L * d, y: p.y + (p.y - 250) / L * d }; };
-    const T = Math.hypot(b.x - a.x, b.y - a.y) || 1, reach = w * .5 + 17;
-    const free = p => Math.hypot(p.x - hx, p.y - hy) >= 31 && p.x > 14 && p.x < 386 && p.y > 14 && p.y < 486;
-    /* the newest step ends at the cat's head, so its seal goes just in front of the face, where the eye already is;
-       a step sung again lies somewhere along the body, and its seal sits beside its middle */
-    const spots = glow === steps ? [{ x: hx + (b.x - a.x) / T * 31, y: hy - 17 }, away(b, reach), away(mid, reach), away(a, reach)] : [away(mid, reach), away(a, reach), away(b, reach)];
-    const s = spots.find(free) || spots[0];
-    const seal = `<g transform="translate(${f(s.x)} ${f(s.y)}) rotate(-5)"><g${ctx.animate ? ` class="lc-new-seal"` : ""}><rect x="-9.5" y="-9.5" width="19" height="19" rx="1.5" fill="#bf452d"/><text y="5.4" text-anchor="middle" font-family="'Songti TC','Noto Serif TC','PMingLiU',serif" font-weight="900" font-size="14.5" fill="#efe6d2">新</text></g></g>`;
+    const a = newSeg[0], b = newSeg[newSeg.length - 1], mid = newSeg[newSeg.length >> 1], T = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    under += `<g class="lc-new-rim" opacity=".9"><path d="${dPath(newSeg)}" stroke="#f3bd4e" stroke-width="${f(w + 11)}" fill="none" stroke-linecap="round"/>${glow === steps ? `<ellipse cx="${f(hx)}" cy="${f(hy + 2)}" rx="24" ry="20.5" fill="#f3bd4e"/>` : ""}</g>`;
     const star = (x, y, k, i) => `<g transform="translate(${f(x)} ${f(y)})"><path class="lc-new-spark" style="animation-delay:${f(.25 + i * .18)}s" d="M0 ${f(-7 * k)}Q${f(1.2 * k)} ${f(-1.2 * k)} ${f(7 * k)} 0Q${f(1.2 * k)} ${f(1.2 * k)} 0 ${f(7 * k)}Q${f(-1.2 * k)} ${f(1.2 * k)} ${f(-7 * k)} 0Q${f(-1.2 * k)} ${f(-1.2 * k)} 0 ${f(-7 * k)}Z" fill="#efe6d2" stroke="${KEY}" stroke-width="1.3" stroke-linejoin="round"/></g>`;
-    const stars = ctx.animate ? star(hx - (b.x - a.x) / T * 6, hy - 32, 1, 0) + star(a.x - hd * 6, a.y - w * .5 - 14, .8, 1) + star(mid.x, mid.y - w * .5 - 20, 1.15, 2) : "";
-    mark = stars + seal;
+    if (ctx.animate) mark = star(hx + (b.x - a.x) / T * 29, hy - 15, 1, 0) + star(a.x - hd * 6, a.y - w * .5 - 14, .8, 1) + star(mid.x, mid.y - w * .5 - 20, 1.15, 2);
   }
   const hop = s => (newSeg && ctx.animate ? `<g class="lc-hop">${s}</g>` : s);
   const beat = { hat: 1.5, top: 7, scarf: 12.5 }[zone];
@@ -154,7 +147,7 @@ export function garmentLayers(g, ctx = {}) {
   /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */
   const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${hop(`<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>`)}${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
   const artAll = trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills;
-  return { under, art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy } };
+  return { under: hop(under), art: ctx.animate ? `<g data-tap="cat" data-group="g-${zone}">${hop(artAll)}</g>` : artAll, head: head + mark, headAt: { x: hx, y: hy } };
 }
 
 /* a dashed guide over the steps not yet worn (from `from` to 12) */
