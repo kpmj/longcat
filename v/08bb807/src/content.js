@@ -54,7 +54,7 @@ export const GUESTS = {
    What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
    climb (the designer, 2026-11-14: more reps on the harder steps, the 10th and 11th): the drill is sung in rounds, each
    `by` semitones higher, up to the top of the singer's range (`most` rounds up at the most), then back down.
-   Steps 10 and 11 of every ladder climb; drills.js climbRounds places the rounds. `most` is set so a take stays
+   Steps 10 to 12 of every ladder climb; drills.js climbRounds places the rounds. `most` is set so a take stays
    under about 40 seconds for a wide range: long rounds climb fewer times. */
 export const DRILL = {
   long: { name: "Long note", rel: [0], dur: 2.4 },
@@ -85,17 +85,22 @@ export const DRILL = {
   octdown: { name: "Octave down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
   arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
   penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
-  free5: { name: "Short melody", free: { notes: 5, top: 2 }, dur: 0.9 },
-  free: { name: "Free melody", free: { notes: 8, top: 7 }, dur: 0.8 },
+  /* the last step of every garment (the designer, 2026-11-14: "把 free drill 完全拿掉，換成剛剛討論的進階 drill"): the designer's own
+     example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Three rounds at the most
+     (up, top, back), since one round is already long. */
+  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75, climb: { by: 2, most: 1, back: true } },
 };
+/* drills that no longer exist, for saves and drill-editor edits made before they went: the made-up melodies of
+   step 12 became the climbing five */
+const DRILL_ALIAS = { free: "climb5", free5: "climb5" };
 for (const [id, d] of Object.entries(DRILL)) d.id = id;
 
 /* One ladder of twelve steps per time of day: a month runs Land, then Move, then Carry. Each ladder climbs by
-   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); the last step is a small melody. */
+   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); steps 10 to 12 climb, and the last step is the climbing five. */
 export const LADDERS = {
-  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "fiveup", "thirdback", "free5"],
-  golden: ["arp", "arpdown", "fivedown", "arpud", "skips", "fifth", "five", "fast5", "scaleup", "arp8", "octave", "free"],
-  night: ["twodown", "hold4", "down3", "arc", "fivedown", "arpdown", "hold5", "penta", "five", "scaledown", "octdown", "free"],
+  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "fiveup", "thirdback", "climb5"],
+  golden: ["arp", "arpdown", "fivedown", "arpud", "skips", "fifth", "five", "fast5", "scaleup", "arp8", "octave", "climb5"],
+  night: ["twodown", "hold4", "down3", "arc", "fivedown", "arpdown", "hold5", "penta", "five", "scaledown", "octdown", "climb5"],
 };
 export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
 export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
@@ -103,7 +108,7 @@ export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(
 /* The drill editor (dev tools, the designer 2026-11-14): the designer moves and edits drills on the phone. The edits live in the
    save (S.dev.drillEdits) and are laid over the tables above when the game starts and after every change, so
    everything that reads DRILL / LADDERS sees them. Shape: { ladders: { morning: [twelve ids] }, drills: { id:
-   { name, rel, dur, climb? } | { name, free: { notes, top }, dur } } }. Nothing here is graded differently. */
+   { name, rel, dur, climb? } } }. Nothing here is graded differently. */
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const BUILT_IN = { drills: clone(DRILL), ladders: clone(LADDERS) };
 export const builtInDrills = () => clone(BUILT_IN);
@@ -122,11 +127,6 @@ export function cleanDrill(d) {
   const L = DRILL_LIMITS, dur = Number(d.dur);
   if (!(dur >= L.durMin && dur <= L.durMax)) return null;
   const name = String(d.name ?? "").trim().slice(0, 40) || "Drill";
-  if (d.free) {
-    const notes = Math.round(Number(d.free.notes)), top = Math.round(Number(d.free.top));
-    if (!(notes >= 2 && notes <= 12 && top >= 1 && top <= 7)) return null;
-    return { name, free: { notes, top }, dur };
-  }
   if (!Array.isArray(d.rel) || !d.rel.length || d.rel.length > L.notes) return null;
   const rel = d.rel.map(Number);
   if (rel.some((r) => !Number.isInteger(r) || r < L.low || r > L.high)) return null;
@@ -143,9 +143,10 @@ export function cleanDrillEdits(e) {
     if (c) out.drills[id] = c;
   }
   const known = (id) => typeof id === "string" && (id in out.drills || id in BUILT_IN.drills);
+  const now = (id) => (typeof id === "string" && !(id in out.drills) && DRILL_ALIAS[id]) || id; // a drill that was removed
   for (const t of TIME_IDS) {
     const l = e.ladders?.[t];
-    if (Array.isArray(l) && l.length === STEPS && l.every(known)) out.ladders[t] = [...l];
+    if (Array.isArray(l) && l.length === STEPS && l.map(now).every(known)) out.ladders[t] = l.map(now);
   }
   return out;
 }

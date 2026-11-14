@@ -1,20 +1,25 @@
-/* Home: the judge where it is now, wearing what has been sung, the cushion on the next step (the baskets of
-   earlier cats are no longer shown here, see state.js homeScene); one button to sing, one line under it. The three progress chips open the Garment sheet.
-   Settings is the gear in the top bar. Nothing here counts streaks or shows a score. */
+/* Home: the judge where it is now, wearing what has been sung, the cushion on the next step. The picture fills the
+   whole screen (full-screen home board, 2026-11-14, the designer chose 丁); the controls float on it in one paper surface:
+   place and time, music and settings at the top, and a small row of three cats' progress on the sheet that also
+   holds the bottom row. Sing itself is the middle button of that bottom row, on every tab (app.js renderDock).
+   A cat's cell opens its Garment sheet. Nothing here counts streaks or shows a score. */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } from "./app.js";
 import { startMusic, stopMusic } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
-import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
+import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
+import { homeArt, catIconSvg } from "./home-art.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
 
-function garmentChips(S, place, time) {
+/* Three cats, one line each: the cat (its coat is the garment's own), twelve ticks, a number. The cat stands for
+   the garment's name; the name is read out to a screen reader. */
+function garmentCells(S, place, time) {
   return ZONES.map((z) => {
-    const n = St.progress(S, place, time, z.id), active = St.activeZone(S, place) === z.id;
-    const label = n >= STEPS ? "done" : n > 0 || active ? `${n} / ${STEPS}` : "not yet";
-    return `<button class="gchip${active ? " on" : ""}${n >= STEPS ? " done" : ""}" data-zone="${z.id}" aria-label="${esc(garmentName(time, z.id))}, ${z.name}, ${label}"><b>${esc(garmentName(time, z.id))}</b><span>${z.name} · ${label}</span><i style="--p:${Math.round((n / STEPS) * 100)}%"></i></button>`;
+    const n = St.progress(S, place, time, z.id), active = St.activeZone(S, place) === z.id, done = n >= STEPS;
+    const ticks = Array.from({ length: STEPS }, (_, i) => `<i${i < n ? ' class="on"' : ""}></i>`).join("");
+    return `<button class="home-cell${active ? " on" : ""}${done ? " done" : ""}" data-zone="${z.id}" aria-label="${esc(garmentName(time, z.id))}, ${done ? "done" : `${n} of ${STEPS}`}${active ? ", the one being sung" : ""}">${catIconSvg(St.garmentSpec(S, place, time, z.id), z.id, time)}<span class="home-ticks" aria-hidden="true">${ticks}</span><small aria-hidden="true">${done ? "✓" : n}</small></button>`;
   }).join("");
 }
 
@@ -27,6 +32,22 @@ function sceneFor(S, place, real) {
   if (glow) o.garments = o.garments.map((g) => (g.zone === glow.zone ? { ...g, glow: glow.step } : g));
   return o;
 }
+
+/* The picture is laid out for the screen it is on: the judge sits between the top row and the tray, whatever
+   the phone's height (home-art.js). It is drawn again when the window changes size. */
+let layout = null, resizeT = 0;
+function paintArt(root = document.getElementById("screen")) {
+  const el = root && $("#home-scene", root);
+  if (!el || app.screen !== "home") return;
+  const S = app.S, r = root.getBoundingClientRect(), W = r.width || 375, H = r.height || 780;
+  const top = $(".home-top", root)?.getBoundingClientRect(), tray = $(".home-tray", root)?.getBoundingClientRect();
+  const art = homeArt(sceneFor(S, S.here, app.real()), W, H, top && top.height ? top.bottom - r.top : 92, tray && tray.height ? tray.top - r.top : H - 120);
+  layout = art.layout;
+  el.innerHTML = art.svg;
+  wireTaps(el); // pat a cat or the judge, tap the yuzu, the lamp, the sun
+}
+function onResize() { clearTimeout(resizeT); resizeT = setTimeout(() => paintArt(), 120); }
+function leaveHome() { stopMusic(); window.removeEventListener("resize", onResize); clearTimeout(resizeT); }
 
 let warnedSave = false;
 const musicOn = (S) => S.settings.music !== false && S.settings.sound !== false;
@@ -41,30 +62,27 @@ export function renderHome(root) {
   const nt = St.nextTake(S, place);
   const unread = St.unreadLetters(S, real).filter((x) => x !== "onsen" || !S.onboarded);
   const special = St.specialFor(place);
-  let cta, sub;
+  /* all nine on: the row says so; the middle button of the bottom row turns into Mix outfits */
+  let note = "";
   if (!time) {
     const nx = St.nextOpening(S, real);
-    cta = `<div class="row"><button class="btn primary" data-go="wardrobe">Mix outfits</button><button class="btn" data-go="places">Other places</button></div>`;
-    sub = nx ? `All nine are on. The next letter comes on ${St.monthLabel(nx.date)}.` : "All nine are on. Every place is open.";
-  } else if (!nt) {
-    cta = `<button class="btn primary big" data-act="pick">Pick a garment</button>`;
-    sub = `${timeById(time).name}: three garments. You choose which goes on first.`;
-  } else {
-    cta = `<button class="btn primary big" data-act="sing">Sing step ${nt.step} · ${esc(nt.drill.name)}</button>`;
-    sub = `${esc(garmentName(time, nt.zone))} · ${nt.step - 1} of ${STEPS} · sing “${sylFor(nt.zone, time)}”`;
+    note = nx ? `All nine are on. The next letter comes on ${St.monthLabel(nx.date)}.` : "All nine are on. Every place is open.";
   }
+  const T = timeById(shownTime);
   root.innerHTML = `
-    <header class="topbar">
-      <div class="where"><span class="place">${esc(p.name)}</span><button class="time-chip t-${shownTime}" data-act="times" aria-label="${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)}. Open the times of day">${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)} <i aria-hidden="true">▾</i></button>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
-      <div class="tools">${unread.length ? `<button class="letter-btn" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="icon-btn music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button><button class="icon-btn gear" data-go="settings" aria-label="Settings">⚙</button></div>
+    <div class="home-art" id="home-scene"></div>
+    <header class="home-top">
+      <button class="home-pill paper" data-act="times" aria-label="${esc(p.name)}, ${esc(T.name)}. Open the times of day"><b>${esc(p.name)}</b><span>${esc(T.name)}</span><i aria-hidden="true">▾</i></button>
+      <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button><button class="home-ico paper" data-go="settings" aria-label="Settings">⚙</button></div>
     </header>
-    <div class="scene-wrap" id="home-scene">${sceneSvg(sceneFor(S, place, real))}</div>
-    <section class="home-panel">
-      <div class="gchips">${garmentChips(S, place, shownTime)}</div>
-      ${cta}
-      <p class="sub">${sub}</p>
+    ${special ? '<span class="home-special paper">New Year month</span>' : ""}
+    <section class="home-tray paper" aria-label="The three garments">
+      ${note ? `<p class="home-note">${esc(note)}</p>` : ""}
+      <div class="home-cells">${garmentCells(S, place, shownTime)}</div>
     </section>`;
-  wireTaps($("#home-scene", root)); // pat a cat or the judge, tap the yuzu, the lamp, the sun
+  paintArt(root);
+  window.removeEventListener("resize", onResize);
+  window.addEventListener("resize", onResize);
   /* the home page has its own quiet music, in the colour of the time of day; it stops when the page is left */
   if (musicOn(S)) startMusic(shownTime); else stopMusic();
   /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
@@ -81,13 +99,9 @@ export function renderHome(root) {
     if (on) { rebuildAudio(); startMusic(shownTime); } else stopMusic();
     toast(on ? "Music on" : "Music off");
   };
-  const sing = $("[data-act=sing]", root);
-  if (sing) sing.onclick = () => show("take", { ctx: St.nextTake(S, place) });
-  const pick = $("[data-act=pick]", root);
-  if (pick) pick.onclick = () => openPicker();
   $$("[data-go]", root).forEach((b) => (b.onclick = () => show(b.dataset.go)));
   /* a card says which cat it is about: that cat hops once as its sheet opens */
-  $$(".gchip", root).forEach((b) => (b.onclick = () => { hopCat($("#home-scene", root), b.dataset.zone); openGarment(b.dataset.zone); }));
+  $$(".home-cell", root).forEach((b) => (b.onclick = () => { hopCat($("#home-scene", root), b.dataset.zone); openGarment(b.dataset.zone); }));
   /* the garment just put on (Wear this one, the picker): its cat hops once */
   if (app.props.picked) setTimeout(() => app.screen === "home" && hopCat(document.getElementById("home-scene"), app.props.picked), 250);
   const tc = $("[data-act=times]", root);
@@ -104,7 +118,8 @@ function homeTips(root, nt, unread) {
   if (app.screen !== "home" || document.querySelector("#sheet-root:not([hidden])")) return;
   const S = app.S, scene = $("#home-scene", root);
   if (!scene) return;
-  const at = (zone, step) => { const pt = stepPoint(zone, step); return { x: pt.x / 400, y: (pt.y / 500) * scene.getBoundingClientRect().height }; };
+  /* a step of a garment, as a place on the screen: across (0 to 1) and down (px) the picture */
+  const at = (zone, step) => { const pt = stepPoint(zone, step), px = layout ? layout.toPx(pt.x, pt.y) : { x: pt.x, y: pt.y }; return { x: px.x / Math.max(1, scene.getBoundingClientRect().width), y: px.y }; };
   const glow = app.props.glow;
   if (glow && St.takesAt(S, S.here) === 1) {
     const left = STEPS - glow.step, name = garmentName(St.currentTime(S, S.here) || "morning", glow.zone).toLowerCase();
@@ -232,4 +247,4 @@ function askRedo(place, time, zone, step) {
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
 
-app.screens.home = { render: renderHome, openPicker, openGarment, leave: stopMusic };
+app.screens.home = { render: renderHome, openPicker, openGarment, leave: leaveHome };

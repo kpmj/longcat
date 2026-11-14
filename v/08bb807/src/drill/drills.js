@@ -22,31 +22,6 @@ export function drillForStep(step, time = "golden") {
   return drillAt(time, step);
 }
 
-/* A small deterministic PRNG so the free melody is the same every time a given step is sung (retakes too). */
-export function seeded(seedText) {
-  let h = 2166136261;
-  for (const ch of String(seedText)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return () => {
-    h += 0x6d2b79f5;
-    let t = h;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const SCALE = [0, 2, 4, 5, 7, 9, 11, 12];
-/* notes = how many; top = the highest scale degree it may reach (2 = within a third, 7 = the octave) */
-export function freeMelody(seedText, { notes = 8, top = 7 } = {}) {
-  const rnd = seeded(seedText);
-  const out = [0];
-  let k = 0;
-  for (let j = 1; j < notes; j++) {
-    k = Math.max(0, Math.min(top, k + [-2, -1, -1, 1, 1, 2][Math.floor(rnd() * 6)]));
-    out.push(SCALE[k]);
-  }
-  return out;
-}
 
 /* The part of the range a phrase may use: EDGE semitones inside what the singer reached. */
 function bounds(range) {
@@ -97,11 +72,11 @@ export const COUNT_BEATS = 5;
 export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null }) {
   const drill = given || drillForStep(step, time); // `drill` is for the dev drill editor: hear a drill before it is saved
   const fl = FLAVOURS[time] || FLAVOURS.golden;
-  const rel = drill.free ? freeMelody(seed || drill.id, drill.free) : drill.rel;
+  const rel = drill.rel;
   const low = Math.min(...rel), span = Math.max(...rel) - low;
   /* rootFor places the lowest note of the phrase; a phrase that dips below its first note is lifted to fit */
   const base = rootFor(range, span, { centred: fl.centred, nudge });
-  const climb = drill.climb && !drill.free ? climbRounds(range, span, base, drill.climb, nudge) : { start: base, shifts: [0], up: 0 };
+  const climb = drill.climb ? climbRounds(range, span, base, drill.climb, nudge) : { start: base, shifts: [0], up: 0 };
   const root = climb.start - low;
   /* the cat's sound: from the zone, or from the seed "place.time.zone" when no zone is given */
   const syl = sylFor(zone || String(seed).split(".")[2], time);

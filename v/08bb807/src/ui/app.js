@@ -1,6 +1,6 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
-import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen } from "../state.js";
+import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen, currentTime, nextTake, beatPending } from "../state.js";
 import { tapSound } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
@@ -59,6 +59,7 @@ export function show(name, props = {}) {
   const full = def?.fullscreen;
   $("#dock").hidden = !!full;
   document.body.classList.toggle("is-full", !!full);
+  document.body.classList.toggle("is-home", name === "home");
   app.badge = { places: unreadLetters(app.S, app.real()).length > 0, wardrobe: newIn(app.S, "wardrobe"), album: newIn(app.S, "album") };
   renderDock();
   def?.render(root, props);
@@ -66,10 +67,23 @@ export function show(name, props = {}) {
 }
 export const refresh = () => show(app.screen, app.props);
 
+/* The bottom row: two tabs, Sing, two tabs (full-screen home board, 2026-11-14). Sing is the same button on every
+   tab and starts the next step from wherever it is pressed. With no garment chosen yet it says Pick and goes to the
+   picker on Home; with all nine on it says Mix and opens the Wardrobe. */
+function singButton() {
+  const S = app.S, place = S.here;
+  if (!currentTime(S, place)) return { big: "Mix", small: "outfits", label: "Mix outfits", go: () => app.screen !== "wardrobe" && show("wardrobe") };
+  const nt = nextTake(S, place);
+  if (!nt) return { big: "Pick", small: "a garment", label: "Pick a garment", go: () => (app.screen === "home" ? app.screens.home.openPicker() : show("home")) };
+  return { big: "Sing", small: `step ${nt.step}`, label: `Sing step ${nt.step}, ${nt.drill.name}`, go: () => (beatPending(S, place) ? show("home") : show("take", { ctx: nextTake(S, place) })) };
+}
 function renderDock() {
   const d = $("#dock");
-  d.innerHTML = DOCK.map((t) => `<button class="tab${app.screen === t.id ? " on" : ""}" data-tab="${t.id}" aria-label="${t.label}"><span class="ti" aria-hidden="true">${t.icon}</span><span>${t.label}</span>${app.badge?.[t.id] ? '<i class="dot" aria-label="something new"></i>' : ""}</button>`).join("");
+  const tab = (t) => `<button class="tab${app.screen === t.id ? " on" : ""}" data-tab="${t.id}" aria-label="${t.label}"${app.screen === t.id ? ' aria-current="page"' : ""}><span class="ti" aria-hidden="true">${t.icon}</span><span>${t.label}</span>${app.badge?.[t.id] ? '<i class="dot" aria-label="something new"></i>' : ""}</button>`;
+  const sing = singButton();
+  d.innerHTML = `${DOCK.slice(0, 2).map(tab).join("")}<button class="dock-sing" data-act="sing" aria-label="${esc(sing.label)}"><b>${sing.big}</b><span>${esc(sing.small)}</span></button>${DOCK.slice(2).map(tab).join("")}`;
   $$(".tab", d).forEach((b) => (b.onclick = () => show(b.dataset.tab)));
+  $(".dock-sing", d).onclick = () => sing.go();
 }
 
 /* ---------- sheets and toasts ---------- */
