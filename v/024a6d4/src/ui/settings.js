@@ -4,10 +4,11 @@
 import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
 import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
-import { ZONES, timeById, garmentName } from "../content.js";
+import { ZONES, timeById, garmentName, sylFor } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
-import { setMuted, hum, audioContext, now } from "../audio/synth.js";
+import { setMuted, hum, audioContext, now, demoNote, audioState } from "../audio/synth.js";
+import { DEMO_VOICES } from "../audio/demo-voices.js";
 import { openMic, closeMic, readMic, micReady } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
@@ -115,11 +116,14 @@ export function openDev() {
   const last = S.takes.slice(-5).reverse().map((t) => `${t.date} ${t.time}.${t.zone} step ${t.step}${t.retake ? " again" : ""}: ${t.counted ? "counted" : "not counted"} · voiced ${t.voiced ?? "–"}`).join("<br>");
   const el = sheet(`
     <h3>Dev tools</h3>
-    <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
+    <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · sound ${audioState()} · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
     <h4>Voice source</h4>
     <div class="radio">${VOICE_MODES.map((v) => `<label><input type="radio" name="voice" value="${v.id}" ${S.dev.voice === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Cat body on short notes</h4>
     <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.shortBody || "snap") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Demo voice</h4>
+    <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "cat") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
     <h4>Progress (${esc(place)} · ${time ? timeById(time).name : "all nine"}${nt ? ` · ${garmentName(nt.time, nt.zone)}, step ${nt.step}` : ""})</h4>
     <div class="grid2">
       <button class="btn small" data-a="one" ${nt ? "" : "disabled"}>Count this step</button>
@@ -147,6 +151,9 @@ export function openDev() {
     try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into the chat."); }
     catch { ta.hidden = false; ta.value = text; ta.focus(); ta.select(); toast("Select all and copy."); }
   };
+  $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
+  const hearDemo = () => { audioContext(); const m = firstNote(S).midi; [0, 2, 4, 2, 0].forEach((d, k) => demoNote(S.dev.demoVoice, now() + 0.08 + k * 0.6, m + d, 0.52, sylFor("scarf", St.currentTime(S, place) || "morning"))); };
+  el.querySelector("[data-a=hear-demo]").onclick = hearDemo;
   $$("input[name=lane]", el).forEach((i) => (i.onchange = () => { S.dev.shortBody = i.value; app.save(); toast(`Short notes: ${LANE_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=voice]", el).forEach((i) => (i.onchange = () => { S.dev.voice = i.value; app.save(); toast(`Voice source: ${VOICE_MODES.find((v) => v.id === i.value).name}`); }));
   const done = (out, name = "") => {

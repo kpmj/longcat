@@ -28,6 +28,7 @@ function sceneFor(S, place, real) {
 }
 
 let warnedSave = false;
+const musicOn = (S) => S.settings.music !== false && S.settings.sound !== false;
 
 export function renderHome(root) {
   const S = app.S, real = app.real();
@@ -54,7 +55,7 @@ export function renderHome(root) {
   root.innerHTML = `
     <header class="topbar">
       <div class="where"><span class="place">${esc(p.name)}</span><button class="time-chip t-${shownTime}" data-act="times" aria-label="${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)}. Open the times of day">${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)} <i aria-hidden="true">▾</i></button>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
-      <div class="tools">${unread.length ? `<button class="letter-btn" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="icon-btn gear" data-go="settings" aria-label="Settings">⚙</button></div>
+      <div class="tools">${unread.length ? `<button class="letter-btn" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="icon-btn music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button><button class="icon-btn gear" data-go="settings" aria-label="Settings">⚙</button></div>
     </header>
     <div class="scene-wrap" id="home-scene">${sceneSvg(sceneFor(S, place, real))}</div>
     <section class="home-panel">
@@ -64,7 +65,19 @@ export function renderHome(root) {
     </section>`;
   wireTaps($("#home-scene", root)); // pat a cat or the judge, tap the yuzu, the lamp, the sun
   /* the home page has its own quiet music, in the colour of the time of day; it stops when the page is left */
-  if (S.settings.music !== false && S.settings.sound !== false) startMusic(shownTime); else stopMusic();
+  if (musicOn(S)) startMusic(shownTime); else stopMusic();
+  /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
+  const mb = $("[data-act=music]", root);
+  if (mb) mb.onclick = () => {
+    if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
+    S.settings.music = S.settings.music === false;
+    app.save();
+    const on = musicOn(S);
+    mb.classList.toggle("off", !on);
+    mb.setAttribute("aria-pressed", String(on));
+    if (on) startMusic(shownTime); else stopMusic();
+    toast(on ? "Music on" : "Music off");
+  };
   const sing = $("[data-act=sing]", root);
   if (sing) sing.onclick = () => show("take", { ctx: St.nextTake(S, place) });
   const pick = $("[data-act=pick]", root);

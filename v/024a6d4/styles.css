@@ -448,4 +448,15 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .say b { font-family: var(--display); font-weight: 600; font-size: 76px; line-height: 1; color: #4a3222; }
 .say span { font-size: 13px; font-weight: 700; color: #8a7a68; }
 
+/* the music button on home: a struck-through note when the music is off */
+.icon-btn.music { position: relative; font-size: 18px; }
+.icon-btn.music.off { color: var(--muted); }
+.icon-btn.music.off::after { content: ""; position: absolute; left: 9px; right: 9px; top: 50%; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+
+/* the phone paused the sound: one tap over the lane turns it back on */
+.wake { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+  background: rgba(253, 246, 232, .9); color: #4a3222; font: inherit; }
+.wake b { font-family: var(--display); font-weight: 600; font-size: 22px; padding: 12px 20px; border-radius: 999px; background: #a898dc; color: #1c1630; }
+.wake span { font-size: 13px; font-weight: 700; color: #8a7a68; }
+
 .pitchlog { width: 100%; height: 120px; font: 11px/1.3 ui-monospace, Menlo, monospace; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: inherit; }

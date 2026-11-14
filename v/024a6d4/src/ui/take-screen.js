@@ -13,9 +13,10 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { sing, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
+import { demoNote, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
+import { demoVoice } from "../audio/demo-voices.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
@@ -33,6 +34,7 @@ const LAND = 0.065; // seconds: moving to another note (about 0.25 s to settle; 
 let R = null;
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
+const wall = () => performance.now() / 1000;
 
 function geometry(plan) {
   const ms = plan.notes.map((n) => n.midi);
@@ -120,7 +122,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
     </div>
     <div class="take-foot"><button class="btn ghost" data-act="skip">Skip the demo</button></div>`;
   $("[data-act=close]", root).onclick = () => { stop(); show("home"); };
-  $("[data-act=skip]", root).onclick = () => { if (R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
+  $("[data-act=skip]", root).onclick = () => { if (R.started && R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
   wireTouch(root);
   R.tier = comboTier(app.combo || 0);
   paintJudge();
@@ -137,21 +139,53 @@ async function start() {
   const mic = app.S.dev.voice === "mic";
   if (mic && micReady()) closeMic(); // left open by the range finder or the microphone test
   if (mic && !micGranted()) {
+    /* if the browser's question is slow to come, say what the game is waiting for */
+    const wait = setTimeout(() => R && !R.started && hint("Allow the microphone", "The demo starts right after"), 1200);
     const ok = await prepareVoice();
+    clearTimeout(wait);
     if (!R) return;
     if (!ok) return micProblem();
     closeMic();
+    hint("Listen first", "");
   } else if (!mic) await prepareVoice();
+  if (!R) return;
+  /* the phone may have paused the sound (synth.js): wake it, and if it will not wake, ask for one tap */
+  if (!(await wakeAudio()) && R) await soundAsleep();
   if (!R) return;
   await sayOnce();
   if (!R) return;
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
   /* the demo is the cat singing the phrase on its own sound */
-  R.plan.notes.forEach((n) => R.nodes.push(sing(t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
-  R.last = clock();
+  R.plan.notes.forEach((n) => R.nodes.push(demoNote(app.S.dev.demoVoice, t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
+  R.last = clock(); R.lastW = wall(); R.stall = 0;
   loop();
   setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
+}
+
+/* The sound did not wake on its own: a button over the lane, because a tap is the one thing a phone always
+   accepts. One tap resumes it; if that fails too, a fresh context is made. The take starts either way, so
+   this screen can never be a dead end. */
+function soundAsleep() {
+  /* nobody has touched the page (the test hook): nothing to tap, the take runs by the wall clock */
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return Promise.resolve();
+  return new Promise((done) => {
+    const wrap = document.querySelector(".lane-wrap");
+    if (!wrap) return done();
+    const b = document.createElement("button");
+    b.className = "wake";
+    b.innerHTML = "<b>Tap to turn the sound on</b><span>The phone paused it</span>";
+    wrap.appendChild(b);
+    hint("", "");
+    b.onclick = async () => {
+      b.disabled = true;
+      let ok = await wakeAudio(500);
+      if (!ok) { rebuildAudio(); ok = await wakeAudio(500); }
+      b.remove();
+      if (R) hint("Listen first", ok ? "" : "No sound right now");
+      done();
+    };
+  });
 }
 
 /* The first time a sound comes up, the cat says it once on its own, with the word large on the lane, before the
@@ -164,11 +198,12 @@ async function sayOnce() {
   app.save();
   const el = document.getElementById("say"), skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
-  if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>the cat says it once</span>`; el.hidden = false; }
+  const cat = demoVoice(S.dev.demoVoice).id === "cat"; // the other demo voices have no words: the word is shown, the note is played
+  if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>${cat ? "the cat says it once" : "the sound to sing"}</span>`; el.hidden = false; }
   hint("", "");
   R.saying = true;
   try { draw(null, 0); } catch { /* the lane is not ready yet */ }
-  R.nodes.push(sing(clock() + 0.12, R.plan.notes[0].midi, 0.7, syl, { fall: 3 }));
+  R.nodes.push(demoNote(S.dev.demoVoice, clock() + 0.12, R.plan.notes[0].midi, 0.7, syl, cat ? { fall: 3 } : {}));
   await new Promise((r) => setTimeout(r, 1250));
   if (!R) return;
   R.saying = false;
@@ -339,11 +374,17 @@ function bookTicks() {
   }
 }
 
+/* The take runs on the audio clock, so what is seen stays with what is heard. But that clock can stand still
+   (the phone paused the sound, see synth.js), and a take must never freeze: when the audio clock has not moved
+   for a quarter of a second, or the sound is not running, the frame's time comes from the wall clock. */
 function loop() {
   if (!R) return;
-  const t = clock();
-  const dt = Math.max(0, Math.min(0.1, t - R.last));
-  R.last = t;
+  const t = clock(), w = wall(), dw = w - R.lastW;
+  let d = t - R.last;
+  R.stall = d > 0 ? 0 : R.stall + dw;
+  if (R.stall > 0.25 || !audioRunning()) d = dw;
+  const dt = Math.max(0, Math.min(0.1, d));
+  R.last = t; R.lastW = w;
   frame(dt);
   if (R && R.T.phase !== "done") R.raf = requestAnimationFrame(loop);
 }
@@ -465,7 +506,7 @@ function resultLine(grade, mood) {
 
 function finish(grade) {
   closeMic(); // the singing is over: the result sounds play at full volume
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState() } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
@@ -546,7 +587,7 @@ app.screens.take = { render, fullscreen: true, leave: () => stop() };
 /* Test hook: step the running take by hand when animation frames are throttled. */
 export function runFrames(seconds, fps = 60) {
   for (let k = 0; k < seconds * fps && R && R.T.phase !== "done"; k++) frame(1 / fps);
-  if (R) R.last = clock();
+  if (R) { R.last = clock(); R.lastW = wall(); R.stall = 0; }
   return R ? R.T.phase : "done";
 }
 export const running = () => R;
