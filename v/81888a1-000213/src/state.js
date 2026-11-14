@@ -43,6 +43,8 @@ export function freshSave(real = new Date()) {
     takes: [],
     months: {},
     letters: [],
+    tips: [],                        // one-time tips already shown
+    marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
     dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap" },
   };
 }
@@ -57,6 +59,9 @@ export function migrate(o, real = new Date()) {
   for (const k of ["journal", "takes", "letters"]) if (!Array.isArray(S[k])) S[k] = [];
   if (!S.months || typeof S.months !== "object") S.months = {};
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
+  if (!Array.isArray(S.tips)) S.tips = [];
+  /* a save from before the dots: everything in it counts as seen */
+  if (!o.marks || typeof o.marks !== "object") S.marks = drawerCounts(S);
   return S;
 }
 
@@ -281,6 +286,20 @@ export function cardScene(S, card, extra = {}) {
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }
+/* What the album and the wardrobe hold, for the dock's "something new" dots. */
+export function drawerCounts(S) {
+  return {
+    album: allCards(S).length + Math.min(S.faces || 0, STEPS),
+    wardrobe: PLACE_IDS.reduce((n, p) => n + garmentsDone(S, p), 0),
+  };
+}
+export const newIn = (S, drawer) => drawerCounts(S)[drawer] > (S.marks?.[drawer] || 0);
+export function markSeen(S, drawer) { S.marks = { ...(S.marks || {}), [drawer]: drawerCounts(S)[drawer] }; }
+
+/* One-time tips. */
+export const tipSeen = (S, id) => S.tips.includes(id);
+export function seeTip(S, id) { if (!S.tips.includes(id)) S.tips.push(id); }
+
 export const allCards = (S) => PLACE_IDS.flatMap((p) => peek(S, p).cards || []);
 
 /* The reset beat plays once per finished time. */

@@ -1,6 +1,7 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
-import { loadSave, writeSave, freshSave, unreadLetters } from "../state.js";
+import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen } from "../state.js";
+import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
 import { VOICES } from "../drill/take.js";
@@ -10,6 +11,8 @@ export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 const storage = (() => { try { return window.localStorage; } catch { return null; } })();
+/* can this browser keep the save? (a private window may not) */
+const canSave = (() => { try { storage.setItem("longcat-probe", "1"); storage.removeItem("longcat-probe"); return true; } catch { return false; } })();
 
 export const app = {
   S: null,
@@ -19,6 +22,7 @@ export const app = {
   real: () => new Date(),
   save() { writeSave(storage, app.S); },
   reset() { app.S = freshSave(app.real()); app.save(); },
+  canSave,
 };
 
 export function boot() {
@@ -27,19 +31,21 @@ export function boot() {
   setMuted(!app.S.settings.sound);
 }
 
-/* ---------- router ---------- */
+/* ---------- router ----------
+   Four tabs, each a place in the game; Settings is behind the gear on Home (game-flow board, decision A). */
 const DOCK = [
   { id: "home", label: "Home", icon: "⌂" },
   { id: "wardrobe", label: "Wardrobe", icon: "◫" },
   { id: "album", label: "Album", icon: "▤" },
   { id: "places", label: "Places", icon: "✉" },
-  { id: "settings", label: "Settings", icon: "⚙" },
 ];
 export function show(name, props = {}) {
   const prev = app.screen;
   if (prev && app.screens[prev]?.leave) app.screens[prev].leave();
   closeSheet(true);
+  hideTip();
   app.screen = name;
+  if (name === "wardrobe" || name === "album") { markSeen(app.S, name); app.save(); }
   app.props = props;
   const root = $("#screen");
   root.className = `screen screen-${name}`;
@@ -48,7 +54,7 @@ export function show(name, props = {}) {
   const full = def?.fullscreen;
   $("#dock").hidden = !!full;
   document.body.classList.toggle("is-full", !!full);
-  app.badge = { places: unreadLetters(app.S, app.real()).length > 0 };
+  app.badge = { places: unreadLetters(app.S, app.real()).length > 0, wardrobe: newIn(app.S, "wardrobe"), album: newIn(app.S, "album") };
   renderDock();
   def?.render(root, props);
   root.scrollTop = 0;
@@ -57,7 +63,7 @@ export const refresh = () => show(app.screen, app.props);
 
 function renderDock() {
   const d = $("#dock");
-  d.innerHTML = DOCK.map((t) => `<button class="tab${app.screen === t.id ? " on" : ""}" data-tab="${t.id}" aria-label="${t.label}"><span class="ti" aria-hidden="true">${t.icon}</span><span>${t.label}</span>${t.id === "places" && app.badge?.places ? '<i class="dot"></i>' : ""}</button>`).join("");
+  d.innerHTML = DOCK.map((t) => `<button class="tab${app.screen === t.id ? " on" : ""}" data-tab="${t.id}" aria-label="${t.label}"><span class="ti" aria-hidden="true">${t.icon}</span><span>${t.label}</span>${app.badge?.[t.id] ? '<i class="dot" aria-label="something new"></i>' : ""}</button>`).join("");
   $$(".tab", d).forEach((b) => (b.onclick = () => show(b.dataset.tab)));
 }
 

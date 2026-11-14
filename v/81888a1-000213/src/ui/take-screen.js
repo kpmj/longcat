@@ -16,6 +16,9 @@ import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now } from ".
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
 import { noteName } from "../audio/pitch.js";
+import { tip, hideTip } from "./tips.js";
+import { micBlocked } from "./onboarding.js";
+import { openMicTest } from "./settings.js";
 
 const W = 390, H = 300, PLAY_X = 118, PXS = 92, MID_Y = 150, GUTTER = 40;
 const HOP = 0.16; // the demo head leaves for the next note this long before it arrives, and lands on time
@@ -128,16 +131,12 @@ async function start() {
   R.plan.notes.forEach((n) => R.nodes.push(hum(t0 + n.s, n.midi, n.e - n.s)));
   R.last = clock();
   loop();
+  setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
 }
 
 function micProblem() {
-  const el = sheet(`<h3>Singing needs the microphone</h3>
-    <p class="muted">Your voice becomes pitch numbers on this device. Nothing is recorded and nothing leaves it. Allow the microphone, or use the touch voice for testing.</p>
-    <div class="row"><button class="btn primary" data-a="retry">Try again</button><button class="btn" data-a="touch">Use touch voice</button></div>
-    <button class="btn ghost" data-a="home">Home</button>`, { dismissable: false });
-  el.querySelector("[data-a=retry]").onclick = () => { closeSheet(true); show("take", app.props); };
-  el.querySelector("[data-a=touch]").onclick = () => { app.S.dev.voice = "touch"; app.save(); closeSheet(true); show("take", app.props); };
-  el.querySelector("[data-a=home]").onclick = () => { closeSheet(true); show("home"); };
+  const props = app.props;
+  micBlocked(() => show("take", props), () => show("home"));
 }
 
 function stopNodes() { R.nodes.forEach((n) => n && n.stop && n.stop()); R.nodes = []; }
@@ -153,6 +152,16 @@ function onCount() {
   for (let k = 0; k < R.plan.countBeats; k++) click(Math.max(clock(), t + k * b), k === R.plan.countBeats - 1);
   const skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
+  hideTip();
+  laneTip("line", 3500, H - 40);
+}
+
+/* a lane tip hangs under the cat's head (or under a given lane height), its arrow pointing up at the line */
+function laneTip(id, ms, laneY = null) {
+  const lane = document.getElementById("lane");
+  if (!lane || !R) return;
+  const k = lane.getBoundingClientRect().height / H;
+  tip(id, lane, { at: "below", x: PLAY_X / W, y: (laneY ?? R.headY + 18) * k + 12, ms });
 }
 
 /* Ready, 3, 2, 1 on the four count-in beats; GO on the first downbeat, as the first note reaches the line. */
@@ -305,7 +314,7 @@ export function frame(dt) {
     if (e.type === "demo-note") hint("Listen first", `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { countdown(["Ready", "3", "2", "1"][e.k] || ""); hint("", "sing as the notes reach the line"); }
-    else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.drill.syl}”`); }
+    else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.drill.syl}”`); hideTip(); laneTip("voice", 4000); }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
   }
@@ -384,6 +393,7 @@ function finish(grade) {
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
   cancelAnimationFrame(R.raf);
+  hideTip();
   const props = { ...app.props };
   const before = retake ? St.stepsOf(S, ctx.place, ctx.time, ctx.zone)[ctx.step - 1] : null;
   const out = retake ? St.retakeStep(S, ctx, grade, real) : St.recordTake(S, ctx, grade, real);
@@ -392,13 +402,19 @@ function finish(grade) {
   const name = garmentName(ctx.time, ctx.zone);
   R = null;
   if (!out.counted) {
+    /* nothing heard: it doesn't count and nothing is lost; the second time in a row, offer the microphone test */
+    app.silentRuns = (app.silentRuns || 0) + 1;
     const el = sheet(`<h3>It didn’t hear that.</h3>
       <p class="muted">${retake ? "This one doesn’t count. The step you sang before stays." : "The microphone didn’t pick up any voice. This take doesn’t count, and nothing is lost."}</p>
-      <div class="row"><button class="btn primary" data-a="again">Sing again</button><button class="btn" data-a="ok">${retake ? "Keep the first one" : "Home"}</button></div>`, { dismissable: false });
+      <div class="row"><button class="btn primary" data-a="again">Sing again</button><button class="btn" data-a="ok">${retake ? "Keep the first one" : "Home"}</button></div>
+      ${app.silentRuns >= 2 ? `<button class="btn ghost" data-a="test">Test the microphone</button>` : ""}`, { dismissable: false });
     el.querySelector("[data-a=again]").onclick = () => { closeSheet(true); show("take", props); };
     el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); retake ? accept(ctx, outcome) : show("home"); };
+    const t = el.querySelector("[data-a=test]");
+    if (t) t.onclick = () => { closeSheet(true); show("home"); openMicTest(); };
     return;
   }
+  app.silentRuns = 0;
   const mood = takeMood(grade);
   let line = resultLine(grade, mood);
   if (retake && before?.tuft && !grade.tuft) line = `The fold is smoothed out. ${line}`;
@@ -409,17 +425,29 @@ function finish(grade) {
      the ten-day test. See docs/later.md. */
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   const learned = !retake && out.learned;
+  /* the legend only for the first three results; the key buttons when half the notes or more got away
+     (game-flow board, decision C: they move the same Lower / Higher as Settings) */
+  const legend = S.takes.filter((t) => t.counted).length <= 3;
+  const keyfix = grade.counts.off * 2 >= grade.notes.length;
   const el = sheet(`
-    <p class="eyebrow">${retake ? "Sung again" : "Done"}</p>
-    <h3>${esc(name)} ${ctx.step} / ${STEPS}</h3>
+    <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
     <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, kind: g.kind, animal: g.animal })}</div>
     <div class="note-dots" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${grade.notes.map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</div>
-    <p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>
-    <div class="verdict ${mood}">${faceIconSvg(takeFace(mood, learnedAll), { size: 64 })}<p class="line">${esc(line)}</p></div>
-    ${learned ? `<div class="learned">${faceIconSvg(learned.id, { size: 72 })}<div><span class="eyebrow">The judge learned</span><b>${esc(learned.name)}</b>${S.faces >= STEPS ? "<span>All twelve faces learned. From now on, a take where every note lands gets one of them.</span>" : "<span>One new face for every step of the first garment.</span>"}</div></div>` : ""}
-    <div class="row"><button class="btn primary" data-a="ok">Keep it</button><button class="btn" data-a="retake">Sing this step again</button></div>`, { dismissable: false });
+    ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
+    ${learned ? `<div class="learn">${faceIconSvg(learned.id, { size: 44 })}<p><b>New face: ${esc(learned.name)}</b><span>${S.faces >= STEPS ? "All twelve learned. A take where every note lands gets one of them now." : `Kept in the Album. ${STEPS - S.faces} more to learn.`}</span></p></div>` : ""}
+    <div class="row"><button class="btn primary" data-a="ok">Keep it</button><button class="btn" data-a="retake">Sing this step again</button></div>
+    ${keyfix ? `<p class="keyfix" id="keyfix">Felt out of reach? <button data-a="lower" ${S.settings.nudge <= -5 ? "disabled" : ""}>Lower the key</button> · <button data-a="higher" ${S.settings.nudge >= 5 ? "disabled" : ""}>Raise the key</button></p>` : ""}`, { dismissable: false });
   el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); accept(ctx, outcome); };
   el.querySelector("[data-a=retake]").onclick = () => { closeSheet(true); show("take", { ctx, retake: true, outcome }); };
+  const key = (d) => {
+    S.settings.nudge = Math.max(-5, Math.min(5, S.settings.nudge + d));
+    app.save();
+    const n = S.settings.nudge;
+    el.querySelector("#keyfix").textContent = `Key ${n > 0 ? "+" : ""}${n}: every drill is a semitone ${d < 0 ? "lower" : "higher"} now. Change it back in Settings.`;
+  };
+  el.querySelector("[data-a=lower]")?.addEventListener("click", () => key(-1));
+  el.querySelector("[data-a=higher]")?.addEventListener("click", () => key(1));
+  if (grade.counts.off > 0) setTimeout(() => tip("fold", el.querySelector(".seg"), { at: "below", x: 0.6 }), 380);
 }
 
 /* After "Keep it": a finished time plays the reset beat; a finished garment asks for the next one. */
@@ -427,7 +455,8 @@ function accept(ctx, outcome) {
   if (outcome?.timeDone) return show("beat", { place: ctx.place, time: outcome.timeDone });
   if (outcome?.garmentDone) {
     show("home", { glow: { zone: ctx.zone, step: ctx.step }, noAutoPick: true });
-    return setTimeout(() => app.screens.home.openPicker?.({ after: `The ${garmentName(ctx.time, ctx.zone).toLowerCase()} is on.` }), 600);
+    const nm = garmentName(ctx.time, ctx.zone).toLowerCase();
+    return setTimeout(() => app.screens.home.openPicker?.({ after: `The ${nm} is on.`, tipText: `The ${nm} is in the Wardrobe now. Other places are open too.` }), 600);
   }
   show("home", { glow: { zone: ctx.zone, step: ctx.step } });
 }

@@ -6,6 +6,7 @@ import * as St from "../state.js";
 import { sceneSvg, postcardSvg } from "../art/index.js";
 import { TIME_IDS, ZONE_IDS, timeById, placeById } from "../content.js";
 import { chime } from "../audio/synth.js";
+import { openCard } from "./album.js";
 
 function render(root, { place, time }) {
   const S = app.S, real = app.real();
@@ -42,7 +43,8 @@ function render(root, { place, time }) {
         <p class="beat-cap">${esc(b.cap)}</p>
         ${b.end ? `<p class="muted">The wardrobe is all open: mix the nine any way you like and take postcards. ${nx ? `The next place opens on ${St.monthLabel(nx.date)}. ` : ""}Old months never close.</p>` : ""}
         <div class="dots">${beats.map((_, i) => `<i class="${i === k ? "on" : ""}"></i>`).join("")}</div>
-        ${b.end ? `<div class="row"><button class="btn primary" data-a="wardrobe">Wardrobe</button><button class="btn" data-a="home">Home</button></div>`
+        ${b.card ? `<button class="btn ghost tight" data-a="share">Share or save this postcard</button>` : ""}
+        ${b.end ? `<div class="row"><button class="btn primary" data-a="wardrobe">Mix outfits</button><button class="btn" data-a="home">Home</button></div>`
           : `<button class="btn primary" data-a="next">${k === beats.length - 1 ? "Which one first?" : "Next"}</button>`}
       </div>`;
     const go = (screen) => { St.markBeatSeen(S, place, time); app.save(); show(screen); };
@@ -54,6 +56,8 @@ function render(root, { place, time }) {
       show("home", { noAutoPick: true });
       setTimeout(() => app.screens.home.openPicker?.({ after: `${timeById(next).name} is here.` }), 400);
     };
+    const sh = $("[data-a=share]", root);
+    if (sh) sh.onclick = () => openCard(card);
     const w = $("[data-a=wardrobe]", root);
     if (w) w.onclick = () => go("wardrobe");
     const h = $("[data-a=home]", root);

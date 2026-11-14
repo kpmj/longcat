@@ -4,7 +4,7 @@
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
 import * as St from "../state.js";
 import { placeThumbSvg, letterSvg, guestSvg } from "../art/index.js";
-import { PLACES, NEWYEAR_LETTER, placeById } from "../content.js";
+import { PLACES, NEWYEAR_LETTER, TIMES, ZONES, STEPS, placeById } from "../content.js";
 
 function render(root) {
   const S = app.S, real = app.real();
@@ -31,8 +31,27 @@ function render(root) {
   $$(".place-row[data-place]", root).forEach((b) => (b.onclick = () => {
     const place = b.dataset.place;
     if (unread.includes(place)) return openLetter(place);
-    travel(place);
+    openPlace(place);
   }));
+}
+
+/* The place sheet: what the nine garments there look like, then Go there (game-flow board, change 11). */
+function openPlace(place) {
+  const S = app.S, p = placeById(place), here = S.here === place;
+  const canGo = place === "onsen" || St.canTravel(S), visited = St.takesAt(S, place) > 0;
+  const nine = TIMES.map((t) => `<span class="wlab">${esc(t.name)}</span>${ZONES.map((z) => {
+    const n = St.progress(S, place, t.id, z.id);
+    return `<i class="${n >= STEPS ? "done" : n > 0 ? "part" : ""}">${n >= STEPS ? "✓" : n > 0 ? `${n}/${STEPS}` : ""}</i>`;
+  }).join("")}`).join("");
+  const el = sheet(`
+    <div class="phead"><span class="thumb">${placeThumbSvg(place, St.currentTime(S, place) || "night")}</span><div><p class="eyebrow">Opened ${St.monthLabel(St.placeOpenKey(PLACES.findIndex((x) => x.id === place)))}</p><h3>${esc(p.name)}</h3><p class="muted small">${esc(p.seat[0].toUpperCase() + p.seat.slice(1))}.</p></div></div>
+    <div class="nine"><span></span>${ZONES.map((z) => `<b>${z.name}</b>`).join("")}${nine}</div>
+    <p class="muted small">${here ? "The judge is sitting here now." : !visited ? `Nothing sung here yet. ${esc(placeById(S.here).name)} keeps everything while you’re away.` : `${St.garmentsDone(S, place)} of 9 garments. Everything here waits for you.`}</p>
+    ${!canGo ? `<p class="muted small">Finish your first garment at the hot spring, then you can go.</p>` : ""}
+    <div class="row">${here ? `<button class="btn primary" data-a="stay">OK</button>` : `<button class="btn primary" data-a="go" ${canGo ? "" : "disabled"}>Go there</button><button class="btn" data-a="stay">Stay here</button>`}</div>`);
+  const go = el.querySelector("[data-a=go]");
+  if (go) go.onclick = () => { closeSheet(true); travel(place); };
+  el.querySelector("[data-a=stay]").onclick = () => closeSheet();
 }
 
 function travel(place) {
