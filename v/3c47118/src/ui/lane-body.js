@@ -157,8 +157,15 @@ function eased(frames, half = 1) {
   });
 }
 
-/* How the body is drawn when the notes are short (under SHORT_NOTE seconds). Long notes always use "trace":
-   a long note is practice in holding steady, so its wobble should show.
+/* How the body is drawn when the notes are short (under SHORT_NOTE seconds). Long holds always use "trace",
+   on a smoothed line (HOLD_EASE): a long note is practice in holding steady, so a slow drift should show,
+   but not the frame-to-frame shake of the voice and the tracker.
+
+   Play-test, 2026-11-14: "now it looks more wobbly as before". The limit was 0.8 s, set when the fast drills
+   had half-second notes. The drill ladders and the metronome then gave most drills notes of 0.8 to 1.3 s,
+   which fell just over the limit and were drawn following the raw voice again. Now every drill with notes
+   under 1.4 s lies flat; only the real holds (a long note, the same note twice, two slow notes) follow the
+   voice, and they follow it smoothed.
      snap   fat pieces lie flat on the line of the note they belong to; the head and the thread show the voice.
             The game's choice for short notes (the designer, 2026-11-14, option A of
             docs/design/longcat-short-note-body-options.html): on a half-second note there is no time to read
@@ -169,7 +176,8 @@ function eased(frames, half = 1) {
    The other three stay behind the Dev panel for comparing. */
 export const BODY_MODES = ["snap", "trace", "slim", "stub"];
 export const SHORT_BODY = "snap";
-export const SHORT_NOTE = 0.8;
+export const SHORT_NOTE = 1.4;
+export const HOLD_EASE = 6; // frames either side that a long hold's line is averaged over (about 0.2 s in all)
 export const STUB_SECONDS = 0.32;
 export const SNAP_TO_LINE = 0.5; // semitones: a level this close to the note is drawn on the note's own line
 export const isShort = (notes) => notes.length > 1 && notes[0].e - notes[0].s < SHORT_NOTE;
@@ -178,8 +186,8 @@ export const isShort = (notes) => notes.length > 1 && notes[0].e - notes[0].s < 
    { subs, threads, tail, slim, headJoins }: polylines for laneCatSvg, and whether the body runs up to the
    head (so the caller can join the two). */
 export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, xOf, yOf, cull = -30 }) {
-  const m = !isShort(notes) ? "trace" : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
-  const clean = despike(dropFarBlips(frames, notes, lat)), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : clean;
+  const hold = !isShort(notes), m = hold ? "trace" : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
+  const clean = despike(dropFarBlips(frames, notes, lat)), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : hold ? eased(clean, HOLD_EASE) : clean;
   const threads = [[]], subs = [[]];
   const cut = (list) => { if (list[list.length - 1].length) list.push([]); };
   let tail = null, headJoins = false;
