@@ -13,7 +13,7 @@ import { resetTips } from "./tips.js";
 /* the first note of the next step, in the current key */
 function firstNote(S) {
   const nt = St.nextTake(S) || { step: 1, time: "morning", seed: "onsen.morning.scarf" };
-  const plan = planTake({ step: nt.step, time: nt.time, range: S.settings.range, nudge: S.settings.nudge, seed: nt.seed });
+  const plan = planTake({ step: nt.step, time: nt.time, zone: nt.zone, range: S.settings.range, nudge: S.settings.nudge, seed: nt.seed });
   return { midi: plan.notes[0].midi, step: nt.step };
 }
 

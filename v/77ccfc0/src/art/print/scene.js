@@ -31,11 +31,12 @@ function cushionMarkup(c) {
   const s = int(c.step, 1, 12, 1), p = stepPoint(z, s), label = c.label == null || txt(c.label) === "" ? String(s) : txt(c.label);
   return `<g transform="translate(${f(p.x)} ${f(p.y + 1)})"><path d="M-15 -4Q0 -8 15 -4Q18 3 15 9Q0 13 -15 9Q-18 3 -15 -4Z" fill="${RED}" stroke="${KEY}" stroke-width="1.6" stroke-linejoin="round"/><circle cy="2.5" r="1.4" fill="${KEY}" opacity=".5"/><text y="6.5" text-anchor="middle" ${FONT} font-weight="800" font-size="${label.length > 2 ? 7 : 9}" fill="${PAPER}">${esc(label)}</text></g>`;
 }
-/* G landscapes, for postcards (o.landscape in sceneParts); places without one use their scene backdrop */
+/* G landscapes (o.landscape in sceneParts): postcards, and since 2026-11-14 the home page and the wardrobe, which
+   show the same background as the postcards. Drawn with `animate` they move and answer a tap like the H scene does */
 const LANDSCAPE = { onsen: onsenLandscape, ...Object.fromEntries(Object.entries(PLACES).map(([k, P]) => [k, P.landscape])) };
 export function placeLayers(place, time, seed = 0, animate = false, landscape = false) {
   const p = placeId(place), t = timeId(time);
-  if (landscape && LANDSCAPE[p]) return { ...LANDSCAPE[p](t), wood: woodOf(t) };
+  if (landscape && LANDSCAPE[p]) return { ...LANDSCAPE[p](t, animate), wood: woodOf(t) };
   if (!DRAW[p]) return { ...oldPlaceLayers(p, t, seed, animate), wood: woodOf(t), frame: "" };
   return { ...DRAW[p](t, rng(hash(`${p}|${t}|${seed}`)), animate), wood: woodOf(t) };
 }

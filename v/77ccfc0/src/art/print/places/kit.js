@@ -68,7 +68,9 @@ const paperEdge = (m, line) => `<path d="M0 0H400V500H0ZM${m} ${m}V${500 - m}H${
      tones: { a, b, l } (the seat's own colours, morning),
      floor: [fill, pattern colour] (the band's own colours, morning) } */
 export function makePlace(spec) {
-  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, animate);
+  /* `on(name, style)` gives a class only when the picture is animated; a view uses it on its own moving things */
+  const onOf = animate => (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
+  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, onOf(animate));
   const bandY = spec.bandY || 474;
   function scene(time, R, animate) {
     const ground = spec.grounds[time], night = time === "night", ink = night ? PAPER : KEY, q = pen(KEY);
@@ -80,7 +82,7 @@ export function makePlace(spec) {
       + `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${KEY}" stroke-width="2.2"/><circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="${ink}" stroke-width=".9" opacity=".8"/>`;
     /* the place's own moving things (rain, snow, lanterns, a campfire ...): `on(name, style)` gives the class only when
        animated, so a still picture shows the same things at rest. Clipped to the picture so a loop never shows outside it */
-    const on = (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
+    const on = onOf(animate);
     const fx = spec.fx ? spec.fx(c, q, time, on) : {};
     /* animated: the window and the place's things answer a tap (the sun pops, hanging things swing, the fire flares) */
     const tap = (kind, m) => (animate ? `<g data-tap="${kind}">${m}</g>` : m);
@@ -89,10 +91,15 @@ export function makePlace(spec) {
     const front = spec.band({ fill: tint(spec.floor[0], time), mark: tint(spec.floor[1], time), k: KEY, paper: PAPER }, bandY, q, time, on) + (fx.front ? tap("fire", fx.front) : "");
     return { back, seat, front, frame: paperEdge(8, KEY) + titleH(time, spec.name, ink), wall: ground, ink };
   }
-  function landscape(time) {
-    const V = VIEW[time], q = pen(V.line);
+  /* the landscape is still on postcards and thumbs; on the home page and in the wardrobe it is drawn with `animate`:
+     the view's own things move, the place's fx are added where the view has no such thing already (spec.fxOnView),
+     and a tap anywhere on the landscape makes its hanging things swing and its sun or moon pop */
+  function landscape(time, animate = false) {
+    const V = VIEW[time], q = pen(V.line), on = onOf(animate);
     const c = { a: V.d[3], b: V.d[2], l: V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
-    return { back: full(time), seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time, () => ""),
+    const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
+    const view = full(time, animate) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
+    return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
       frame: paperEdge(10, IND[0]) + titleG(time, spec.name), wall: V.sky[0], ink: KEY };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));

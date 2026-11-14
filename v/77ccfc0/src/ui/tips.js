@@ -5,7 +5,7 @@ import { app } from "./app.js";
 import * as St from "../state.js";
 
 export const TIPS = {
-  listen: "Listen: the judge hums it once. Then it’s your turn.",
+  listen: "Listen: the cat sings it once. Then it’s your turn.",
   line: "Start when the note reaches this line.",
   voice: "Your voice moves the cat. Keep its head on the bar.",
   step: null, // written when shown: "That’s one step. Eleven more and the scarf is done."

@@ -7,6 +7,7 @@ import { headFor, tailFor, palFor as guestPal } from "./guests.js";
 import { COATS, KEY, LWC, bodyMarkup, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked } from "./cat.js";
 
 const MOODS = ["listen", "sing", "smug", "squint", "wide", "sleep"];
+const MOUTHS = ["mm", "oo", "ee", "ah", "ay"]; // o.mouth: the sound being sung, drawn on a cat's face (guests keep their own)
 const FURK = { short: 1, mid: 1.08, long: 1.16 };
 const DASH = {
   bands3: [3.5, 26, .92, "stripe"], pale3: [3.5, 26, .92, "belly"], stripes5: [2.2, 12, .92, "stripe"], bold: [9, 62, .92, "stripe"],
@@ -16,15 +17,15 @@ const DASH = {
 const MARK = { ok: ["✓", "#3f7a55"], "~": ["~", "#a8741c"], "?": ["?", "#bf452d"] };
 /* cats wear the woodblock coats; guests their own colours */
 const palFor = (animal, look) => guestPal(animal, look);
-const headOf = (animal, kind, x, y, dir, mood, sc, pal) => (animal === "cat" ? catHead(x, y, dir, mood, sc, pal, kind) : headFor(animal, kind, x, y, dir, mood, sc, pal));
+const headOf = (animal, kind, x, y, dir, mood, sc, pal, mouth = null) => (animal === "cat" ? catHead(x, y, dir, mood, sc, pal, kind, null, mouth) : headFor(animal, kind, x, y, dir, mood, sc, pal));
 const tailOf = (animal, kind, x, y, dir, w, pal, tucked) => (animal === "cat" ? (tucked ? catTailTucked : catTail)(kind, x, y, dir, w, pal) : tailFor(animal, kind, x, y, dir, w, pal, tucked));
 
 const headCache = new Map();
-function cachedHead(animal, kind, mood, palette, dir, sc) {
-  const key = `${animal}|${kind}|${mood}|${palette}|${dir}|${sc}`;
+function cachedHead(animal, kind, mood, palette, dir, sc, mouth = null) {
+  const key = `${animal}|${kind}|${mood}|${palette}|${dir}|${sc}|${mouth || ""}`;
   let h = headCache.get(key);
   if (!h) {
-    h = headOf(animal, kind, 0, 0, dir, mood, sc, palFor(animal, { palette }));
+    h = headOf(animal, kind, 0, 0, dir, mood, sc, palFor(animal, { palette }), mouth);
     if (headCache.size > 400) headCache.clear();
     headCache.set(key, h);
   }
@@ -67,7 +68,7 @@ export function laneCatSvg(o = {}) {
     if (look.pattern === "twotone") out += stroke(d, pal.furDk, w, ` stroke-dasharray="0 ${f(len / 2)} ${f(len + 1)}"`);
     else if (D) out += `<path d="${d}" stroke="${pal[D[3]]}" stroke-width="${f(w * D[2])}" stroke-dasharray="${f(D[0] * sc)} ${f(D[1] * sc)}" stroke-dashoffset="${f(-D[1] * sc / 2)}"${D[4] ? ` stroke-linecap="round"` : ""} stroke-linejoin="round" fill="none"${animal === "cat" ? "" : ` opacity=".5"`}/>`;
   }
-  if (head) out += `<g transform="translate(${f(head.x)} ${f(head.y)})">${cachedHead(animal, kind, mood, look.palette, dir, Math.round(.85 * sc * 100) / 100)}</g>`;
+  if (head) out += `<g transform="translate(${f(head.x)} ${f(head.y)})">${cachedHead(animal, kind, mood, look.palette, dir, Math.round(.85 * sc * 100) / 100, MOUTHS.includes(o.mouth) ? o.mouth : null)}</g>`;
   for (const m of Array.isArray(o.marks) ? o.marks : []) {
     if (!m || typeof m !== "object") continue;
     const [t, ink] = MARK[m.type] || MARK["?"];

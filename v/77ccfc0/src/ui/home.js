@@ -4,7 +4,7 @@
 import { app, show, sheet, closeSheet, esc, toast, $, $$ } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
-import { placeById, timeById, ZONES, STEPS, DRILLS, PATTERNS, garmentName } from "../content.js";
+import { placeById, timeById, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
 
@@ -47,11 +47,11 @@ export function renderHome(root) {
     sub = `${timeById(time).name}: three garments. You choose which goes on first.`;
   } else {
     cta = `<button class="btn primary big" data-act="sing">Sing step ${nt.step} · ${esc(nt.drill.name)}</button>`;
-    sub = `${esc(garmentName(time, nt.zone))} · ${nt.step - 1} of ${STEPS} · ${timeById(time).flavour} singing`;
+    sub = `${esc(garmentName(time, nt.zone))} · ${nt.step - 1} of ${STEPS} · sing “${sylFor(nt.zone, time)}”`;
   }
   root.innerHTML = `
     <header class="topbar">
-      <div class="where"><span class="place">${esc(p.name)}</span><span class="time-chip t-${shownTime}">${esc(timeById(shownTime).name)}</span>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
+      <div class="where"><span class="place">${esc(p.name)}</span><span class="time-chip t-${shownTime}">${esc(timeById(shownTime).name)} · ${esc(timeById(shownTime).flavour)}</span>${special ? '<span class="time-chip special">New Year month</span>' : ""}</div>
       <div class="tools">${unread.length ? `<button class="letter-btn" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="icon-btn gear" data-go="settings" aria-label="Settings">⚙</button></div>
     </header>
     <div class="scene-wrap" id="home-scene">${sceneSvg(sceneFor(S, place, real))}</div>
@@ -120,10 +120,10 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
   const fresh = ZONES.every((z) => St.progress(S, place, time, z.id) === 0);
   const el = sheet(`
     <h3>${after ? esc(after) + "<br>" : ""}${except ? "Wear which one instead?" : fresh ? "Which one first?" : "Which one next?"}</h3>
-    <p class="muted">${first ? "The first one is also the tutorial: every step you sing, the judge learns a new face." : except ? "The one you’re wearing keeps its steps and waits for you." : `${timeById(time).name} · ${timeById(time).weather}. The colours come with the garment.`}</p>
+    <p class="muted">${first ? "The first one is also the tutorial: every step you sing, the judge learns a new face." : except ? "The one you’re wearing keeps its steps and waits for you." : `${timeById(time).name} · ${timeById(time).flavour}: ${timeById(time).how}. Each cat sings it with its own sound.`}</p>
     <div class="pick-row">${left.map((z) => `<button class="pick" data-zone="${z.id}">
       ${wardrobeThumbSvg({ zone: z.id, ...St.garmentSpec(S, place, time, z.id), steps: STEPS })}
-      <b>${esc(garmentName(time, z.id))}</b><span>${z.name} · ${St.progress(S, place, time, z.id)} / ${STEPS}</span></button>`).join("")}</div>`, { onClose: () => {} });
+      <b>${esc(garmentName(time, z.id))}</b><span>${esc(SOUNDS[z.id].cat)} · “${sylFor(z.id, time)}” · ${St.progress(S, place, time, z.id)} / ${STEPS}</span></button>`).join("")}</div>`, { onClose: () => {} });
   $$(".pick", el).forEach((b) => (b.onclick = () => {
     St.chooseZone(S, place, b.dataset.zone);
     app.save();
@@ -145,7 +145,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   const folds = steps.map((st, i) => (st?.tuft ? i + 1 : 0)).filter(Boolean);
   const others = ZONES.filter((x) => x.id !== zone && !St.garmentDone(S, place, time, x.id));
   const inTutorial = !St.tutorialDone(S);
-  const grid = DRILLS.map((d, i) => {
+  const grid = ladderFor(time).map((d, i) => {
     const k = i + 1, st = k <= n ? (folds.includes(k) ? "fold" : "done") : k === n + 1 && !done ? "next" : "todo";
     /* a step already sung can be sung again (the designer, 2026-11-14: "allow user to go back to the previous drills
        to redo them"); it never moves anything forward */
@@ -167,7 +167,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     buttons = `<div class="row"><button class="btn primary" data-a="wear">Wear this one</button><button class="btn" data-a="close">Not now</button></div>`;
   }
   const el = sheet(`
-    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())}</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}, ${FUR[g.look.fur] || ""}.</p></div></div>
+    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}, ${FUR[g.look.fur] || ""}.</p></div></div>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}
@@ -185,14 +185,14 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
 /* Singing an earlier step again: the new take replaces that step (its shape and its folds) once it is sung;
    a silent take keeps the old one. It counts as practice, never as progress. */
 function askRedo(place, time, zone, step) {
-  const d = DRILLS[step - 1], name = garmentName(time, zone);
+  const d = ladderFor(time)[step - 1], name = garmentName(time, zone);
   const el = sheet(`
     <h3>Sing step ${step} again?</h3>
     <p class="muted">${esc(name)} · ${esc(d.name)}. What you sing now takes the place of this step, folds and all. Nothing moves forward or back.</p>
     <div class="row"><button class="btn primary" data-a="go">Sing it again</button><button class="btn" data-a="no">Not now</button></div>`);
   el.querySelector("[data-a=go]").onclick = () => {
     closeSheet(true);
-    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step), seed: `${place}.${time}.${zone}` }, retake: true, outcome: null });
+    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}` }, retake: true, outcome: null });
   };
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }

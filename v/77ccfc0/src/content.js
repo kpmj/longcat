@@ -11,11 +11,11 @@ export const ZONES = [
 ];
 export const ZONE_IDS = ZONES.map((z) => z.id);
 
-/* Each time of day has its fur, its weather and its singing flavour (design doc section 6). */
+/* Each time of day has its fur, its weather and its own ladder of drills (flavour = the ladder's name). */
 export const TIMES = [
-  { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Warm-up", how: "a little slower, closer to the middle of your range, shorter notes" },
-  { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Standard", how: "the twelve drills as they are" },
-  { id: "night", name: "Night", fur: "long", weather: "Cold, time for something thicker", flavour: "Long and soft", how: "longer notes, slower, quiet is fine" },
+  { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Land", how: "short, slow notes close together: landing each one" },
+  { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Move", how: "scales and leaps, up to an octave" },
+  { id: "night", name: "Night", fur: "long", weather: "Cold, time for something thicker", flavour: "Carry", how: "long notes and long, slow phrases; quiet is fine" },
 ];
 export const TIME_IDS = TIMES.map((t) => t.id);
 
@@ -49,23 +49,63 @@ export const GUESTS = {
   dragon: { name: "Long dragon", mark: "only at New Year" },
 };
 
-/* The twelve drills. Every garment is these twelve, in this order (design doc section 2).
-   rel = semitones above the drill's root; dur = seconds per note in the standard (golden) flavour.
-   Lifted in spirit from the meme-games ladder; rewritten for this game. */
-export const DRILLS = [
-  { id: "long", name: "Long note", syl: "ah", rel: [0], dur: 2.4 },
-  { id: "two", name: "Two notes", syl: "mm", rel: [0, 2], dur: 1.0 },
-  { id: "doremi", name: "Do–Re–Mi", syl: "nay", rel: [0, 2, 4], dur: 1.0 },
-  { id: "down3", name: "Three down", syl: "noo", rel: [4, 2, 0], dur: 1.0 },
-  { id: "arp", name: "Arpeggio", syl: "oo", rel: [0, 4, 7], dur: 0.9 },
-  { id: "five", name: "Five-note scale", syl: "mm", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
-  { id: "skips", name: "Skips", syl: "yah", rel: [0, 4, 2, 5, 4], dur: 0.9 },
-  { id: "octave", name: "Octave", syl: "wee", rel: [0, 12], dur: 1.2 },
-  { id: "scale", name: "Scale", syl: "la", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
-  { id: "fast5", name: "Fast five", syl: "mm", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
-  { id: "arp8", name: "Arpeggio + octave", syl: "oo", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
-  { id: "free", name: "Free melody", syl: "la", free: true, dur: 0.8 },
-];
+/* The drills (drill-ladder board, proposal 丙, the designer 2026-11-14). rel = semitones above the drill's root (the
+   lowest note is placed in the singer's range, so a rel may be negative); dur = seconds per note at golden hour.
+   What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below). */
+export const DRILL = {
+  long: { name: "Long note", rel: [0], dur: 2.4 },
+  long2: { name: "Same note twice", rel: [0, 0], dur: 1.6 },
+  hold4: { name: "Long hold", rel: [0], dur: 4.0 },
+  hold5: { name: "Longer hold", rel: [0], dur: 5.0 },
+  two: { name: "Two notes", rel: [0, 2], dur: 1.0 },
+  twodown: { name: "Two down", rel: [2, 0], dur: 1.4 },
+  nbup: { name: "Neighbour up", rel: [0, 2, 0], dur: 1.0 },
+  nbdown: { name: "Neighbour down", rel: [0, -2, 0], dur: 1.0 },
+  doremi: { name: "Do–Re–Mi", rel: [0, 2, 4], dur: 1.0 },
+  down3: { name: "Three down", rel: [4, 2, 0], dur: 1.0 },
+  arc: { name: "Up and back", rel: [0, 2, 4, 2, 0], dur: 0.9 },
+  fiveup: { name: "Five up", rel: [0, 2, 4, 5, 7], dur: 0.85 },
+  fivedown: { name: "Five down", rel: [7, 5, 4, 2, 0], dur: 0.85 },
+  five: { name: "Five-note scale", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
+  fast5: { name: "Fast five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
+  scaleup: { name: "Scale", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
+  scaledown: { name: "Scale down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7 },
+  third: { name: "Third", rel: [0, 4], dur: 1.0 },
+  thirdback: { name: "Third and back", rel: [0, 4, 0], dur: 1.0 },
+  arp: { name: "Arpeggio", rel: [0, 4, 7], dur: 0.9 },
+  arpdown: { name: "Arpeggio down", rel: [7, 4, 0], dur: 0.9 },
+  arpud: { name: "Arpeggio and back", rel: [0, 4, 7, 4, 0], dur: 0.85 },
+  fifth: { name: "Fifth", rel: [0, 7], dur: 1.1 },
+  skips: { name: "Skips", rel: [0, 4, 2, 5, 4], dur: 0.9 },
+  octave: { name: "Octave", rel: [0, 12], dur: 1.2 },
+  octdown: { name: "Octave down", rel: [12, 0], dur: 1.2 },
+  arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
+  penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
+  free5: { name: "Short melody", free: { notes: 5, top: 2 }, dur: 0.9 },
+  free: { name: "Free melody", free: { notes: 8, top: 7 }, dur: 0.8 },
+};
+for (const [id, d] of Object.entries(DRILL)) d.id = id;
+
+/* One ladder of twelve steps per time of day: a month runs Land, then Move, then Carry. Each ladder climbs by
+   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); the last step is a small melody. */
+export const LADDERS = {
+  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "fiveup", "thirdback", "free5"],
+  golden: ["arp", "arpdown", "fivedown", "arpud", "skips", "fifth", "five", "fast5", "scaleup", "arp8", "octave", "free"],
+  night: ["twodown", "hold4", "down3", "arc", "fivedown", "arpdown", "hold5", "penta", "five", "scaledown", "octdown", "free"],
+};
+export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
+export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
+
+/* Each cat has its own sound, the same shapes sung three ways. A mouth is what the lane cat's face shows:
+   mm (closed), oo (small and round), ee (wide), ah (open), ay (half open). The game listens to pitch only, so
+   it cannot tell which sound was sung; the sound is a suggestion, never graded. */
+export const SOUNDS = {
+  scarf: { cat: "Hum cat", syl: { morning: "mm", golden: "mm", night: "mm" } },
+  top: { cat: "Oo cat", syl: { morning: "oo", golden: "noo", night: "oo" } },
+  bottom: { cat: "Ah cat", syl: { morning: "ah", golden: "yah", night: "ah" } },
+};
+export const MOUTH = { mm: "mm", oo: "oo", noo: "oo", woo: "oo", ee: "ee", wee: "ee", ah: "ah", yah: "ah", nah: "ah", la: "ah", nay: "ay" };
+export const sylFor = (zoneId, timeId) => (SOUNDS[zoneId] || SOUNDS.bottom).syl[timeId] || "ah";
 
 /* The judge: the twelve faces it learns in the first garment (design doc section 2). */
 export const TUTORIAL_FACES = [

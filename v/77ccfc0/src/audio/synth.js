@@ -42,6 +42,68 @@ export function audioContext() {
 export const now = () => (ac ? ac.currentTime : performance.now() / 1000);
 export function setMuted(m) { muted = !!m; }
 
+/* The cat's voice (drill-ladder board, section 8): the demo sings the syllable the player is asked to sing.
+   A small formant synthesiser: one sawtooth at exactly the target pitch through three band-pass filters placed
+   at the vowel's formants; a consonant is a short move of those filters (n, m: quiet and low; w starts at "oo";
+   y starts at "ee"; l is a quick dip). It sounds like a cat only because the formants are scaled up, as a smaller
+   mouth would; the pitch is never bent, because the pitch is what the player copies. */
+const FORMANT = { a: [730, 1090, 2440], i: [270, 2290, 3010], u: [300, 870, 2240], e: [530, 1840, 2480],
+  m: [250, 1000, 2200], n: [250, 1500, 2500], l: [360, 1300, 2700], w: [290, 610, 2150], y: [260, 2100, 3000] };
+/* [sound, seconds it lasts (consonants) or null = the rest of the note, loudness] */
+const SYLLABLE = {
+  mm: [["m", null, 0.9]], ah: [["a", null, 1]], oo: [["u", null, 1]], ee: [["i", null, 1]],
+  noo: [["n", 0.11, 0.4], ["u", null, 1]], nay: [["n", 0.11, 0.4], ["e", 0.3, 1], ["i", null, 0.9]], nah: [["n", 0.11, 0.4], ["a", null, 1]],
+  yah: [["y", 0.09, 0.7], ["a", null, 1]], wee: [["w", 0.1, 0.7], ["i", null, 1]], woo: [["w", 0.12, 0.7], ["u", null, 1]], la: [["l", 0.09, 0.6], ["a", null, 1]],
+};
+const CAT_MOUTH = 1.32; // how far the formants move up
+export const CAT_PEAK = 1.5; // level before the filters, set so the cat is about as loud as the old hum
+/* The nodes of one sung syllable, on any context (the game's, or an offline one for measuring). fall = semitones
+   the pitch drops over the note: 0 for singing, a few for the once-spoken syllable. */
+export function catVoiceNodes(ctx, dest, t0, hz, dur, syl, peak, fall = 0) {
+  const src = ctx.createOscillator(), out = ctx.createGain();
+  src.type = "sawtooth";
+  src.frequency.setValueAtTime(hz, t0);
+  if (fall) src.frequency.exponentialRampToValueAtTime(hz * Math.pow(2, -fall / 12), t0 + dur);
+  out.gain.setValueAtTime(0, t0);
+  out.connect(dest);
+  const bands = [0, 1, 2].map((j) => {
+    const bp = ctx.createBiquadFilter(), g = ctx.createGain();
+    bp.type = "bandpass"; bp.Q.value = [7, 10, 12][j];
+    g.gain.value = [1, 0.55, 0.3][j];
+    src.connect(bp); bp.connect(g); g.connect(out);
+    return bp;
+  });
+  let t = t0, last = peak;
+  (SYLLABLE[syl] || SYLLABLE.ah).forEach(([ph, len, loud], idx) => {
+    const F = FORMANT[ph];
+    /* a ramp starts from the previous target, so each change of sound is a 70 ms glide of the three filters */
+    bands.forEach((bp, j) => { if (idx === 0) bp.frequency.setValueAtTime(F[j] * CAT_MOUTH, t); else bp.frequency.linearRampToValueAtTime(F[j] * CAT_MOUTH, t + 0.07); });
+    last = peak * loud;
+    out.gain.linearRampToValueAtTime(last, t + (idx === 0 ? 0.04 : 0.07));
+    if (len != null) { bands.forEach((bp, j) => bp.frequency.setValueAtTime(F[j] * CAT_MOUTH, t + len)); out.gain.setValueAtTime(last, t + len); t += len; }
+  });
+  out.gain.setValueAtTime(last, t0 + Math.max(0.1, dur - 0.08));
+  out.gain.linearRampToValueAtTime(0, t0 + dur + 0.04);
+  src.start(t0); src.stop(t0 + dur + 0.1);
+  return { src, out };
+}
+export function sing(t0, midi, dur, syl = "ah", { vol = 1, fall = 0 } = {}) {
+  if (muted || !audioContext()) return { stop() {} };
+  const f = midiToHz(midi);
+  logSound(t0, dur + 0.1, f, f * Math.pow(2, -fall / 12), fall ? 1 : 0, [1, 2, 3, 4, 5]);
+  const { src, out } = catVoiceNodes(ac, master, t0, f, dur, syl, CAT_PEAK * vol * (midi < 50 ? 1.3 : 1), fall);
+  return {
+    stop() {
+      try {
+        const n = ac.currentTime;
+        out.gain.cancelScheduledValues(n);
+        out.gain.setTargetAtTime(0, n, 0.03);
+        src.stop(n + 0.12);
+      } catch { /* already stopped */ }
+    },
+  };
+}
+
 /* A soft hummed note: triangle + sine through a low-pass, a little scoop in and a gentle vibrato. */
 export function hum(t0, midi, dur, vol = 1) {
   if (muted || !audioContext()) return { stop() {} };

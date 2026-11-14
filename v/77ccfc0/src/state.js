@@ -44,6 +44,7 @@ export function freshSave(real = new Date()) {
     months: {},
     letters: [],
     tips: [],                        // one-time tips already shown
+    said: [],                        // syllables the cat has already said once on its own
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
     dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap" },
   };
@@ -60,6 +61,7 @@ export function migrate(o, real = new Date()) {
   if (!S.months || typeof S.months !== "object") S.months = {};
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
   if (!Array.isArray(S.tips)) S.tips = [];
+  if (!Array.isArray(S.said)) S.said = [];
   /* a save from before the dots: everything in it counts as seen */
   if (!o.marks || typeof o.marks !== "object") S.marks = drawerCounts(S);
   return S;
@@ -156,14 +158,14 @@ export function nextTake(S, place = S.here) {
   const time = currentTime(S, place), zone = activeZone(S, place);
   if (!time || !zone) return null;
   const step = progress(S, place, time, zone) + 1;
-  return { place, time, zone, step, drill: drillForStep(step), seed: `${place}.${time}.${zone}` };
+  return { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}` };
 }
 
 /* ---------- recording ---------- */
 function logTake(S, ctx, grade, retake, real) {
   S.takes.push({
     date: todayKey(S, real), at: nowFor(S, real).toISOString(), place: ctx.place, time: ctx.time, zone: ctx.zone,
-    step: ctx.step, drill: drillForStep(ctx.step).id, retake, counted: !!grade.counted, voiced: grade.voicedRatio ?? null,
+    step: ctx.step, drill: drillForStep(ctx.step, ctx.time).id, retake, counted: !!grade.counted, voiced: grade.voicedRatio ?? null,
   });
   if (S.takes.length > MAX_TAKES) S.takes.splice(0, S.takes.length - MAX_TAKES);
 }

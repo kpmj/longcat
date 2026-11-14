@@ -13,7 +13,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { hum, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
+import { sing, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
 import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
@@ -78,7 +78,7 @@ function guideY(t) {
 function laneNotes(plan) {
   return plan.notes.map((n, i) => {
     const x = n.s * PXS, w = Math.max(14, (n.e - n.s) * PXS - 3), y = yOf(n.midi);
-    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/><text x="${(x + 12).toFixed(1)}" y="${(y + 5).toFixed(1)}">${esc(plan.drill.syl)}</text></g>`;
+    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/><text x="${(x + 12).toFixed(1)}" y="${(y + 5).toFixed(1)}">${esc(plan.syl)}</text></g>`;
   }).join("");
 }
 
@@ -86,7 +86,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   const S = app.S;
   if (!ctx) return show("home");
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
-  const plan = planTake({ step: ctx.step, time: ctx.time, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
+  const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1 };
   R.geo = geometry(plan);
@@ -97,7 +97,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
   root.innerHTML = `
     <header class="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
-      <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)} · sing “${esc(plan.drill.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
+      <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
     </header>
     <div class="lane-wrap">
       <svg class="lane" id="lane" viewBox="0 0 ${W} ${H}" aria-label="Lane">
@@ -109,6 +109,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
         <g id="lane-gutter">${grid.gutter}</g>
       </svg>
       <div class="countdown" id="countdown" aria-live="polite"></div>
+      <div class="say" id="say" hidden></div>
       <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>
     </div>
     <div class="judge-wrap" id="judge-wrap">
@@ -141,12 +142,38 @@ async function start() {
     closeMic();
   } else if (!mic) await prepareVoice();
   if (!R) return;
+  await sayOnce();
+  if (!R) return;
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
-  R.plan.notes.forEach((n) => R.nodes.push(hum(t0 + n.s, n.midi, n.e - n.s)));
+  /* the demo is the cat singing the phrase on its own sound */
+  R.plan.notes.forEach((n) => R.nodes.push(sing(t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
   R.last = clock();
   loop();
   setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
+}
+
+/* The first time a sound comes up, the cat says it once on its own, with the word large on the lane, before the
+   demo sings it (drill-ladder board, section 8). The synthesised consonants are rough; this is where a player
+   learns which sound "noo" or "yah" is. */
+async function sayOnce() {
+  const S = app.S, syl = R.plan.syl;
+  if (S.said.includes(syl)) return;
+  S.said.push(syl);
+  app.save();
+  const el = document.getElementById("say"), skip = document.querySelector("[data-act=skip]");
+  if (skip) skip.hidden = true;
+  if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>the cat says it once</span>`; el.hidden = false; }
+  hint("", "");
+  R.saying = true;
+  try { draw(null, 0); } catch { /* the lane is not ready yet */ }
+  R.nodes.push(sing(clock() + 0.12, R.plan.notes[0].midi, 0.7, syl, { fall: 3 }));
+  await new Promise((r) => setTimeout(r, 1250));
+  if (!R) return;
+  R.saying = false;
+  if (el) el.hidden = true;
+  if (skip) skip.hidden = false;
+  hint("Listen first", "");
 }
 
 function micProblem() {
@@ -334,15 +361,15 @@ export function frame(dt) {
     if (e.type === "demo-note") hint("Listen first", `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { countdown(["Ready", "3", "2", "1"][e.k] || ""); hint("", "sing as the notes reach the line"); }
-    else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.drill.syl}”`); hideTip(); laneTip("voice", 4000); }
+    else if (e.type === "phase" && e.phase === "sing") { countdown("GO!", true); hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
   }
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
-    if (R.flash && T.t < R.flash.until) hint(R.flash.text, `“${P.drill.syl}”`, R.flash.level);
+    if (R.flash && T.t < R.flash.until) hint(R.flash.text, `“${P.syl}”`, R.flash.level);
     else if (R.silentFor > 1.4 && T.t < P.total) hint("Sing out", "the judge can’t hear you yet");
-    else hint("Sing", `“${P.drill.syl}”`);
+    else hint("Sing", `“${P.syl}”`);
   }
   if (R.face !== "neutral" && T.t > R.faceUntil) { setFace("neutral", 0); setLevel(""); }
   draw(v, dt);
@@ -405,7 +432,10 @@ function draw(v, dt = 1 / 60) {
   const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
   const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 1.5 : 0;
   const el = document.getElementById("lane-cat");
-  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks });
+  /* the cat's mouth shows the sound: while a demo note sounds, while it waits for the singer, and while it hears one */
+  const open = R.saying || (T.phase === "demo" ? currentIndex(T) >= 0 : T.phase === "count" ? true : !!v);
+  const mouth = open || P.mouth === "mm" ? P.mouth : null;
+  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
 }
 
 function wireTouch(root) {

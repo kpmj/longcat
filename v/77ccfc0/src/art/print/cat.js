@@ -31,8 +31,17 @@ export function catEars(kind, pal, anim = null) {
   return one("M-18 -6L-17 -26Q-16.4 -29 -13.4 -26.8L-3.5 -15.2Z", "M-15.8 -11.4L-15.2 -22.6L-8.4 -15.4Z", tuft);
 }
 
-/* eyes and mouth by mood: normal (awake), listen, sing, smug, squint, wide, sleep. almond eyes with a slit */
-export function catFace(mood, pal, dy = 0) {
+/* eyes and mouth by mood: normal (awake), listen, sing, smug, squint, wide, sleep. almond eyes with a slit.
+   mouth (optional) replaces the mood's mouth with the shape of a sung sound: "mm" closed, "oo" small and round,
+   "ee" wide, "ah" open, "ay" half open (the lane cat shows which sound the drill is sung on) */
+const SUNG = {
+  mm: (my, lw) => ln(`M-4.4 ${f(my + 1.6)}h8.8`, lw * .95),
+  oo: (my, lw) => `<ellipse cx="0" cy="${f(my + 2.2)}" rx="2.3" ry="2.8" fill="#7a3b33" ${key(lw * .45)}/>`,
+  ee: (my, lw) => `<path d="M-5.4 ${f(my + .4)}h10.8q0 3.4 -5.4 3.4q-5.4 0 -5.4 -3.4z" fill="#7a3b33" ${key(lw * .45)}/><path d="M-3.6 ${f(my + 1.3)}h7.2" stroke="#f8f2e2" stroke-width="1.1" stroke-linecap="round"/>`,
+  ah: (my, lw) => `<ellipse cx="0" cy="${f(my + 3.2)}" rx="3.9" ry="4.9" fill="#7a3b33" ${key(lw * .45)}/><ellipse cx="0" cy="${f(my + 5.6)}" rx="2" ry="1.5" fill="#c9675c"/>`,
+  ay: (my, lw) => `<path d="M-4.6 ${f(my + .4)}h9.2q0 5.4 -4.6 5.4q-4.6 0 -4.6 -5.4z" fill="#7a3b33" ${key(lw * .45)}/>`,
+};
+export function catFace(mood, pal, dy = 0, sung = null) {
   const y = -2 + dy, lw = LWC;
   const almond = x => `<path d="M${f(x - 4.2)} ${f(y)}Q${x} ${f(y - 4.6)} ${f(x + 4.2)} ${f(y)}Q${x} ${f(y + 3.8)} ${f(x - 4.2)} ${f(y)}Z" fill="${pal.eye || "#e9d98a"}" ${key(lw * .55)}/><path d="M${x} ${f(y - 3)}V${f(y + 2.2)}" ${key(lw * .7)}/>`;
   const eye = x => mood === "smug" || mood === "listen" ? ln(`M${f(x - 3.6)} ${f(y + .6)}q3.6 -4.4 7.2 0`, lw * .8)
@@ -41,7 +50,7 @@ export function catFace(mood, pal, dy = 0) {
         : mood === "wide" ? `<circle cx="${x}" cy="${f(y)}" r="4.6" fill="#f8f2e2" ${key(lw * .55)}/><circle cx="${x}" cy="${f(y)}" r="2" fill="${KEY}"/>`
           : almond(x);
   const my = 7 + dy;
-  const mouth = mood === "wide" || mood === "sing" ? `<ellipse cx="0" cy="${f(my + 2.4)}" rx="${mood === "sing" ? 3 : 2.4}" ry="${mood === "sing" ? 3.8 : 3}" fill="#7a3b33" ${key(lw * .45)}/>`
+  const mouth = SUNG[sung] ? SUNG[sung](my, lw) : mood === "wide" || mood === "sing" ? `<ellipse cx="0" cy="${f(my + 2.4)}" rx="${mood === "sing" ? 3 : 2.4}" ry="${mood === "sing" ? 3.8 : 3}" fill="#7a3b33" ${key(lw * .45)}/>`
     : mood === "squint" ? ln(`M-3.4 ${f(my + 1)}h6.8`, lw * .6)
       : ln(`M-3.6 ${f(my)}q1.8 2.2 3.6 0q1.8 2.2 3.6 0`, lw * .6);
   return `${eye(-8.4)}${eye(8.4)}<path d="M-2 ${f(3.6 + dy)}h4l-2 2.4z" fill="${pal.nose}" stroke="${pal.nose}" stroke-width=".9" stroke-linejoin="round"/>${mouth}`;
@@ -49,14 +58,14 @@ export function catFace(mood, pal, dy = 0) {
 const HEAD = "M-20.5 1C-21 -11.5 -12 -17 0 -17C12 -17 21 -11.5 20.5 1C20 10.5 10.5 15.5 0 15.5C-10.5 15.5 -20 10.5 -20.5 1Z";
 /* the cat's head at (x, y), facing dir (1 = right), scale sc */
 /* anim (optional, seconds): the ears twitch and the open eyes blink, out of step by that much. Leave it out for the
-   lane cat, which is redrawn every frame */
-export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim = null) {
+   lane cat, which is redrawn every frame. mouth (optional): the shape of a sung sound, see catFace */
+export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim = null, mouth = null) {
   const s = f(dir * sc * 100) / 100 || .01, t = f(sc * 100) / 100 || .01;
   const marks = `<path d="M-4.6 -16v5M0 -17v6.2M4.6 -16v5" stroke="${pal.stripe}" stroke-width="1.9" stroke-linecap="round"/>`;
   const whisk = `<path d="M-13.5 4l-11 -1.8M-13.5 7l-10.4 1.8M13.5 4l11 -1.8M13.5 7l10.4 1.8" ${key(LWC * .38)} opacity=".75"/>`;
   /* animated and awake: the face blinks, and a second, happy face waits for a pat (shown while lc-tapped) */
   const blinks = anim != null && (mood === "normal" || mood === "wide");
-  const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal)}</g>` : catFace(mood, pal);
+  const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal, 0, mouth)}</g>` : catFace(mood, pal, 0, mouth);
   const face = anim != null && mood !== "sleep" ? `<g class="lc-face">${face0}</g><g class="lc-face-pet">${catFace("smug", pal)}</g>` : face0;
   return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}</g>`;
 }

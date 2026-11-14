@@ -79,11 +79,13 @@ const G = {
 };
 const ikey = (w) => `stroke="${IND[0]}" stroke-width="${f(w)}" stroke-linejoin="round" stroke-linecap="round"`;
 const mist = (x, y, w, h, c, o) => `<g fill="${c}" opacity="${o}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}"/><rect x="${f(x + w * .28)}" y="${f(y + h * .62)}" width="${f(w * .9)}" height="${h}" rx="${h / 2}"/></g>`;
-export function onsenLandscape(time) {
+export function onsenLandscape(time, animate = false) {
   const P = G[time] || G.morning, night = time === "night";
+  const on = (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
+  const tap = (kind, m) => (animate ? `<g data-tap="${kind}">${m}</g>` : m);
   const [dc, dx, dy, dr] = P.disc;
   const sky = P.sky.map((c, i) => `<rect y="${i * 62}" width="400" height="${i === 3 ? 500 : 62}" fill="${c}"/>`).join("");
-  const stars = night ? [[60, 52, 1.8], [128, 34, 1.4], [196, 62, 1.2], [250, 38, 1.6], [34, 130, 1.2], [150, 98, 1.1], [226, 104, 1.3]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f2ecd6"/>`).join("") : "";
+  const stars = night ? [[60, 52, 1.8], [128, 34, 1.4], [196, 62, 1.2], [250, 38, 1.6], [34, 130, 1.2], [150, 98, 1.1], [226, 104, 1.3]].map(([x, y, r]) => `<circle${on("lc-twinkle")} cx="${x}" cy="${y}" r="${r}" fill="#f2ecd6"/>`).join("") : "";
   const farD = "M-10 250L60 192Q90 172 120 190L172 150Q202 126 234 152L300 198Q340 178 410 216";
   const nearD = "M-10 300Q90 226 196 268Q292 216 410 274";
   const stalk = (x, y0, w) => {
@@ -91,9 +93,11 @@ export function onsenLandscape(time) {
     for (let y = y0 + 34; y < 400; y += 50) s += `<path d="M${x - w / 2} ${y}h${w}" fill="none" ${ikey(1.6)}/>`;
     return s;
   };
-  const leaf = (x, y, rot, s = 1) => `<path transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" d="M0 0Q13 -9 30 -2Q15 8 0 0Z" fill="${P.leaf}" ${ikey(.9 / s)}/>`;
+  /* each bamboo leaf hangs from its own point and sways a little */
+  const leaf = (x, y, rot, s = 1) => `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})"><g${on("lc-sway", `transform-origin:0% 50%;animation-duration:${f(3.4 + (x % 5) * .5)}s;animation-delay:${f(-(y % 7) * .4)}s`)}><path d="M0 0Q13 -9 30 -2Q15 8 0 0Z" fill="${P.leaf}" ${ikey(.9 / s)}/></g></g>`;
   const rock = d => `<path d="${d}" fill="${P.rock}"/><path d="${d}" fill="${P.rockDk}" opacity=".45" transform="translate(0 40)"/><path d="${d}" fill="none" ${ikey(1.9)}/>`;
-  const back = sky + stars + `<circle cx="${dx}" cy="${dy}" r="${dr}" fill="${dc}"/>`
+  const steamG = (x, y, s) => `<g${on("lc-steam")} transform="translate(${x} ${y}) scale(${s})"><path d="M0 0c-10 -10 8 -17 0 -27c-8 -9 7 -15 1 -24M12 -3c-7 -8 6 -13 0 -21" fill="none" stroke="${P.mist}" stroke-width="${f(3.4 / s)}" stroke-linecap="round" opacity="${night ? .4 : .85}"/></g>`;
+  const back = sky + stars + tap("window", `<circle${on("lc-sun")} cx="${dx}" cy="${dy}" r="${dr}" fill="${dc}"/>`)
     + `<path d="${farD}V340H-10Z" fill="${P.far}" opacity=".85"/><path d="${farD}" fill="none" ${ikey(1.3)} opacity=".75"/>`
     + mist(-30, 214, 170, 15, P.mist, night ? .45 : .95) + mist(214, 228, 150, 13, P.mist, night ? .45 : .95)
     + `<path d="${nearD}V440H-10Z" fill="${P.near}"/><path d="${nearD}V290H-10Z" fill="${P.nearTop}" opacity=".55"/><path d="${nearD}" fill="none" ${ikey(1.5)}/>`
@@ -101,12 +105,13 @@ export function onsenLandscape(time) {
     + `<path d="M-10 438Q200 424 410 438V500H-10Z" fill="${P.floor}"/>`
     + stalk(20, 110, 12) + stalk(44, 70, 13) + stalk(66, 150, 10) + leaf(44, 90, -28) + leaf(46, 108, 18, .9) + leaf(66, 170, -12, .8) + leaf(22, 130, -30, .8)
     + rock("M-10 500V356Q8 318 50 320Q94 324 102 372V500Z") + rock("M298 500V306Q304 268 350 268Q398 268 410 306V500Z")
-    + `<g transform="translate(40 318)">${P.glow ? `<circle cy="-32" r="42" fill="${P.lamp}" opacity="${P.glow}"/>` : ""}<g fill="${P.stone}" ${ikey(1.6)}><path d="M-8 -18h16v22h-16Z"/><path d="M-14 -46h28v28h-28Z"/><path d="M-26 -46Q0 -72 26 -46Z"/><circle cy="-66" r="4.5"/></g><rect x="-7" y="-39" width="14" height="14" fill="${P.lamp}" ${ikey(1.2)}/></g>`;
+    + tap("lamp", `<g transform="translate(40 318)">${P.glow ? `<g${on("lc-flicker")}><circle cy="-32" r="42" fill="${P.lamp}" opacity="${P.glow}"/></g>` : ""}<g fill="${P.stone}" ${ikey(1.6)}><path d="M-8 -18h16v22h-16Z"/><path d="M-14 -46h28v28h-28Z"/><path d="M-26 -46Q0 -72 26 -46Z"/><circle cy="-66" r="4.5"/></g><rect x="-7" y="-39" width="14" height="14" fill="${P.lamp}" ${ikey(1.2)}/></g>`)
+    + steamG(124, 300, 1.2) + steamG(286, 262, 1.1) + (animate ? leaves(true) : "");
   const seat = `<g fill="${P.stone}" ${ikey(1.6)}>${[[14, 452, 30, 20], [384, 456, 30, 18], [62, 462, 34, 16], [338, 464, 34, 15]].map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`).join("")}</g>`;
   const wave = "M0 473q25 -8 50 0t50 0t50 0t50 0t50 0t50 0t50 0t50 0";
   const front = `<path d="${wave}V500H0Z" fill="${P.water}"/><rect y="488" width="400" height="12" fill="${P.waterDk}"/><path d="${wave}" fill="none" ${ikey(1.6)}/>`
-    + `<path d="M8 484q12.5 -6 25 0t25 0t25 0M150 488q12.5 -6 25 0t25 0t25 0M270 483q12.5 -6 25 0t25 0t25 0t25 0" fill="none" stroke="${P.wave}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`
-    + floatYuzu(84, 487, 8) + floatYuzu(318, 490, 7);
+    + `<g${on("lc-float", "--lc-x:10px;--lc-y:0px;animation-duration:5s")}><path d="M8 484q12.5 -6 25 0t25 0t25 0M150 488q12.5 -6 25 0t25 0t25 0M270 483q12.5 -6 25 0t25 0t25 0t25 0" fill="none" stroke="${P.wave}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/></g>`
+    + floatYuzu(84, 487, 8, animate) + floatYuzu(318, 490, 7, animate) + steamG(52, 470, .8) + steamG(360, 466, .8);
   /* the title block: the place reversed out of an indigo strip, the time and the series name in small boxes, a red seal */
   const titleG = `<rect x="352" y="24" width="30" height="92" fill="${IND[0]}" stroke="${PAPER}" stroke-width="1.2"/>${column("湯之里", 367, 30, 21, 27, PAPER)}`
     + `<rect x="328" y="24" width="20" height="24" fill="${PAPER}" ${ikey(1.2)}/>${glyph(P.time, 338, 28, 14, IND[0])}`
