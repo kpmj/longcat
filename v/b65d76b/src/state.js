@@ -242,7 +242,9 @@ export function homeScene(S, place = S.here, real, extra = {}) {
   const garments = ZONE_IDS.map((z) => garmentSpec(S, place, cur, z));
   return {
     place, time: cur, face: extra.face || "neutral", garments, baskets: basketsFor(S, place),
-    cushion: cushionFor(S, place, real), special: specialFor(place), animate: true, seed: takesAt(S, place), ...extra,
+    cushion: cushionFor(S, place, real), special: specialFor(place), animate: true, seed: takesAt(S, place),
+    landscape: true, // the place's full landscape, as on the postcards (the designer, 2026-11-14)
+    ...extra,
   };
 }
 
