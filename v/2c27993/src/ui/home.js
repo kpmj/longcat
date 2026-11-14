@@ -1,7 +1,7 @@
-/* Home: the judge where it is now, wearing what has been sung, the cushion on the next step, the baskets of
-   earlier cats; one button to sing, one line under it. The three progress chips open the Garment sheet.
+/* Home: the judge where it is now, wearing what has been sung, the cushion on the next step (the baskets of
+   earlier cats are no longer shown here, see state.js homeScene); one button to sing, one line under it. The three progress chips open the Garment sheet.
    Settings is the gear in the top bar. Nothing here counts streaks or shows a score. */
-import { app, show, sheet, closeSheet, esc, toast, $, $$ } from "./app.js";
+import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { placeById, timeById, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
@@ -60,21 +60,7 @@ export function renderHome(root) {
       ${cta}
       <p class="sub">${sub}</p>
     </section>`;
-  /* the scene answers a touch: pat a cat or the judge, tap the yuzu, the lamp, the round window (the art marks what can
-     be tapped with data-tap and does the rest in CSS; data-group makes several pieces answer as one) */
-  const sceneEl = $("#home-scene", root);
-  if (sceneEl) sceneEl.onclick = (e) => {
-    const t = e.target.closest ? e.target.closest("[data-tap]") : null;
-    if (!t || !sceneEl.contains(t)) return;
-    const group = t.dataset.group, els = group ? $$(`[data-group="${group}"]`, sceneEl) : [t];
-    for (const el of els) {
-      el.classList.remove("lc-tapped");
-      el.getBoundingClientRect(); // restart the animation when tapped again
-      el.classList.add("lc-tapped");
-      clearTimeout(el._lcTap);
-      el._lcTap = setTimeout(() => el.classList.remove("lc-tapped"), 1400);
-    }
-  };
+  wireTaps($("#home-scene", root)); // pat a cat or the judge, tap the yuzu, the lamp, the sun
   const sing = $("[data-act=sing]", root);
   if (sing) sing.onclick = () => show("take", { ctx: St.nextTake(S, place) });
   const pick = $("[data-act=pick]", root);

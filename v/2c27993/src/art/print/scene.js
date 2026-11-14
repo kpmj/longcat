@@ -129,3 +129,13 @@ export const PLACE_UI = Object.fromEntries(PLACE_IDS.map(p => [p, Object.fromEnt
   const L = placeLayers(p, t, 0, false);
   return [t, { bg: L.wall, ink: L.ink, accent: OLD_UI[p][t].accent }];
 }))]));
+
+/* The cats that have finished and gone to sleep, on their own: one basket per finished time of day, side by side
+   (320 x 104). They left the home page on 2026-11-14 (it was too full) and live in the wardrobe's Cats tab.
+   o = { baskets: [{ time, cats }], time (for the wood), animate }. Animated, they breathe and can be patted. */
+export function nappingSvg(o = {}) {
+  const baskets = list(o && o.baskets).slice(0, 3), time = timeId(o && o.time), animate = !o || o.animate !== false, wood = woodOf(time);
+  const n = baskets.length, xs = n === 1 ? [160] : n === 2 ? [100, 220] : [64, 160, 256];
+  const floor = `<rect width="320" height="104" fill="${PAPER}"/><path d="M12 91H308" stroke="${KEY}" stroke-width="1.6" stroke-linecap="round"/><path d="M30 97H110M150 97H290" stroke="${KEY}" stroke-width="1" stroke-linecap="round" opacity=".35"/>`;
+  return svgDoc("0 0 320 104", floor + baskets.map((b, i) => `<ellipse cx="${xs[i]}" cy="91" rx="40" ry="4" fill="${KEY}" opacity=".12"/>` + basket(xs[i], 90, b, wood, time, animate)).join(""));
+}

@@ -2,7 +2,7 @@
    Since 2026-11-14 the game draws with the woodblock redraw in ./print/ (judge, cats, garments, places, scene, lane,
    cards). The files beside this one are the first art: ./print still borrows from them (palette tables, coat
    patterns, caption wrapping, the place ids), and the gallery shows them for comparison. */
-export { sceneSvg, judgeBustSvg, PLACE_UI } from "./print/scene.js";
+export { sceneSvg, judgeBustSvg, nappingSvg, PLACE_UI } from "./print/scene.js";
 export { stepPoint, ZONE_NAME } from "./print/garments.js";
 export { faceIconSvg } from "./print/judge.js";
 export { laneCatSvg, segmentSvg } from "./print/lane.js";

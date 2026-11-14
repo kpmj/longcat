@@ -2,9 +2,9 @@
    finished garments and times already reached can be chosen; this month only; photos only (home never changes);
    no list of combinations and no counter. The Cats tab holds the four cat kinds per body part (free, a setting,
    never progress; moved here from Settings by the game-flow board): the judge above changes as you pick. */
-import { app, show, esc, $, $$, sheet, closeSheet } from "./app.js";
+import { app, show, esc, $, $$, sheet, closeSheet, wireTaps } from "./app.js";
 import * as St from "../state.js";
-import { sceneSvg, wardrobeThumbSvg, catKindSvg } from "../art/index.js";
+import { sceneSvg, wardrobeThumbSvg, catKindSvg, nappingSvg } from "../art/index.js";
 import { ZONES, TIMES, STEPS, CAT_KINDS, garmentName, placeById, timeById } from "../content.js";
 import { openCard } from "./album.js";
 
@@ -17,6 +17,8 @@ function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclic
 function cats(root) {
   const S = app.S, place = S.here;
   const o = St.homeScene(S, place, app.real(), { cushion: null, animate: true });
+  /* the cats that have finished and gone to sleep: off the home page (it was too full), kept here (the designer, 2026-11-14) */
+  const asleep = St.basketsFor(S, place);
   root.innerHTML = `
     <header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(place).name)}</span></div></header>
     ${segs()}
@@ -24,7 +26,11 @@ function cats(root) {
     <section class="wardrobe kinds">
       ${ZONES.map((z) => `<div class="kind-row"><span class="wlab">${z.name}</span>${CAT_KINDS.map((k) => `<button class="kind${S.settings.kinds[z.id] === k.id ? " on" : ""}" data-zone="${z.id}" data-kind="${k.id}" aria-pressed="${S.settings.kinds[z.id] === k.id}" aria-label="${esc(z.name)}: ${esc(k.name)}">${catKindSvg(k.id, { look: { fur: "short", pattern: "plain", palette: "ginger" } })}<span>${esc(k.short)}</span></button>`).join("")}</div>`).join("")}
       <p class="sub">Only the ears and the tail change. All four are free; change them any time. Postcards already taken stay as they were.</p>
+      ${asleep.length ? `<div class="nap"><span class="wlab">Asleep</span><div class="seg" id="nap">${nappingSvg({ baskets: asleep, time: o.time })}</div></div>
+      <p class="sub">The ${St.specialFor(place) ? "guests" : "cats"} of the earlier ${asleep.length > 1 ? "times" : "time"} of day sleep here. You can pat them.</p>` : ""}
     </section>`;
+  wireTaps($(".scene-wrap", root));
+  wireTaps($("#nap", root));
   $$(".kind", root).forEach((b) => (b.onclick = () => { S.settings.kinds[b.dataset.zone] = b.dataset.kind; app.save(); cats(root); }));
   wireSegs(root);
 }

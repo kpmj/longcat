@@ -142,3 +142,21 @@ export function readVoice(t, note, T) {
     default: return readMic();
   }
 }
+
+/* A drawing answers a touch: pat a cat or the judge, tap the yuzu, the lamp, the sun. The art marks what can be tapped
+   with data-tap and does the rest in CSS (ART_CSS); data-group makes several pieces answer as one. */
+export function wireTaps(el) {
+  if (!el) return;
+  el.onclick = (e) => {
+    const t = e.target.closest ? e.target.closest("[data-tap]") : null;
+    if (!t || !el.contains(t)) return;
+    const group = t.dataset.group, els = group ? [...el.querySelectorAll(`[data-group="${group}"]`)] : [t];
+    for (const x of els) {
+      x.classList.remove("lc-tapped");
+      x.getBoundingClientRect(); // restart the animation when tapped again
+      x.classList.add("lc-tapped");
+      clearTimeout(x._lcTap);
+      x._lcTap = setTimeout(() => x.classList.remove("lc-tapped"), 1400);
+    }
+  };
+}

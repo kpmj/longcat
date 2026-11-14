@@ -243,7 +243,9 @@ export function homeScene(S, place = S.here, real, extra = {}) {
   const cur = currentTime(S, place) || "night";
   const garments = ZONE_IDS.map((z) => garmentSpec(S, place, cur, z));
   return {
-    place, time: cur, face: extra.face || "neutral", garments, baskets: basketsFor(S, place),
+    /* no baskets of sleeping cats here: with them the home page was too full (the designer, 2026-11-14). The cats still run to
+       their basket in the reset beat (ui/beat.js), which asks basketsFor itself; after that they are out of sight */
+    place, time: cur, face: extra.face || "neutral", garments, baskets: [],
     cushion: cushionFor(S, place, real), special: specialFor(place), animate: true, seed: takesAt(S, place),
     landscape: true, // the place's full landscape, as on the postcards (the designer, 2026-11-14)
     ...extra,
