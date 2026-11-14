@@ -24,7 +24,11 @@ import { openMicTest } from "./settings.js";
 
 const W = 390, H = 300, PLAY_X = 118, PXS = 92, MID_Y = 150, GUTTER = 40;
 const HOP = 0.16; // the demo head leaves for the next note this long before it arrives, and lands on time
-const FOLLOW = 0.03; // seconds for the head to settle on the sung pitch (time based, so phones keep up)
+/* The head moves like a soft spring: it starts gently and settles without overshooting (time based, so
+   phones keep up). Within a note it follows the voice quickly; landing on another note it takes a little
+   longer (the designer, 2026-11-14: "it feels a bit rushed ... add a very slight delay when landing on the next note"). */
+const FOLLOW = 0.02; // seconds: following the voice within a note
+const LAND = 0.045; // seconds: moving to another note (about 0.18 s to settle)
 let R = null;
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
@@ -366,6 +370,15 @@ function steadyVoice(v, t, notes, lat) {
   return R.headMidi ?? null;
 }
 
+/* a critically damped spring towards `want`, with time constant tau, stepped finely so a slow frame is fine */
+function springHead(want, tau, dt) {
+  if (!(dt > 0)) { R.headY = want; R.headV = 0; return; }
+  const w = 1 / tau, n = Math.max(1, Math.ceil(dt * 480)), h = dt / n;
+  let y = R.headY, v = R.headV || 0;
+  for (let i = 0; i < n; i++) { v += (w * w * (want - y) - 2 * w * v) * h; y += v * h; }
+  R.headY = y; R.headV = v;
+}
+
 function draw(v, dt = 1 / 60) {
   const T = R.T, P = R.plan;
   const shift = PLAY_X - T.t * PXS;
@@ -374,12 +387,12 @@ function draw(v, dt = 1 / 60) {
   /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
   const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
-  if (T.phase === "demo" || T.phase === "count") R.headY = guideY(T.phase === "demo" ? T.t : 0);
+  if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
     const hv = steadyVoice(v, T.t, P.notes, T.matcher.latency);
     const want = hv != null ? yOf(hv) : guideY(T.t);
-    const k = dt > 0 ? 1 - Math.exp(-dt / (hv != null ? FOLLOW : 0.08)) : 1;
-    R.headY += (want - R.headY) * k;
+    const semitone = Math.abs(yOf(61) - yOf(60));
+    springHead(want, hv == null ? 0.08 : Math.abs(want - R.headY) > semitone ? LAND : FOLLOW, dt);
   }
   markGrid(v ? v.midi : null);
   /* join the newest end of the line to the head, which eases after the voice */

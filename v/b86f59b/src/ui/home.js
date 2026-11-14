@@ -6,6 +6,7 @@ import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { placeById, timeById, ZONES, STEPS, DRILLS, PATTERNS, garmentName } from "../content.js";
 import { tip } from "./tips.js";
+import { drillForStep } from "../drill/drills.js";
 
 function garmentChips(S, place, time) {
   return ZONES.map((z) => {
@@ -131,7 +132,11 @@ export function openGarment(zone) {
   const inTutorial = !St.tutorialDone(S);
   const grid = DRILLS.map((d, i) => {
     const k = i + 1, st = k <= n ? (folds.includes(k) ? "fold" : "done") : k === n + 1 && !done ? "next" : "todo";
-    return `<div class="gstep ${st}"><b>${k}</b><span>${esc(d.name)}</span></div>`;
+    /* a step already sung can be sung again (the designer, 2026-11-14: "allow user to go back to the previous drills
+       to redo them"); it never moves anything forward */
+    return k <= n
+      ? `<button class="gstep ${st}" data-step="${k}" aria-label="Sing step ${k}, ${esc(d.name)}, again"><b>${k} <i aria-hidden="true">↻</i></b><span>${esc(d.name)}</span></button>`
+      : `<div class="gstep ${st}"><b>${k}</b><span>${esc(d.name)}</span></div>`;
   }).join("");
   let buttons = "", note = "";
   if (done) {
@@ -149,6 +154,7 @@ export function openGarment(zone) {
   const el = sheet(`
     <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())}</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}, ${FUR[g.look.fur] || ""}.</p></div></div>
     <div class="gsteps">${grid}</div>
+    ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}
     ${note ? `<p class="muted small">${esc(note)}</p>` : ""}
     ${buttons}`);
@@ -158,6 +164,22 @@ export function openGarment(zone) {
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });
   on("wear", () => { St.chooseZone(S, place, zone); app.save(); closeSheet(true); show("home", { noAutoPick: true }); });
+  el.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => { closeSheet(true); askRedo(place, time, zone, Number(b.dataset.step)); }));
+}
+
+/* Singing an earlier step again: the new take replaces that step (its shape and its folds) once it is sung;
+   a silent take keeps the old one. It counts as practice, never as progress. */
+function askRedo(place, time, zone, step) {
+  const d = DRILLS[step - 1], name = garmentName(time, zone);
+  const el = sheet(`
+    <h3>Sing step ${step} again?</h3>
+    <p class="muted">${esc(name)} · ${esc(d.name)}. What you sing now takes the place of this step, folds and all. Nothing moves forward or back.</p>
+    <div class="row"><button class="btn primary" data-a="go">Sing it again</button><button class="btn" data-a="no">Not now</button></div>`);
+  el.querySelector("[data-a=go]").onclick = () => {
+    closeSheet(true);
+    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step), seed: `${place}.${time}.${zone}` }, retake: true, outcome: null });
+  };
+  el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone); };
 }
 
 app.screens.home = { render: renderHome, openPicker, openGarment };
