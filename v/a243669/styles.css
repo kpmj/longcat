@@ -541,8 +541,8 @@ body.is-home .dev-fab { display: none; }
    A picture, and a sheet of the print's paper over it. One surface (paper, a dark key line, a flat shadow like a
    second block), one primary colour (the indigo of the title block, for the one main action), vermilion only as
    a mark (progress, a sung step, "Here"). The game no longer follows the phone's dark theme: these colours are
-   its own. Every tab opens with a strip of the sky of the place and time the player is in (--sky, --sky2, --sun,
-   set on <body> by app.js) and its content sits on a sheet that rises over it. */
+   its own. Home and the singing screen are the picture; the tabs are plain pages of paper. Behind the game, where
+   the window is wider than a phone, is the sky of the place and time the player is in (--sky, set by app.js). */
 body { background: var(--sky, var(--soft)); }
 
 /* ---------- buttons and small controls ---------- */
@@ -580,24 +580,16 @@ body { background: var(--sky, var(--soft)); }
 :root .pick { background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); }
 :root .time-g { background: var(--card); border: 1.5px solid var(--line); }
 
-/* ---------- a tab: a strip of sky, then the sheet ---------- */
-:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar {
-  position: relative; flex: none; align-items: flex-start;
-  margin: calc(-8px - env(safe-area-inset-top, 0px)) calc(-1 * max(14px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(14px, env(safe-area-inset-left, 0px)));
-  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 34px max(14px, env(safe-area-inset-left, 0px));
-  background: linear-gradient(var(--sky) 0 48%, var(--sky2) 48%);
-}
-/* the sun (or the moon) of that time of day, going down behind the sheet */
-:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar::before { content: ""; position: absolute; right: 44px; bottom: -6px; width: 58px; height: 58px; border-radius: 50%; background: var(--sun); }
-:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--paper); border-top: 1.5px solid var(--key); border-radius: 22px 22px 0 0; }
-:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar > * { position: relative; z-index: 1; }
-/* the page's name in the same pill as Home's place and time */
-:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar .where { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 16px; flex-wrap: nowrap; }
-:root .topbar .place { font-size: 17px; }
-:root .topbar .where .time-chip { background: none; border: 0; padding: 0; font-size: 13.5px; color: var(--muted); }
-:root :is(.screen-settings, .screen-drills) > .topbar .where { padding-left: 4px; }
-:root :is(.screen-settings, .screen-drills) > .topbar .icon-btn { border: 0; box-shadow: none; background: none; width: 36px; height: 36px; }
-:root .screen-album > .topbar > :last-child:not(.where) { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+/* ---------- a tab: a full page of paper, with its name at the top ----------
+   Until 2026-11-15 a tab opened with a strip of sky and its content rose over it like a sheet. A sheet that cannot
+   be put away read as an overlay (the designer: "show the full page instead of the overlay. Since there's no way for user
+   to collapse it either way"), so the Wardrobe, the Store, Settings and the drill editor are plain pages now. */
+:root :is(.screen-wardrobe, .screen-store, .screen-settings, .screen-drills) > .topbar { flex: none; min-height: 46px; padding: 0 2px; }
+:root :is(.screen-wardrobe, .screen-store, .screen-settings, .screen-drills) > .topbar .where { flex-wrap: nowrap; align-items: baseline; gap: 9px; }
+:root .topbar .where .time-chip { background: none; border: 0; padding: 0; font-size: 14px; color: var(--muted); }
+:root :is(.screen-settings, .screen-drills) > .topbar .where { align-items: center; }
+:root :is(.screen-settings, .screen-drills) > .topbar .icon-btn { border: 0; box-shadow: none; background: none; width: 36px; height: 36px; margin-left: -8px; }
+:root .topbar .purse { background: var(--card); min-height: 40px; }
 
 /* the two-way switch */
 :root .segs { background: var(--soft); border: 1.5px solid var(--key); border-radius: 22px; padding: 3px; }
