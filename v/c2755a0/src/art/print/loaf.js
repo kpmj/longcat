@@ -1,13 +1,16 @@
 /* A cat (or guest) curled into a loaf, in the woodblock style. Same signatures as ../loaf.js. */
 import { f } from "../util.js";
-import { lookOf, animalId, kindId, FUR } from "../palettes.js";
+import { lookOf, animalId, kindId } from "../palettes.js";
 import { headFor, tailFor, palFor } from "./guests.js";
 import { COATS, KEY, LWC, coatMarkup, straight, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
 
 export function loaf(x, y, dir, c = {}, mood = "sleep", sc = 1, zone = "bottom", time = "morning", anim = null) {
   const look = lookOf(c.look, c.zone || zone, time), animal = animalId(c.animal), kind = kindId(c.kind);
   const cat = animal === "cat", pal = palFor(animal, look);
-  const long = FUR[look.fur].fluff > 2, rx = 19 + (long ? 1.5 : 0), ry = 11 + (long ? 1 : 0), lw = LWC * .8;
+  /* A cat's own fur is the same at every time of day (the designer, 2026-11-14): the knitting it wears shows the time, not
+     its fur. `look.fur` still travels with a garment and now only says how thick that garment's knitting is, so a
+     loaf ignores it. The tufts stay in the code for a cat that is long-haired by nature, if one is ever cast. */
+  const long = false, rx = 19 + (long ? 1.5 : 0), ry = 11 + (long ? 1 : 0), lw = LWC * .8;
   const coat = coatMarkup([{ pts: straight(-14, -1, 28), pattern: look.pattern }], 15, pal, cat ? 1 : .5);
   const asleep = mood === "sleep";
   const tail = cat ? (asleep ? catTailTucked : catTail)(kind, 15, 3, -1, 6, pal) : tailFor(animal, kind, 15, 3, -1, 6, pal, asleep);
