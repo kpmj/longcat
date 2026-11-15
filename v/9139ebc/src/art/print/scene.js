@@ -21,9 +21,11 @@ const plank = (x, y, wood) => `<rect x="${x}" y="${y}" width="80" height="7" rx=
 const tag = (cx, y, label) => { const w = 14 + textWidth(label, 10.5); return `<rect x="${f(cx - w / 2)}" y="${y}" width="${f(w)}" height="16" rx="1.5" fill="${PAPER}" stroke="${KEY}" stroke-width="1.3"/><text x="${cx}" y="${y + 12}" text-anchor="middle" ${FONT} font-weight="700" font-size="10.5" fill="${KEY}">${esc(label)}</text>`; };
 function basket(cx, y, b, wood, time, animate, arrive = null) {
   const t = timeId(b.time), cats = list(b.cats);
+  /* a basket's tag says its time of day, unless the basket brings its own label; an empty label means no tag */
+  const label = b.label === undefined || b.label === null ? TIME_NAME[t] : txt(b.label);
   return `${pile(cx, y - 35, cats, "sleep", t, 1, animate, arrive)}<path d="M${cx - 30} ${y - 28} L${cx - 24} ${y} H${cx + 24} L${cx + 30} ${y - 28}Z" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M${cx - 27} ${y - 19} H${cx + 27} M${cx - 25.5} ${y - 10} H${cx + 25.5} M${cx - 12} ${y - 26} L${cx - 10} ${y - 1} M${cx + 12} ${y - 26} L${cx + 10} ${y - 1} M${cx} ${y - 26} V${y - 1}" stroke="${KEY}" stroke-width=".9" opacity=".55" fill="none"/>
-    <rect x="${cx - 32}" y="${y - 32}" width="64" height="8" rx="3" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6"/>${tag(cx, y - 20, TIME_NAME[t])}${animate && arrive ? `<g class="lc-arrive" style="animation-delay:${f(Math.max(...arrive.filter(v => v != null)) + .7)}s">${zzPrint(cx + 18, y - 60, 1.1)}</g>` : zzPrint(cx + 18, y - 60, 1.1)}`;
+    <rect x="${cx - 32}" y="${y - 32}" width="64" height="8" rx="3" fill="${wood[0]}" stroke="${KEY}" stroke-width="1.6"/>${label ? tag(cx, y - 20, label) : ""}${animate && arrive ? `<g class="lc-arrive" style="animation-delay:${f(Math.max(...arrive.filter(v => v != null)) + .7)}s">${zzPrint(cx + 18, y - 60, 1.1)}</g>` : zzPrint(cx + 18, y - 60, 1.1)}`;
 }
 /* the daily cushion: a small vermilion zabuton with its step number */
 function cushionMarkup(c) {
@@ -148,7 +150,9 @@ export const PLACE_UI = Object.fromEntries(PLACE_IDS.map(p => [p, Object.fromEnt
 
 /* The cats that have finished and gone to sleep, on their own: one basket per finished time of day, side by side
    (320 x 104). They left the home page on 2026-11-14 (it was too full) and live in the wardrobe's Cats tab.
-   o = { baskets: [{ time, cats }], time (for the wood), animate }. Animated, they breathe and can be patted. */
+   o = { baskets: [{ time, cats, label }], time (for the wood), animate }. Animated, they breathe and can be patted.
+   Since 2026-11-15 nobody sleeps after a time of day (a place has three singers all day); the Wardrobe's Cats tab
+   uses this for the player's cats that are not singing, with `label: ""` so the baskets carry no time. */
 export function nappingSvg(o = {}) {
   const baskets = list(o && o.baskets).slice(0, 3), time = timeId(o && o.time), animate = !o || o.animate !== false, wood = woodOf(time);
   const n = baskets.length, xs = n === 1 ? [160] : n === 2 ? [100, 220] : [64, 160, 256];
