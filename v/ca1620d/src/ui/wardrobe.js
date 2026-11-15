@@ -1,26 +1,27 @@
 /* The wardrobe, by garment (the designer, 2026-11-15, wardrobe redesign board, layout 甲: docs/design/longcat-wardrobe-redesign.md).
-   Two tabs; everything here changes what Home shows:
+   Two tabs:
    - Wearing: what the judge wears on Home, one card per garment. A card opens that garment's sheet (ui/cats.js,
-     openDress): who sings it, and its yarn. "Earlier garments" under the cards lists the finished garments of the
-     other times of day; one opens Home's Garment sheet, where its cat and yarn can be changed and a step sung again.
-   - Places (ui/places.js): the open places and their letters; going to one changes what hangs in this wardrobe.
-   Mixing postcards was a tab here (Postcard, once Outfit); it is in the Album now (ui/album.js; board
-   docs/design/longcat-postcards-together.md). The Cats tab that was here is the Store in the bottom row (ui/cats.js). */
-import { app, esc, $, $$, sheet, closeSheet, wireTaps } from "./app.js";
+     openDress): who sings it, and its yarn. Under the cards, "Earlier garments" lists the finished garments of the
+     other times of day (one opens Home's Garment sheet, where its cat and yarn can be changed and a step sung again)
+     and "Mix a postcard" opens the maker (ui/album.js openMaker) whenever there is something to mix.
+   - Album (ui/album.js): the postcards, the mixed ones too. It was a tab of the bottom row (the designer, 2026-11-15).
+   Places was a tab here for a day; it opens from the chip at the top left of Home now (ui/places.js). The Cats tab
+   that was here is the Store in the bottom row (ui/cats.js). */
+import { app, esc, $, $$, sheet, closeSheet, wireTaps, paintDock } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg } from "../art/index.js";
 import { ZONES, TIMES, garmentName, placeById, timeById } from "../content.js";
 import { catIconSvg } from "./home-art.js";
 import { openDress, purse, singerLabel, yarnLabel, yarnSwatch } from "./cats.js";
-import { renderPlaces } from "./places.js";
+import { renderAlbum, openMaker } from "./album.js";
 
-let mode = "wearing", wasAt = null;
+let mode = "wearing";
 
-const TABS = [["wearing", "Wearing"], ["places", "Places"]];
-/* a dot on Places while a letter is unread */
+const TABS = [["wearing", "Wearing"], ["album", "Album"]];
+/* a dot on Album while it holds a postcard not looked at yet */
 const segs = () => {
-  const letter = St.unreadLetters(app.S, app.real()).length > 0;
-  return `<div class="segs" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}${id === "places" && letter ? '<i class="dot" aria-label="a letter"></i>' : ""}</button>`).join("")}</div>`;
+  const fresh = mode !== "album" && St.newIn(app.S, "album");
+  return `<div class="segs" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}${id === "album" && fresh ? '<i class="dot" aria-label="a new postcard"></i>' : ""}</button>`).join("")}</div>`;
 };
 function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(root); })); }
 const topbar = (S) => `<header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(S.here).name)}</span></div>${purse(S)}</header>`;
@@ -29,7 +30,7 @@ const earlier = (S, place, time) => TIMES.flatMap((t) => (t.id === time ? [] : Z
 
 /* ---------- Wearing: the three garments the judge has on now ---------- */
 function wearing(root) {
-  const S = app.S, place = S.here, time = St.currentTime(S, place) || "night", old = earlier(S, place, time);
+  const S = app.S, place = S.here, time = St.currentTime(S, place) || "night", old = earlier(S, place, time), mix = St.mixable(S, place).any;
   const card = (z) => {
     const g = St.garmentSpec(S, place, time, z.id), who = singerLabel(S, g.singer), y = yarnLabel(g.yarn);
     return `<button class="wear-slot" data-zone="${z.id}" aria-label="${esc(z.name)}: sung by ${esc(who)}, ${esc(y.toLowerCase())}. Change">
@@ -42,20 +43,27 @@ function wearing(root) {
     <div class="scene-wrap small">${sceneSvg(St.homeScene(S, place, app.real(), { cushion: null, animate: true }))}</div>
     <div class="wear-slots">${ZONES.map(card).join("")}</div>
     <p class="sub">What the judge wears on Home. Tap one to change its cat or its yarn.</p>
-    ${old.length ? `<button class="btn ghost wear-earlier" data-a="earlier">Earlier garments</button>` : ""}`;
+    ${old.length || mix ? `<div class="row tight wear-more">${old.length ? `<button class="btn ghost" data-a="earlier">Earlier garments</button>` : ""}${mix ? `<button class="btn mix-open" data-a="mix">Mix a postcard</button>` : ""}</div>` : ""}`;
   wireTaps($(".scene-wrap", root));
   wireSegs(root);
   $$(".wear-slot", root).forEach((b) => (b.onclick = () => openDress(b.dataset.zone, time)));
   const eb = $("[data-a=earlier]", root);
   if (eb) eb.onclick = () => pickGarment(old);
+  const mb = $("[data-a=mix]", root);
+  if (mb) mb.onclick = () => openMaker();
+  /* another screen can ask for the maker: show("wardrobe", { tab: "wearing", mix: true }) (the bottom row's Mix,
+     the month's last beat) */
+  if (app.props.mix) { app.props.mix = null; if (mix) setTimeout(() => app.screen === "wardrobe" && mode === "wearing" && openMaker(), 250); }
 }
 
 function render(root) {
-  /* after travelling the wardrobe opens on what the judge wears there, not on the list of places again */
-  if (wasAt !== app.S.here) { if (wasAt && mode === "places") mode = "wearing"; wasAt = app.S.here; }
-  /* another screen can ask for a tab: show("wardrobe", { tab: "places" }) */
+  /* another screen can ask for a tab: show("wardrobe", { tab: "album" }) */
   if (app.props.tab && TABS.some(([id]) => id === app.props.tab)) { mode = app.props.tab; app.props.tab = null; }
-  if (mode === "places") return renderPlaces(root, topbar(app.S), segs(), wireSegs);
+  if (mode === "album") {
+    /* looking at the Album takes its dot away, here and in the bottom row */
+    if (St.newIn(app.S, "album")) { St.markSeen(app.S, "album"); app.save(); paintDock(); }
+    return renderAlbum(root, topbar(app.S), segs(), wireSegs);
+  }
   wearing(root);
 }
 

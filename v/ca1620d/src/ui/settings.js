@@ -1,4 +1,5 @@
-/* Settings (game-flow board, section 6): a full page behind the gear on Home. Four groups: your voice (range,
+/* Settings (game-flow board, section 6): a tab of the bottom row (the designer, 2026-11-15; it was a full page behind the
+   gear on Home). Four groups: your voice (range,
    key, hear the first note), the microphone (and a test), sound and letters, help. Cat kinds moved to the
    Wardrobe. The dev tools the designer uses to walk the whole month stay at the very bottom, marked as testing only. */
 import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
@@ -36,7 +37,7 @@ function render(root) {
   const r = S.settings.range, range = r || DEFAULT_RANGE;
   const fn = firstNote(S), nud = S.settings.nudge;
   root.innerHTML = `
-    <header class="topbar"><div class="where"><button class="icon-btn" data-a="back" aria-label="Back to Home">‹</button><span class="place">Settings</span></div></header>
+    <header class="topbar"><div class="where"><span class="place">Settings</span></div></header>
     <section class="settings">
       <div class="card"><h4>Your voice</h4>
         <div class="set"><span><b>Range</b><small>${r ? `${noteName(r.low)} – ${noteName(r.high)}` : `Not measured. Using ${noteName(DEFAULT_RANGE.low)} – ${noteName(DEFAULT_RANGE.high)}`}</small></span><button class="btn small" data-a="range">${r ? "Measure again" : "Measure"}</button></div>
@@ -63,7 +64,6 @@ function render(root) {
     if (a) a.innerHTML = `<i class="mic-dot ${cls}"></i>${esc(name)}`;
     if (b) b.textContent = note;
   });
-  $("[data-a=back]", root).onclick = () => show("home");
   $("[data-a=range]", root).onclick = () => show("range", { from: "settings" });
   const nudge = (d) => { S.settings.nudge = Math.max(-5, Math.min(5, S.settings.nudge + d)); app.save(); render(root); };
   $("[data-a=down]", root).onclick = () => nudge(-1);
@@ -192,4 +192,4 @@ export function openDev() {
   act("range", () => { closeSheet(true); show("range", { from: "settings" }); });
 }
 
-app.screens.settings = { render, fullscreen: true };
+app.screens.settings = { render };

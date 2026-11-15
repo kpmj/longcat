@@ -8,7 +8,7 @@ import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { openDress, singerLabel, yarnLabel } from "./cats.js";
-import { openLetter } from "./places.js";
+import { openLetter, openPlaces } from "./places.js";
 import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor, yarnName } from "../content.js";
@@ -87,8 +87,8 @@ export function renderHome(root) {
   root.innerHTML = `
     <div class="home-art" id="home-scene"></div>
     <header class="home-top">
-      <button class="home-pill paper" data-act="times" aria-label="${esc(p.name)}, ${esc(T.name)}. Open the times of day"><b>${esc(p.name)}</b><span>${esc(T.name)}</span><i aria-hidden="true">▾</i></button>
-      <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button><button class="home-ico paper" data-go="settings" aria-label="Settings">⚙</button></div>
+      <button class="home-pill paper" data-act="places" aria-label="${esc(p.name)}, ${esc(T.name)}. Open the places"><b>${esc(p.name)}</b><span>${esc(T.name)}</span><i aria-hidden="true">▾</i></button>
+      <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button></div>
     </header>
     ${special ? '<span class="home-special paper">New Year month</span>' : ""}
     <section class="home-tray paper" aria-label="The three garments">
@@ -123,8 +123,10 @@ export function renderHome(root) {
   wireCells(root);
   /* the garment just put on (Wear this one, the picker): its cat hops once */
   if (app.props.picked) setTimeout(() => app.screen === "home" && hopCat(document.getElementById("home-scene"), app.props.picked), 250);
-  const tc = $("[data-act=times]", root);
-  if (tc) tc.onclick = () => openTimes();
+  /* the chip at the top left says where the judge is and opens the places (the designer, 2026-11-15); the times of day of
+     this place are behind the row that says Here */
+  const pc = $("[data-act=places]", root);
+  if (pc) pc.onclick = () => openPlaces();
   const lb = $("[data-act=letter]", root);
   if (lb) lb.onclick = () => openLetter(unread[0]);
   if (!nt && time && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && openPicker(), 350);
@@ -266,4 +268,4 @@ function askRedo(place, time, zone, step) {
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
 
-app.screens.home = { render: renderHome, repaint: repaintHome, openPicker, openGarment, leave: leaveHome };
+app.screens.home = { render: renderHome, repaint: repaintHome, openPicker, openGarment, openTimes, leave: leaveHome };

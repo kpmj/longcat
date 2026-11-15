@@ -764,3 +764,9 @@ body { background: var(--sky, var(--soft)); }
 .mix-dots u.ok { border-color: var(--key); }
 .mix-dots u.on { border-color: var(--key); background: var(--key); }
 .wear-earlier { align-self: center; min-height: 40px; font-size: 14px; }
+
+/* ---------- Places behind Home's chip, the Album inside the Wardrobe, Settings in the bottom row (the designer, 2026-11-15) ---------- */
+.sheet .places { gap: 8px; }
+.album > .days { align-self: flex-end; margin: -2px 2px -6px; }
+.wear-more { justify-content: center; }
+.mix-open::before { content: "◉"; font-size: 13px; color: var(--coral); margin-right: 7px; }

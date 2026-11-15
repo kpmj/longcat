@@ -1,5 +1,6 @@
-/* Places and letters: the Wardrobe's third tab (the designer, 2026-11-15: it was a tab of the bottom row; it changed
-   places with Cats, which is the Store there now). A new place opens on the 1st and arrives as a two-line letter; the game never moves the
+/* Places and letters: a sheet behind the chip at the top left of Home, which says where the judge is (the designer,
+   2026-11-15; it was a tab of the bottom row, then of the Wardrobe). The row of the place the judge is at opens
+   its times of day (ui/home.js openTimes). A new place opens on the 1st and arrives as a two-line letter; the game never moves the
    player there on its own (decision 2). Any open place can be entered once the tutorial garment is done;
    unfinished months keep everything; "not visited yet", never "missed". */
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
@@ -7,7 +8,7 @@ import * as St from "../state.js";
 import { placeThumbSvg, letterSvg, guestSvg } from "../art/index.js";
 import { PLACES, NEWYEAR_LETTER, TIMES, ZONES, STEPS, placeById } from "../content.js";
 
-export function renderPlaces(root, topbar, segs, wireSegs) {
+export function openPlaces() {
   const S = app.S, real = app.real();
   const opened = St.openedPlaces(S, real);
   const unread = St.unreadLetters(S, real);
@@ -18,22 +19,23 @@ export function renderPlaces(root, topbar, segs, wireSegs) {
     const locked = place !== "onsen" && !St.canTravel(S);
     return `<button class="place-row${here ? " here" : ""}" data-place="${place}" ${locked ? 'data-locked="1"' : ""}>
       <span class="thumb">${placeThumbSvg(place, St.currentTime(S, place) || "night")}</span>
-      <span class="pinfo"><b>${esc(p.name)}${St.specialFor(place) ? " · New Year month" : ""}</b><span>${esc(p.seat)} · ${status}</span></span>
+      <span class="pinfo"><b>${esc(p.name)}${St.specialFor(place) ? " · New Year month" : ""}</b><span>${here ? `${n >= 9 ? "All nine" : `${n} / 9`} · times of day ›` : `${esc(p.seat)} · ${status}`}</span></span>
       ${here ? '<span class="badge">Here</span>' : unread.includes(place) ? '<span class="badge env">✉</span>' : ""}
     </button>`;
   }).join("");
-  root.innerHTML = `
-    ${topbar}
-    ${segs}
+  const root = sheet(`
+    <h3>Places</h3>
     <section class="places">
       ${rows}
       ${nx ? `<div class="place-row future"><span class="thumb ghost"></span><span class="pinfo"><b>Next place</b><span>Opens on ${St.monthLabel(nx.date)}. A letter comes first.</span></span></div>` : ""}
       ${!St.canTravel(S) ? `<p class="sub">Finish your first garment at the hot spring, then you can go anywhere that’s open.</p>` : `<p class="sub">Any open place, any time. Unfinished garments wait for you.</p>`}
-    </section>`;
-  wireSegs(root);
+    </section>
+    <button class="btn" data-a="close">Close</button>`, { tall: true });
+  $("[data-a=close]", root).onclick = () => closeSheet();
   $$(".place-row[data-place]", root).forEach((b) => (b.onclick = () => {
     const place = b.dataset.place;
     if (unread.includes(place)) return openLetter(place);
+    if (place === S.here) { closeSheet(true); return app.screens.home.openTimes(); }
     openPlace(place);
   }));
 }
@@ -84,6 +86,5 @@ export function openLetter(place) {
 }
 
 function refreshBadge() {
-  if (app.screen === "wardrobe") show("wardrobe", { tab: "places" });
-  else if (app.screen === "home") show("home", { noAutoPick: true });
+  if (app.screen === "home") show("home", { noAutoPick: true });
 }

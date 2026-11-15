@@ -1,6 +1,6 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
-import { loadSave, writeSave, freshSave, unreadLetters, newIn, markSeen, currentTime, nextTake, beatPending, homeScene } from "../state.js";
+import { loadSave, writeSave, freshSave, newIn, markSeen, currentTime, nextTake, beatPending, homeScene } from "../state.js";
 import { sceneParts } from "../art/index.js";
 import { tapSound, stopMusic } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
@@ -38,13 +38,15 @@ export function boot() {
 }
 
 /* ---------- router ----------
-   Four tabs; Settings is behind the gear on Home (game-flow board, decision A). The fourth is the Store, where
-   the Wardrobe's Cats tab went; Places took that tab's spot inside the Wardrobe (the designer, 2026-11-15). */
+   Four tabs: Home, Wardrobe, Settings, Store (the designer, 2026-11-15). The Store is where the Wardrobe's Cats tab went;
+   Settings took the Album's spot (it was the gear on Home) and the Album is a tab of the Wardrobe; Places opens
+   from the chip at the top left of Home. */
 const BAG = `<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 7.4h12.8l-1 9.6H4.6z"/><path d="M7.1 7.4V6a2.9 2.9 0 0 1 5.8 0v1.4"/></svg>`;
+const COG = `<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linejoin="round"><circle cx="10" cy="10" r="7.1" stroke-width="2.6" stroke-dasharray="2.79 2.79"/><circle cx="10" cy="10" r="5.2" stroke-width="1.7"/><circle cx="10" cy="10" r="1.7" stroke-width="1.5"/></svg>`;
 const DOCK = [
   { id: "home", label: "Home", icon: "⌂" },
   { id: "wardrobe", label: "Wardrobe", icon: "◫" },
-  { id: "album", label: "Album", icon: "▤" },
+  { id: "settings", label: "Settings", icon: COG },
   { id: "store", label: "Store", icon: BAG },
 ];
 /* The sky of where the player is, for the strip at the top of every tab: the colour at the top of that place's
@@ -72,7 +74,7 @@ export function show(name, props = {}) {
   app.from = prev || null;
   app.screen = name;
   if (name !== "home") stopMusic(); // the music is Home's (a tune tried out in the dev tools stops here too)
-  if (name === "wardrobe" || name === "album") { markSeen(app.S, name); app.save(); }
+  if (name === "wardrobe") { markSeen(app.S, name); app.save(); }
   app.props = props;
   const root = $("#screen");
   root.className = `screen screen-${name}`;
@@ -83,20 +85,24 @@ export function show(name, props = {}) {
   document.body.classList.toggle("is-full", !!full);
   document.body.classList.toggle("is-home", name === "home");
   paintSky();
-  /* an unread letter is read on the Wardrobe's Places tab, so the Wardrobe carries its dot */
-  app.badge = { wardrobe: newIn(app.S, "wardrobe") || unreadLetters(app.S, app.real()).length > 0, album: newIn(app.S, "album") };
-  renderDock();
+  paintDock();
   def?.render(root, props);
   root.scrollTop = 0;
 }
 export const refresh = () => show(app.screen, app.props);
+/* The dots of the bottom row. The Album is a tab of the Wardrobe, so a new postcard puts its dot on the Wardrobe
+   (and on that tab, ui/wardrobe.js) until the tab is looked at. */
+export function paintDock() {
+  app.badge = { wardrobe: newIn(app.S, "wardrobe") || newIn(app.S, "album") };
+  renderDock();
+}
 
 /* The bottom row: two tabs, Sing, two tabs (full-screen home board, 2026-11-14). Sing is the same button on every
    tab and starts the next step from wherever it is pressed. With no garment chosen yet it says Pick and goes to the
-   picker on Home; with all nine on it says Mix and opens the Album's "Mix a postcard". */
+   picker on Home; with all nine on it says Mix and opens the Wardrobe's "Mix a postcard". */
 function singButton() {
   const S = app.S, place = S.here;
-  if (!currentTime(S, place)) return { big: "Mix", small: "a postcard", label: "Mix a postcard", go: () => show("album", { mix: true }) };
+  if (!currentTime(S, place)) return { big: "Mix", small: "a postcard", label: "Mix a postcard", go: () => show("wardrobe", { tab: "wearing", mix: true }) };
   const nt = nextTake(S, place);
   if (!nt) return { big: "Pick", small: "a garment", label: "Pick a garment", go: () => (app.screen === "home" ? app.screens.home.openPicker() : show("home")) };
   return { big: "Sing", small: `step ${nt.step}`, label: `Sing step ${nt.step}, ${nt.drill.name}`, go: () => (beatPending(S, place) ? show("home") : show("take", { ctx: nextTake(S, place) })) };

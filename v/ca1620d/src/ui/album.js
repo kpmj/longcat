@@ -1,16 +1,16 @@
-/* The album: postcards, and where one is mixed (the designer, 2026-11-15, board docs/design/longcat-postcards-together.md,
-   layout 甲: "these two tabs seem to belong together"). One cell per month: its three time postcards and the mixed
+/* The album: a tab of the Wardrobe that shows the postcards (the designer, 2026-11-15: "move the entire Album inside
+   Wardrobe as a tab just to show the result after mixing"; it was a tab of the bottom row), and the maker that mixes
+   one (board docs/design/longcat-postcards-together.md, layout 甲), opened from the Wardrobe's Wearing tab. One cell
+   per month: its three time postcards and the mixed
    ones; an unfinished month says "7 / 9 garments" and its door stays open. A postcard is a picture with no score;
    it can be shared or saved as an image. "Sung on N days" is only a number: no calendar, no missed days.
-   - At the place the player is at, a dashed "Mix one" card stands before the mixed postcards whenever there is
-     something to mix (state.js mixable). It opens the maker.
    - The maker is a sheet: the picture and four buttons under it (scarf, top, hat, sky). A tap on one goes to the
      next finished garment of that kind, or the next sky reached; three dots under it are morning, golden hour and
      night (the one in use, the others that can be had, the ones not finished). Only this month; photos only (Home
      never changes); no list of combinations and no counter. It took the place of the Wardrobe's Postcard tab and
      its twelve cells.
    - There is no Faces tab any more: the judge still learns its twelve faces and makes them, and nothing lists them. */
-import { app, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
+import { app, sheet, closeSheet, esc, $, $$, toast, paintDock } from "./app.js";
 import * as St from "../state.js";
 import { postcardSvg, sceneSvg, wardrobeThumbSvg, placeThumbSvg } from "../art/index.js";
 import { placeById, timeById, TIMES, ZONES, garmentName } from "../content.js";
@@ -19,37 +19,33 @@ function cardSvg(card) {
   return postcardSvg({ ...St.cardScene(app.S, card), caption: card.caption, title: placeById(card.place).name, dateLabel: St.monthLabel(card.date) });
 }
 
-function render(root) {
+export function renderAlbum(root, topbar, segs, wireSegs) {
   const S = app.S, real = app.real(), n = S.journal.length;
   const opened = St.openedPlaces(S, real);
-  const canMix = St.mixable(S, S.here).any;
   const cells = opened.map((place) => {
     const p = placeById(place), m = S.months[place];
     const done = St.garmentsDone(S, place), cards = m?.cards || [];
     const status = !m || !St.takesAt(S, place) ? "Not visited yet" : done >= 9 ? "All nine" : `${done} / 9 garments`;
     const timeCards = TIMES.map((t) => cards.find((c) => c.kind === "time" && c.bg === t.id));
-    const mixes = cards.filter((c) => c.kind === "mix"), mixHere = place === S.here && canMix;
+    const mixes = cards.filter((c) => c.kind === "mix");
     return `<article class="month">
       <header><b>${esc(p.name)}</b><span>${status}</span></header>
       <div class="cards">${timeCards.map((c, i) => c
         ? `<button class="pc" data-card="${c.id}" aria-label="${esc(TIMES[i].name)} postcard">${cardSvg(c)}</button>`
         : `<div class="pc empty"><span>${esc(TIMES[i].name)}</span></div>`).join("")}</div>
-      ${mixes.length || mixHere ? `<div class="mixes">${mixHere ? `<button class="pc mini mix-new" data-a="mix" aria-label="Mix a postcard"><b aria-hidden="true">+</b><span>Mix one</span></button>` : ""}${mixes.map((c) => `<button class="pc mini" data-card="${c.id}" aria-label="Mixed postcard">${cardSvg(c)}</button>`).join("")}</div>` : ""}
+      ${mixes.length ? `<div class="mixes">${mixes.map((c) => `<button class="pc mini" data-card="${c.id}" aria-label="Mixed postcard">${cardSvg(c)}</button>`).join("")}</div>` : ""}
     </article>`;
   }).join("");
   const cur = St.currentTime(S, S.here), tn = cur ? TIMES.find((t) => t.id === cur).name.toLowerCase() : "";
-  root.innerHTML = `<header class="topbar"><div class="where"><span class="place">Album</span></div><span class="days">Sung on ${n} day${n === 1 ? "" : "s"}</span></header>
-    <section class="album">${cells}<p class="sub">${cur ? `The ${tn} postcard is taken when all three ${tn} garments are on.` : "Places you haven’t been say “not visited yet”. Their doors stay open."}</p></section>`;
+  root.innerHTML = `${topbar}${segs}
+    <section class="album"><p class="days">Sung on ${n} day${n === 1 ? "" : "s"}</p>${cells}<p class="sub">${cur ? `The ${tn} postcard is taken when all three ${tn} garments are on.` : "Places you haven’t been say “not visited yet”. Their doors stay open."}</p></section>`;
   $$("[data-card]", root).forEach((b) => (b.onclick = () => openCard(St.allCards(S).find((c) => c.id === b.dataset.card))));
-  const mix = $("[data-a=mix]", root);
-  if (mix) mix.onclick = () => openMaker();
-  /* another screen can ask for the maker: show("album", { mix: true }) (the bottom row's Mix, the month's last beat) */
-  if (app.props.mix) { app.props.mix = null; if (canMix) setTimeout(() => app.screen === "album" && openMaker(), 250); }
+  wireSegs(root);
 }
 
 /* ---------- the maker: mix a postcard ---------- */
 let pick = null;
-function openMaker() {
+export function openMaker() {
   const S = app.S, place = S.here, mx = St.mixable(S, place);
   if (!mx.any) return;
   /* it opens on the newest finished garment of each kind under the newest sky, and keeps the mix while at this place */
@@ -81,8 +77,9 @@ function openMaker() {
     if (!card) return;
     app.save();
     closeSheet(true);
-    /* the new card is in the album behind its own sheet */
-    if (app.screen === "album") render($("#screen"));
+    /* the new card is in the Album tab; the Wardrobe underneath gets its dot */
+    app.screens[app.screen]?.repaint?.();
+    paintDock();
     openCard(card);
   };
 }
@@ -143,4 +140,4 @@ function pngBlob(card, done) {
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-app.screens.album = { render, openMaker };
+
