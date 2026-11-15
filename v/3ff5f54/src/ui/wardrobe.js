@@ -15,7 +15,7 @@ import { app, esc, $, $$, wireTaps, paintDock } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, placeThumbSvg } from "../art/index.js";
 import { ZONES, TIMES, STEPS, garmentName, placeById, timeById } from "../content.js";
-import { paintDress, purse } from "./cats.js";
+import { paintDress } from "./cats.js";
 import { renderAlbum, openCard } from "./album.js";
 
 let mode = "dress";
@@ -27,7 +27,8 @@ const segs = () => {
   return `<div class="segs" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}${id === "album" && fresh ? '<i class="dot" aria-label="a new postcard"></i>' : ""}</button>`).join("")}</div>`;
 };
 function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(root); })); }
-const topbar = (S) => `<header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(S.here).name)}</span></div>${purse(S)}</header>`;
+/* no treats up here: they are the Store's (the designer, 2026-11-15) */
+const topbar = (S) => `<header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(S.here).name)}</span></div></header>`;
 
 /* What the picture shows: { place, bg, set: { zone: time } }. It is kept while at this place, and starts again
    (state.js dressStart) when a garment is finished or a new sky is reached, so that the new one is on. */

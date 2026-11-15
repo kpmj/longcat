@@ -12,7 +12,7 @@
 import { app, show, esc, $, $$, sheet, closeSheet, toast, wireTaps } from "./app.js";
 import * as St from "../state.js";
 import { catKindSvg, guestSvg, nappingSvg, yarnSwatchSvg, wardrobeThumbSvg } from "../art/index.js";
-import { ZONES, ZONE_IDS, TIMES, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, placeById, garmentName } from "../content.js";
+import { ZONES, ZONE_IDS, TIMES, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, garmentName } from "../content.js";
 
 /* the coin: a gold disc with a small fish. Drawn here until the art session draws one in the print's style */
 export const treatIcon = (s = 16) => `<svg class="treat" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#e6b84f" stroke="#3e2a3c" stroke-width="1.6"/><path d="M5.2 10c1.6-2.6 4.6-2.9 6.6-.9l2.4-1.7v5.2l-2.4-1.7c-2 2-5 1.7-6.6-.9z" fill="#3e2a3c"/></svg>`;
@@ -57,7 +57,7 @@ function renderStore(root) {
   const cast = St.castAt(S, place, time), shelf = St.shelfAt(S, place), singing = (id) => ZONES.find((z) => cast[z.id] === id);
   const napping = S.cats.filter((id) => !singing(id));
   root.innerHTML = `
-    <header class="topbar"><div class="where"><span class="place">Store</span><span class="time-chip">${esc(placeById(place).name)}</span></div>${purse(S)}</header>
+    <header class="topbar"><div class="where"><span class="place">Store</span></div>${purse(S)}</header>
     <section class="cats-tab">
       <h4 class="cats-h">Your cats <i>${S.cats.length}${napping.length ? " · the ones not singing are asleep" : ""}</i></h4>
       <div class="cat-grid four">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, tag: z ? z.name : "", zz: !z, say: z ? `sings the ${z.name.toLowerCase()}` : "asleep" }); }).join("")}</div>
