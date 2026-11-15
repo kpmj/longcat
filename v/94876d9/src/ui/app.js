@@ -102,7 +102,7 @@ export function paintDock() {
    picker on Home; with all nine on it says Mix and opens the Wardrobe's "Mix a postcard". */
 function singButton() {
   const S = app.S, place = S.here;
-  if (!currentTime(S, place)) return { big: "Mix", small: "a postcard", label: "Mix a postcard", go: () => show("wardrobe", { tab: "wearing", mix: true }) };
+  if (!currentTime(S, place)) return { big: "Mix", small: "a postcard", label: "Mix a postcard", go: () => show("wardrobe", { tab: "dress" }) };
   const nt = nextTake(S, place);
   if (!nt) return { big: "Pick", small: "a garment", label: "Pick a garment", go: () => (app.screen === "home" ? app.screens.home.openPicker() : show("home")) };
   return { big: "Sing", small: `step ${nt.step}`, label: `Sing step ${nt.step}, ${nt.drill.name}`, go: () => (beatPending(S, place) ? show("home") : show("take", { ctx: nextTake(S, place) })) };

@@ -1,19 +1,15 @@
 /* The album: a tab of the Wardrobe that shows the postcards (the designer, 2026-11-15: "move the entire Album inside
-   Wardrobe as a tab just to show the result after mixing"; it was a tab of the bottom row), and the maker that mixes
-   one (board docs/design/longcat-postcards-together.md, layout 甲), opened from the Wardrobe's Wearing tab. One cell
-   per month: its three time postcards and the mixed
-   ones; an unfinished month says "7 / 9 garments" and its door stays open. A postcard is a picture with no score;
-   it can be shared or saved as an image. "Sung on N days" is only a number: no calendar, no missed days.
-   - The maker is a sheet: the picture and four buttons under it (scarf, top, hat, sky). A tap on one goes to the
-     next finished garment of that kind, or the next sky reached; three dots under it are morning, golden hour and
-     night (the one in use, the others that can be had, the ones not finished). Only this month; photos only (Home
-     never changes); no list of combinations and no counter. It took the place of the Wardrobe's Postcard tab and
-     its twelve cells.
+   Wardrobe as a tab just to show the result after mixing"; it was a tab of the bottom row). One cell per month: its
+   three time postcards and the mixed ones; an unfinished month says "7 / 9 garments" and its door stays open. A
+   postcard is a picture with no score; it can be shared or saved as an image. "Sung on N days" is only a number: no
+   calendar, no missed days.
+   - A mixed postcard is taken on the Wardrobe's Dress up page (ui/wardrobe.js), which took the place of the maker's
+     sheet that was here (board docs/design/longcat-wardrobe-one-page.md, layout 甲).
    - There is no Faces tab any more: the judge still learns its twelve faces and makes them, and nothing lists them. */
-import { app, sheet, closeSheet, esc, $, $$, toast, paintDock } from "./app.js";
+import { app, sheet, closeSheet, esc, $$, toast } from "./app.js";
 import * as St from "../state.js";
-import { postcardSvg, sceneSvg, wardrobeThumbSvg, placeThumbSvg } from "../art/index.js";
-import { placeById, timeById, TIMES, ZONES, garmentName } from "../content.js";
+import { postcardSvg } from "../art/index.js";
+import { placeById, TIMES } from "../content.js";
 
 function cardSvg(card) {
   return postcardSvg({ ...St.cardScene(app.S, card), caption: card.caption, title: placeById(card.place).name, dateLabel: St.monthLabel(card.date) });
@@ -41,47 +37,6 @@ export function renderAlbum(root, topbar, segs, wireSegs) {
     <section class="album"><p class="days">Sung on ${n} day${n === 1 ? "" : "s"}</p>${cells}<p class="sub">${cur ? `The ${tn} postcard is taken when all three ${tn} garments are on.` : "Places you haven’t been say “not visited yet”. Their doors stay open."}</p></section>`;
   $$("[data-card]", root).forEach((b) => (b.onclick = () => openCard(St.allCards(S).find((c) => c.id === b.dataset.card))));
   wireSegs(root);
-}
-
-/* ---------- the maker: mix a postcard ---------- */
-let pick = null;
-export function openMaker() {
-  const S = app.S, place = S.here, mx = St.mixable(S, place);
-  if (!mx.any) return;
-  /* it opens on the newest finished garment of each kind under the newest sky, and keeps the mix while at this place */
-  if (!pick || pick.place !== place || !ZONES.every((z) => mx.zones[z.id].includes(pick.set[z.id])) || !mx.skies.includes(pick.bg)) {
-    pick = { place, bg: mx.skies[mx.skies.length - 1], set: {} };
-    for (const z of ZONES) pick.set[z.id] = mx.zones[z.id][mx.zones[z.id].length - 1];
-  }
-  const el = sheet(`
-    <div class="mix-head"><h3>Mix a postcard</h3><span>${esc(placeById(place).name)}</span></div>
-    <div id="mix-body"></div>
-    <p class="muted small mix-hint">Tap one to change it. Only finished garments come up.</p>
-    <div class="row"><button class="btn" data-a="close">Close</button><button class="btn primary mix-take" data-a="shoot">Take a postcard</button></div>`, { tall: true });
-  const body = $("#mix-body", el);
-  const next = (list, cur) => list[(list.indexOf(cur) + 1) % list.length];
-  const dots = (cur, list) => `<i class="mix-dots" aria-hidden="true">${TIMES.map((t) => `<u class="${t.id === cur ? "on" : list.includes(t.id) ? "ok" : ""}"></u>`).join("")}</i>`;
-  const say = (what, cur, list) => `${what}: ${esc(timeById(cur).name.toLowerCase())}${list.length > 1 ? `. Tap for the next of ${list.length}` : ", the only one finished"}`;
-  const paint = () => {
-    const garments = ZONES.map((z) => St.garmentSpec(S, place, pick.set[z.id], z.id));
-    body.innerHTML = `
-      <div class="scene-wrap small mix-pic">${sceneSvg({ place, time: pick.bg, garments, baskets: [], cushion: null, special: St.specialFor(place), animate: true, seed: 3, landscape: true })}</div>
-      <div class="mix-chips">${ZONES.map((z, i) => `<button class="mix-chip" data-zone="${z.id}" aria-label="${say(esc(garmentName(pick.set[z.id], z.id)), pick.set[z.id], mx.zones[z.id])}">${wardrobeThumbSvg({ ...garments[i] })}<b>${esc(garmentName(pick.set[z.id], z.id))}</b>${dots(pick.set[z.id], mx.zones[z.id])}</button>`).join("")}<button class="mix-chip" data-sky="1" aria-label="${say("Sky", pick.bg, mx.skies)}"><span class="mix-sky">${placeThumbSvg(place, pick.bg)}</span><b>${esc(timeById(pick.bg).name)}</b>${dots(pick.bg, mx.skies)}</button></div>`;
-    $$(".mix-chip[data-zone]", body).forEach((b) => (b.onclick = () => { const z = b.dataset.zone; pick.set[z] = next(mx.zones[z], pick.set[z]); paint(); }));
-    $(".mix-chip[data-sky]", body).onclick = () => { pick.bg = next(mx.skies, pick.bg); paint(); };
-  };
-  paint();
-  $("[data-a=close]", el).onclick = () => closeSheet();
-  $("[data-a=shoot]", el).onclick = () => {
-    const card = St.addMixCard(S, place, pick.set, pick.bg, app.real());
-    if (!card) return;
-    app.save();
-    closeSheet(true);
-    /* the new card is in the Album tab; the Wardrobe underneath gets its dot */
-    app.screens[app.screen]?.repaint?.();
-    paintDock();
-    openCard(card);
-  };
 }
 
 /* Share opens the phone's share menu with the picture; browsers without it only get Save as image. */

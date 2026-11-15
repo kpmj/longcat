@@ -409,13 +409,21 @@ export function ensureTimeCards(S, place, real) {
 }
 /* What a mixed postcard can be made of at a place: for each garment the times of day whose one is finished, and the
    skies reached. `any` says there is something to mix: every garment has a finished one, and more than one picture
-   is possible (the Album only offers "Mix one" then; the designer, 2026-11-15). */
+   is possible. */
 export function mixable(S, place) {
   const zones = {};
   for (const z of ZONE_IDS) zones[z] = TIME_IDS.filter((t) => garmentDone(S, place, t, z));
   const skies = reachedTimes(S, place);
   const n = ZONE_IDS.reduce((k, z) => k * zones[z].length, 1) * skies.length;
   return { zones, skies, any: n > 1 };
+}
+/* What the Wardrobe's Dress up page opens on: of each garment the newest finished one, or the one of the time of day
+   being knitted while none is finished; under the newest sky reached. So the judge is dressed as soon as there is
+   something to wear, and the first morning shows what Home shows. */
+export function dressStart(S, place) {
+  const mx = mixable(S, place), cur = currentTime(S, place) || TIME_IDS[TIME_IDS.length - 1], set = {};
+  for (const z of ZONE_IDS) set[z] = mx.zones[z].length ? mx.zones[z][mx.zones[z].length - 1] : cur;
+  return { bg: mx.skies[mx.skies.length - 1], set };
 }
 export function addMixCard(S, place, set, bg, real) {
   if (!reachedTimes(S, place).includes(bg)) return null;

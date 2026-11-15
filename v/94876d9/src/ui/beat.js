@@ -64,7 +64,7 @@ function render(root, { place, time }) {
     const sh = $("[data-a=share]", root);
     if (sh) sh.onclick = () => openCard(card);
     const w = $("[data-a=wardrobe]", root);
-    if (w) w.onclick = () => { St.markBeatSeen(S, place, time); app.save(); show("wardrobe", { tab: "wearing", mix: true }); };
+    if (w) w.onclick = () => { St.markBeatSeen(S, place, time); app.save(); show("wardrobe", { tab: "dress" }); };
     const h = $("[data-a=home]", root);
     if (h) h.onclick = () => go("home");
   };
