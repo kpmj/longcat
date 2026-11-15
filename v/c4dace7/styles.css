@@ -745,6 +745,17 @@ body { background: var(--sky, var(--soft)); }
 /* a garment with nothing sung yet, or of a time of day not reached: grey */
 .wcell.locked :is(svg, .dress-sky) { filter: grayscale(1); opacity: .55; }
 .wcell.locked:disabled { opacity: .6; background: var(--soft); border-style: dashed; }
+/* Who sings it (who-sings board, layout 甲): a grid that never moves, the one singing ticked, plain words under the
+   others; the line under the title says what a tap did */
+.dress-say { font-size: 12.5px; line-height: 1.35; color: var(--muted); margin: -4px 0 0; }
+.dress-say.said { color: var(--ink); font-weight: 700; background: var(--soft); border-radius: 10px; padding: 6px 10px; margin: -2px 0 0; }
+.dress-cats { padding-top: 6px; }
+.dress-cats .cat-card { padding: 4px 3px 6px; }
+.dress-cats .cat-card > svg:not(.treat) { max-width: 58px; }
+.dress-cats .cat-card.more { min-height: 0; font-size: 11.5px; }
+.cat-card.on:has(.cat-check) { border: 2px solid var(--brand); }
+.cat-check { position: absolute; top: -7px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); font-style: normal; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid var(--paper); }
+.cat-note { font-size: 10px; font-weight: 700; color: var(--muted); line-height: 1.2; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .dress-link { align-self: center; min-height: 36px; font-size: 13.5px; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .mix-take::before { content: "◉"; font-size: 13px; color: #f0b9a6; margin-right: 7px; }
 

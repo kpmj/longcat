@@ -88,6 +88,8 @@ export function show(name, props = {}) {
   paintDock();
   def?.render(root, props);
   root.scrollTop = 0;
+  /* the Wardrobe scrolls the page itself (its top stays put), so a new screen starts at the top of the page too */
+  if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
 }
 export const refresh = () => show(app.screen, app.props);
 /* The dots of the bottom row. The Album is a tab of the Wardrobe, so a new postcard puts its dot on the Wardrobe

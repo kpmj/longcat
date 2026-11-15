@@ -32,7 +32,12 @@ export const yarnLabel = (y) => { if (!y) return "No yarn"; const t = y.type ===
 const NO_SWATCH = `<svg viewBox="0 0 96 40" aria-hidden="true"><rect x="7" y="11" width="82" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 4" opacity=".55"/></svg>`;
 export const yarnSwatch = (y, time) => (y ? yarnSwatchSvg(y, time) : NO_SWATCH);
 
-const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}${o.say ? `, ${esc(o.say)}` : ""}">${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${o.zz ? `<i class="cat-zz" aria-hidden="true">z z</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${o.under || ""}</button>`;
+/* a singer's card. `note` is a line of plain words under the name: where it sings, or that it is asleep or lives
+   here (the designer, 2026-11-15, who-sings board, layout 甲: the red tags "Now", "Top" did not say what a tap does).
+   `check` ticks the one chosen. */
+const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}${o.say ? `, ${esc(o.say)}` : o.note ? `, ${esc(o.note)}` : ""}"${o.check !== undefined ? ` aria-pressed="${!!o.check}"` : ""}>${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${o.check ? `<i class="cat-check" aria-hidden="true">✓</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${o.note ? `<small class="cat-note">${esc(o.note)}</small>` : ""}${o.under || ""}</button>`;
+/* where a singer sings here, in words: "on the top" */
+const onThe = (zone) => `on the ${zoneName(zone).toLowerCase()}`;
 const price = (id, word = "") => `<em class="${word ? "keep" : ""}">${treatIcon(13)}${word ? `${word} ` : ""}${num(priceOf(id))}</em>`;
 
 /* The player's cats that are not singing here nap in baskets, three to a basket, and can be patted (the designer,
@@ -59,10 +64,10 @@ function renderStore(root) {
   root.innerHTML = `
     <header class="topbar"><div class="where"><span class="place">Store</span></div>${purse(S)}</header>
     <section class="cats-tab">
-      <h4 class="cats-h">Your cats <i>${S.cats.length}${napping.length ? " · the ones not singing are asleep" : ""}</i></h4>
-      <div class="cat-grid four">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, tag: z ? z.name : "", zz: !z, say: z ? `sings the ${z.name.toLowerCase()}` : "asleep" }); }).join("")}</div>
+      <h4 class="cats-h">Your cats <i>${S.cats.length}</i></h4>
+      <div class="cat-grid four">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, note: z ? onThe(z.id) : "asleep" }); }).join("")}</div>
       ${shelf.here.length ? `<h4 class="cats-h">They live here <i>keep one and it comes along</i></h4>
-      <div class="cat-shelf">${shelf.here.map((id) => card(S, id, { tag: singing(id) ? singing(id).name : "", under: price(id, "Keep"), say: `keep for ${priceOf(id)} treats` })).join("")}</div>` : ""}
+      <div class="cat-shelf">${shelf.here.map((id) => card(S, id, { note: singing(id) ? onThe(singing(id).id) : "", under: price(id, "Keep"), say: `${singing(id) ? `${onThe(singing(id).id)}, ` : ""}keep for ${priceOf(id)} treats` })).join("")}</div>` : ""}
       ${shelf.cats.length + shelf.animals.length ? `<h4 class="cats-h">More to bring home</h4>
       <div class="cat-shelf">${[...shelf.cats.slice(0, 2), ...shelf.animals, ...shelf.cats.slice(2)].map((id) => card(S, id, { under: price(id), say: `${priceOf(id)} treats` })).join("")}</div>` : ""}
       ${napping.length ? `<h4 class="cats-h">Asleep <i>you can pat them</i></h4>
@@ -140,6 +145,8 @@ function openBring(id) {
      reached. The one being knitted is still in the picture, grey in this row, while nothing of its kind is
      finished (state.js dressStart).
    - in a sheet (openDress), from the Garment sheet on Home: who sings it and its yarn only. */
+/* what the last pick did, said once under the title when the choices are drawn again */
+let lastSaid = null;
 export function paintDress(body, zone, t, { which = null, changed = () => {} } = {}) {
   const S = app.S, place = S.here, z = ZONES.find((x) => x.id === zone) || ZONES[0];
   const n = St.progress(S, place, t, z.id), reached = St.reachedTimes(S, place);
@@ -147,25 +154,39 @@ export function paintDress(body, zone, t, { which = null, changed = () => {} } =
     const k = St.progress(S, place, x.id, z.id), ok = reached.includes(x.id), locked = k < STEPS, name = garmentName(x.id, z.id);
     return `<button class="wcell${x.id === t ? " on" : ""}${locked ? " locked" : ""}" data-time="${x.id}" aria-pressed="${x.id === t}" ${locked && x.id !== t ? "disabled" : ""} aria-label="${esc(name)}, ${esc(x.name.toLowerCase())}${k >= STEPS ? "" : !ok ? ", not yet" : k ? `, ${k} of ${STEPS} steps` : ", not started"}">${wardrobeThumbSvg({ ...St.garmentSpec(S, place, x.id, z.id) })}<span>${k >= STEPS ? esc(name) : ok ? `${k} / ${STEPS}` : "Not yet"}</span></button>`;
   };
+  /* Who sings it: one grid in an order that never changes, the player's cats and then the ones who live here
+     (the designer, 2026-11-15, who-sings board, layout 甲: "The whole list shifts when user selects"). The one singing is
+     ticked; the others say where they sing, or that they live here. Picking one that sings another garment swaps
+     the two, and the line under the title says so. */
   const cast = St.castAt(S, place, t), cur = cast[z.id];
   const home = [...new Set(Object.values(St.homeCast(place, t)))].filter((id) => !St.ownsCat(S, id));
-  const ids = [cur, ...S.cats.filter((id) => id !== cur), ...home.filter((id) => id !== cur)];
-  const tagOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id); return id === cur ? "Now" : at ? at.name : ""; };
+  const ids = [...S.cats, ...home, ...Object.values(cast).filter((id) => !S.cats.includes(id) && !home.includes(id))];
+  const noteOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id && x.id !== z.id); return at ? onThe(at.id) : St.ownsCat(S, id) ? "" : "lives here"; };
+  const gname = garmentName(t, z.id).toLowerCase();
+  const said = lastSaid && lastSaid.zone === z.id ? lastSaid.text : "";
+  lastSaid = null;
   const own = St.yarnKey(t, z.id), worn = St.yarnKeyOf(S, place, t, z.id);
   /* none at all first (the designer: "can you have no yarn to be the first option"), then its own, then the collected */
   const yarns = [{ key: St.NO_YARN, label: "No yarn", yarn: null }, { key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...St.collectedYarns(S, place).filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
   body.innerHTML = `${which ? `
     <h4>Which one <i>for this picture only</i></h4>
     <div class="dress-which">${TIMES.map(cell).join("")}</div>` : ""}
-    <h4>Who sings it</h4>
-    <div class="cat-shelf">${ids.map((id) => card(S, id, { on: id === cur, tag: tagOf(id), say: id === cur ? "sings it now" : "" })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
+    <h4>Who sings the ${esc(gname)}</h4>
+    <p class="dress-say${said ? " said" : ""}" aria-live="polite">${said ? esc(said) : "Tap a cat. One on another garment swaps with this one."}</p>
+    <div class="cat-grid four dress-cats">${ids.map((id) => card(S, id, { on: id === cur, check: id === cur, note: noteOf(id), say: id === cur ? `sings the ${gname}` : "" })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
     <h4>Its yarn</h4>
     <div class="dress-yarns">${yarns.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${yarnSwatch(c.yarn, t)}<span>${esc(c.label)}</span></button>`).join("")}</div>${which && n ? `
     <button class="dress-link" data-a="steps">Sing a step of the ${esc(garmentName(t, z.id).toLowerCase())} again ›</button>` : ""}`;
   $$(".wcell[data-time]", body).forEach((b) => (b.onclick = () => { if (b.dataset.time !== t) which(b.dataset.time); }));
   const sb = $("[data-a=steps]", body);
   if (sb) sb.onclick = () => { closeSheet(true); app.screens.home.openGarment(z.id, t); };
-  $$(".cat-card[data-cat]", body).forEach((b) => (b.onclick = () => { if (!St.setSinger(S, place, t, z.id, b.dataset.cat)) return; app.save(); changed(); }));
+  $$(".cat-card[data-cat]", body).forEach((b) => (b.onclick = () => {
+    const id = b.dataset.cat, from = ZONES.find((x) => cast[x.id] === id);
+    if (id === cur || !St.setSinger(S, place, t, z.id, id)) return;
+    app.save();
+    lastSaid = { zone: z.id, text: `${singerLabel(S, id)} sings the ${gname} now.${from ? ` ${singerLabel(S, cur)} moved to the ${zoneName(from.id).toLowerCase()}.` : ""}` };
+    changed();
+  }));
   $$(".coat", body).forEach((b) => (b.onclick = () => { if (!St.setYarn(S, place, t, z.id, b.dataset.yarn)) return; app.save(); changed(); }));
   $("[data-a=more]", body).onclick = () => { closeSheet(true); show("store"); };
 }
