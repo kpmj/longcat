@@ -1,8 +1,8 @@
 /* Cats of one's own (the designer, 2026-11-14 and 15; boards: docs/design/longcat-yarn-shop-animals.md for the rules,
    longcat-shop-screens.md for the shop, longcat-wardrobe-redesign.md for the Wardrobe by garment, layout 甲).
-   - The Wardrobe's Cats tab: the player's cats, the cats who live at this place, the shelf of cats and other long
-     animals that can be brought home for treats, and the baskets where the player's cats that are not singing
-     sleep.
+   - The Store, a tab of the bottom row (it was the Wardrobe's Cats tab until the designer moved it, 2026-11-15): the
+     player's cats, the cats who live at this place, the shelf of cats and other long animals that can be brought
+     home for treats, and the baskets where the player's cats that are not singing sleep.
    - The garment sheet (openDress): who sings one garment, and its yarn. Opened from a card on the Wardrobe's
      Wearing tab, from the Postcard tab's list and from the Garment sheet on Home.
    - Two sheets for one singer: the player's own (name it, say where it sings) and one to bring home.
@@ -11,7 +11,7 @@
 import { app, show, esc, $, $$, sheet, closeSheet, toast, wireTaps } from "./app.js";
 import * as St from "../state.js";
 import { catKindSvg, guestSvg, nappingSvg, yarnSwatchSvg } from "../art/index.js";
-import { ZONES, ZONE_IDS, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName } from "../content.js";
+import { ZONES, ZONE_IDS, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, placeById } from "../content.js";
 
 /* the coin: a gold disc with a small fish. Drawn here until the art session draws one in the print's style */
 export const treatIcon = (s = 16) => `<svg class="treat" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#e6b84f" stroke="#3e2a3c" stroke-width="1.6"/><path d="M5.2 10c1.6-2.6 4.6-2.9 6.6-.9l2.4-1.7v5.2l-2.4-1.7c-2 2-5 1.7-6.6-.9z" fill="#3e2a3c"/></svg>`;
@@ -47,17 +47,16 @@ function napsSvg(ids, time) {
   return rows.join("");
 }
 
-/* ---------- the Wardrobe's Cats tab ----------
-   Who sings is chosen per garment (the Wearing tab's cards, openDress), so this tab is only the cats themselves:
+/* ---------- the Store ----------
+   Who sings is chosen per garment (the Wardrobe's Wearing cards, openDress), so this is only the cats themselves:
    the player's (a tag says which garment one is singing, "z z" that it is asleep), the ones who live here, the
    shelf, and the baskets. A cat of the player's opens its own sheet; any other opens the one to bring it home. */
-export function renderCats(root, topbar, segs, wireSegs) {
+function renderStore(root) {
   const S = app.S, { place, time } = now(S);
   const cast = St.castAt(S, place, time), shelf = St.shelfAt(S, place), singing = (id) => ZONES.find((z) => cast[z.id] === id);
   const napping = S.cats.filter((id) => !singing(id));
   root.innerHTML = `
-    ${topbar}
-    ${segs}
+    <header class="topbar"><div class="where"><span class="place">Store</span><span class="time-chip">${esc(placeById(place).name)}</span></div>${purse(S)}</header>
     <section class="cats-tab">
       <h4 class="cats-h">Your cats <i>${S.cats.length}${napping.length ? " · the ones not singing are asleep" : ""}</i></h4>
       <div class="cat-grid four">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, tag: z ? z.name : "", zz: !z, say: z ? `sings the ${z.name.toLowerCase()}` : "asleep" }); }).join("")}</div>
@@ -69,10 +68,10 @@ export function renderCats(root, topbar, segs, wireSegs) {
       <div class="cat-naps" id="cat-naps">${napsSvg(napping, time)}</div>` : ""}
       <p class="sub">Every take you sing through earns ${TREATS.take} treats, for the first ${TREATS.perDay} of a day.</p>
     </section>`;
-  wireSegs(root);
   wireTaps($("#cat-naps", root));
   $$(".cat-card", root).forEach((b) => (b.onclick = () => openSinger(b.dataset.cat)));
 }
+app.screens.store = { render: renderStore };
 
 /* ---------- one singer: the player's own, or one to bring home ---------- */
 export function openSinger(id) {
@@ -154,7 +153,7 @@ export function openDress(zone, time) {
       <div class="dress-yarns">${yarns.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${yarnSwatch(c.yarn, t)}<span>${esc(c.label)}</span></button>`).join("")}</div>`;
     $$(".cat-card[data-cat]", body).forEach((b) => (b.onclick = () => { if (!St.setSinger(S, place, t, z.id, b.dataset.cat)) return; app.save(); paint(); repaint(); }));
     $$(".coat", body).forEach((b) => (b.onclick = () => { if (!St.setYarn(S, place, t, z.id, b.dataset.yarn)) return; app.save(); paint(); repaint(); }));
-    $("[data-a=more]", body).onclick = () => { closeSheet(true); show("wardrobe", { tab: "cats" }); };
+    $("[data-a=more]", body).onclick = () => { closeSheet(true); show("store"); };
   };
   paint();
   $("[data-a=close]", el).onclick = () => closeSheet();
@@ -164,5 +163,5 @@ export function openDress(zone, time) {
 export function treatLine(t) {
   if (!t) return "";
   if (!t.got) return `<div class="treat-line"><span>That’s all the treats for today. Sing on if you like.</span></div>`;
-  return `<div class="treat-line"><span>${t.first ? "Enough for a cat now. Wardrobe, then Cats." : "For singing it through"}</span><b>${treatIcon(17)}+${t.got}</b></div>`;
+  return `<div class="treat-line"><span>${t.first ? "Enough for a cat now. It’s in the Store." : "For singing it through"}</span><b>${treatIcon(17)}+${t.got}</b></div>`;
 }

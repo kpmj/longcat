@@ -8,6 +8,7 @@ import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { openDress, singerLabel, yarnLabel } from "./cats.js";
+import { openLetter } from "./places.js";
 import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor, yarnName } from "../content.js";
@@ -125,7 +126,7 @@ export function renderHome(root) {
   const tc = $("[data-act=times]", root);
   if (tc) tc.onclick = () => openTimes();
   const lb = $("[data-act=letter]", root);
-  if (lb) lb.onclick = () => app.screens.places.openLetter(unread[0]);
+  if (lb) lb.onclick = () => openLetter(unread[0]);
   if (!nt && time && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && openPicker(), 350);
   if (!app.canSave && !warnedSave) { warnedSave = true; setTimeout(() => toast("This browser won’t remember your progress."), 600); }
   setTimeout(() => homeTips(root, nt, unread), 450);

@@ -588,18 +588,18 @@ body { background: var(--sky, var(--soft)); }
 :root .time-g { background: var(--card); border: 1.5px solid var(--line); }
 
 /* ---------- a tab: a strip of sky, then the sheet ---------- */
-:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar {
+:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar {
   position: relative; flex: none; align-items: flex-start;
   margin: calc(-8px - env(safe-area-inset-top, 0px)) calc(-1 * max(14px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(14px, env(safe-area-inset-left, 0px)));
   padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 34px max(14px, env(safe-area-inset-left, 0px));
   background: linear-gradient(var(--sky) 0 48%, var(--sky2) 48%);
 }
 /* the sun (or the moon) of that time of day, going down behind the sheet */
-:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar::before { content: ""; position: absolute; right: 44px; bottom: -6px; width: 58px; height: 58px; border-radius: 50%; background: var(--sun); }
-:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--paper); border-top: 1.5px solid var(--key); border-radius: 22px 22px 0 0; }
-:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar > * { position: relative; z-index: 1; }
+:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar::before { content: ""; position: absolute; right: 44px; bottom: -6px; width: 58px; height: 58px; border-radius: 50%; background: var(--sun); }
+:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--paper); border-top: 1.5px solid var(--key); border-radius: 22px 22px 0 0; }
+:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar > * { position: relative; z-index: 1; }
 /* the page's name in the same pill as Home's place and time */
-:root :is(.screen-wardrobe, .screen-album, .screen-places, .screen-settings, .screen-drills) > .topbar .where { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 16px; flex-wrap: nowrap; }
+:root :is(.screen-wardrobe, .screen-album, .screen-store, .screen-settings, .screen-drills) > .topbar .where { background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 22px; min-height: 44px; padding: 0 16px; flex-wrap: nowrap; }
 :root .topbar .place { font-size: 17px; }
 :root .topbar .where .time-chip { background: none; border: 0; padding: 0; font-size: 13.5px; color: var(--muted); }
 :root :is(.screen-settings, .screen-drills) > .topbar .where { padding-left: 4px; }
@@ -664,7 +664,7 @@ body { background: var(--sky, var(--soft)); }
 :root .wake b { background: var(--brand); color: var(--brand-ink); }
 
 /* ---------- cats of one's own, and treats (ui/cats.js; the designer, 2026-11-15, shop screens board, layout 甲) ----------
-   The Wardrobe's Cats tab, the three sheets and the result sheet's line. Paper, key line and flat shadow as on
+   The Store (it was the Wardrobe's Cats tab), the three sheets and the result sheet's line. Paper, key line and flat shadow as on
    every page; indigo only on the button that brings a cat home. */
 .treat { flex: none; vertical-align: -3px; }
 .purse { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); font-family: var(--display); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; color: var(--ink); }
@@ -735,3 +735,8 @@ body { background: var(--sky, var(--soft)); }
 .cat-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 7px; }
 .cat-card .cat-zz { position: absolute; top: 2px; right: 5px; font-size: 10px; font-weight: 800; color: var(--muted); font-style: normal; }
 .row.tight > .btn { flex: 1 1 130px; min-height: 40px; font-size: 13.5px; padding: 0 10px; }
+
+/* ---------- Places is the Wardrobe's third tab; the Store is in the bottom row (the designer, 2026-11-15) ---------- */
+.segs button { position: relative; }
+.segs .dot { position: absolute; top: 6px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--coral); }
+.tab .ti svg { display: block; }

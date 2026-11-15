@@ -38,12 +38,14 @@ export function boot() {
 }
 
 /* ---------- router ----------
-   Four tabs, each a place in the game; Settings is behind the gear on Home (game-flow board, decision A). */
+   Four tabs; Settings is behind the gear on Home (game-flow board, decision A). The fourth is the Store, where
+   the Wardrobe's Cats tab went; Places took that tab's spot inside the Wardrobe (the designer, 2026-11-15). */
+const BAG = `<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 7.4h12.8l-1 9.6H4.6z"/><path d="M7.1 7.4V6a2.9 2.9 0 0 1 5.8 0v1.4"/></svg>`;
 const DOCK = [
   { id: "home", label: "Home", icon: "⌂" },
   { id: "wardrobe", label: "Wardrobe", icon: "◫" },
   { id: "album", label: "Album", icon: "▤" },
-  { id: "places", label: "Places", icon: "✉" },
+  { id: "store", label: "Store", icon: BAG },
 ];
 /* The sky of where the player is, for the strip at the top of every tab: the colour at the top of that place's
    picture at that time of day (the art's L.up), a paler band under it, and the sun or moon of that time. */
@@ -81,7 +83,8 @@ export function show(name, props = {}) {
   document.body.classList.toggle("is-full", !!full);
   document.body.classList.toggle("is-home", name === "home");
   paintSky();
-  app.badge = { places: unreadLetters(app.S, app.real()).length > 0, wardrobe: newIn(app.S, "wardrobe"), album: newIn(app.S, "album") };
+  /* an unread letter is read on the Wardrobe's Places tab, so the Wardrobe carries its dot */
+  app.badge = { wardrobe: newIn(app.S, "wardrobe") || unreadLetters(app.S, app.real()).length > 0, album: newIn(app.S, "album") };
   renderDock();
   def?.render(root, props);
   root.scrollTop = 0;

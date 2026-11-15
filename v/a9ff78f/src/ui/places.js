@@ -1,4 +1,5 @@
-/* Places and letters. A new place opens on the 1st and arrives as a two-line letter; the game never moves the
+/* Places and letters: the Wardrobe's third tab (the designer, 2026-11-15: it was a tab of the bottom row; it changed
+   places with Cats, which is the Store there now). A new place opens on the 1st and arrives as a two-line letter; the game never moves the
    player there on its own (decision 2). Any open place can be entered once the tutorial garment is done;
    unfinished months keep everything; "not visited yet", never "missed". */
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
@@ -6,7 +7,7 @@ import * as St from "../state.js";
 import { placeThumbSvg, letterSvg, guestSvg } from "../art/index.js";
 import { PLACES, NEWYEAR_LETTER, TIMES, ZONES, STEPS, placeById } from "../content.js";
 
-function render(root) {
+export function renderPlaces(root, topbar, segs, wireSegs) {
   const S = app.S, real = app.real();
   const opened = St.openedPlaces(S, real);
   const unread = St.unreadLetters(S, real);
@@ -22,12 +23,14 @@ function render(root) {
     </button>`;
   }).join("");
   root.innerHTML = `
-    <header class="topbar"><div class="where"><span class="place">Places</span></div></header>
+    ${topbar}
+    ${segs}
     <section class="places">
       ${rows}
       ${nx ? `<div class="place-row future"><span class="thumb ghost"></span><span class="pinfo"><b>Next place</b><span>Opens on ${St.monthLabel(nx.date)}. A letter comes first.</span></span></div>` : ""}
       ${!St.canTravel(S) ? `<p class="sub">Finish your first garment at the hot spring, then you can go anywhere that’s open.</p>` : `<p class="sub">Any open place, any time. Unfinished garments wait for you.</p>`}
     </section>`;
+  wireSegs(root);
   $$(".place-row[data-place]", root).forEach((b) => (b.onclick = () => {
     const place = b.dataset.place;
     if (unread.includes(place)) return openLetter(place);
@@ -81,7 +84,6 @@ export function openLetter(place) {
 }
 
 function refreshBadge() {
-  if (app.screen === "places" || app.screen === "home") show(app.screen, { noAutoPick: true });
+  if (app.screen === "wardrobe") show("wardrobe", { tab: "places" });
+  else if (app.screen === "home") show("home", { noAutoPick: true });
 }
-
-app.screens.places = { render, openLetter };

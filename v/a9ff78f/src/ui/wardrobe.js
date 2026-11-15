@@ -7,19 +7,26 @@
      Only finished garments and times already reached can be chosen; this month only; photos only (Home never
      changes); no list of combinations and no counter. A finished garment of any time of day can have its cat and
      yarn changed, or a step sung again, from here.
-   - Cats (ui/cats.js): the player's cats, the ones who live here, and the ones to bring home. */
+   - Places (ui/places.js): the open places and their letters; going to one changes what hangs in this wardrobe.
+     It was a tab of the bottom row. The Cats tab that was here is the Store in the bottom row now (ui/cats.js;
+     the designer, 2026-11-15). */
 import { app, esc, $, $$, sheet, closeSheet, wireTaps } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg } from "../art/index.js";
 import { ZONES, TIMES, STEPS, garmentName, placeById, timeById } from "../content.js";
 import { openCard } from "./album.js";
 import { catIconSvg } from "./home-art.js";
-import { renderCats, openDress, purse, singerLabel, yarnLabel, yarnSwatch } from "./cats.js";
+import { openDress, purse, singerLabel, yarnLabel, yarnSwatch } from "./cats.js";
+import { renderPlaces } from "./places.js";
 
-let pick = null, mode = "wearing";
+let pick = null, mode = "wearing", wasAt = null;
 
-const TABS = [["wearing", "Wearing"], ["postcard", "Postcard"], ["cats", "Cats"]];
-const segs = () => `<div class="segs three" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}</button>`).join("")}</div>`;
+const TABS = [["wearing", "Wearing"], ["postcard", "Postcard"], ["places", "Places"]];
+/* a dot on Places while a letter is unread */
+const segs = () => {
+  const letter = St.unreadLetters(app.S, app.real()).length > 0;
+  return `<div class="segs three" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}${id === "places" && letter ? '<i class="dot" aria-label="a letter"></i>' : ""}</button>`).join("")}</div>`;
+};
 function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(root); })); }
 const topbar = (S) => `<header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(S.here).name)}</span></div>${purse(S)}</header>`;
 
@@ -44,10 +51,12 @@ function wearing(root) {
 }
 
 function render(root) {
-  /* another screen can ask for a tab: show("wardrobe", { tab: "cats" }) */
+  /* after travelling the wardrobe opens on what the judge wears there, not on the list of places again */
+  if (wasAt !== app.S.here) { if (wasAt && mode === "places") mode = "wearing"; wasAt = app.S.here; }
+  /* another screen can ask for a tab: show("wardrobe", { tab: "postcard" }) */
   if (app.props.tab && TABS.some(([id]) => id === app.props.tab)) { mode = app.props.tab; app.props.tab = null; }
   if (mode === "wearing") return wearing(root);
-  if (mode === "cats") return renderCats(root, topbar(app.S), segs(), wireSegs);
+  if (mode === "places") return renderPlaces(root, topbar(app.S), segs(), wireSegs);
   const S = app.S, place = S.here;
   const reached = St.reachedTimes(S, place);
   if (!pick || pick.place !== place) {
