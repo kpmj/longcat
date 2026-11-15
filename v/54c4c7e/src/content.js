@@ -102,6 +102,13 @@ export const DRILL = {
   octdown: { name: "Octave down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
   arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
   penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
+  /* added when the ladders were dealt again (2026-11-15), so that no two ladders share a drill */
+  fourthback: { name: "Fourth and back", rel: [0, 5, 0], dur: 1.0 },
+  fifthoct: { name: "Fifth, then octave", rel: [0, 7, 12], dur: 1.0 },
+  fourdown: { name: "Four down", rel: [5, 4, 2, 0], dur: 1.0 },
+  nbboth: { name: "Both neighbours", rel: [0, 2, 0, -2, 0], dur: 0.9 },
+  fifthdown: { name: "Fifth down", rel: [7, 0], dur: 1.8 },
+  minor5: { name: "Minor five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.75 },
   /* the last step of every garment (the designer, 2026-11-14: "把 free drill 完全拿掉，換成剛剛討論的進階 drill"): the designer's own
      example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Five rounds at the most
      (two up, the top, two back): about 45 to 60 seconds. the designer, the same day: "最後一關算是最難的 所以 30-40 秒沒
@@ -114,11 +121,26 @@ const DRILL_ALIAS = { free: "climb5", free5: "climb5" };
 for (const [id, d] of Object.entries(DRILL)) d.id = id;
 
 /* One ladder of twelve steps per time of day: a month runs Land, then Move, then Carry. Each ladder climbs by
-   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); steps 10 to 12 climb, and the last step is the climbing five. */
+   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); steps 10 to 12 climb, and the last step is the climbing five.
+   Dealt again on 2026-11-15 (the designer: "把現有的 drill review 過一次 … 重新 assign 所有的 drills"), on the same plan as
+   before. What the review found and what changed:
+   - the same drill came up in two ladders (Three down, Up and back, Five down, Arpeggio down, Five-note scale) and
+     the nine notes of the five-note scale were sung in six of the thirty-six steps. Now every ladder has its own
+     eleven drills; only step 12, the climbing five, is shared (the designer's choice of 2026-11-14). "five" is still in the
+     list above for the drill editor, in no ladder.
+   - in each ladder the take of step 10 was longer than that of step 11. Now the three climbing steps grow: about
+     24, 35, 51 seconds in the morning, 10, 22, 44 at golden hour, 14, 29, 58 at night (for a range of an octave and
+     a half; a narrow range climbs less).
+   - golden hour put an easy step (Five down) after two harder ones and went from scales straight to the octave.
+     Now: the arpeggio three ways, a fourth, skips, a fifth, the fast five, fifth then octave, the scale, and then
+     the octave on its own before the arpeggio that has it inside.
+   - night borrowed five of its steps. Now it is its own: holds and falling lines, each a little longer, a minor
+     five as its one long phrase, the octave down before the scale down.
+   Morning only swapped steps 10 and 11. */
 export const LADDERS = {
-  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "fiveup", "thirdback", "climb5"],
-  golden: ["arp", "arpdown", "fivedown", "arpud", "skips", "fifth", "five", "fast5", "scaleup", "arp8", "octave", "climb5"],
-  night: ["twodown", "hold4", "down3", "arc", "fivedown", "arpdown", "hold5", "penta", "five", "scaledown", "octdown", "climb5"],
+  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "thirdback", "fiveup", "climb5"],
+  golden: ["arp", "arpdown", "arpud", "fourthback", "skips", "fifth", "fast5", "fifthoct", "scaleup", "octave", "arp8", "climb5"],
+  night: ["twodown", "hold4", "fourdown", "nbboth", "fivedown", "hold5", "fifthdown", "penta", "minor5", "octdown", "scaledown", "climb5"],
 };
 export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
 export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
