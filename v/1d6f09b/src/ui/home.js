@@ -199,7 +199,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   }).join("");
   let buttons = "", note = "";
   if (done) {
-    /* opened from a garment's sheet in the Wardrobe it needs no way there */
+    /* opened from the Wardrobe's page it needs no way there */
     const inWardrobe = app.screen === "wardrobe";
     note = inWardrobe ? "" : "It’s in the Wardrobe now.";
     buttons = inWardrobe ? `<button class="btn primary" data-a="close">OK</button>` : `<div class="row"><button class="btn primary" data-a="close">OK</button><button class="btn" data-a="wardrobe">Wardrobe</button></div>`;
@@ -222,7 +222,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   const on = (a, fn) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.onclick = fn; };
   on("close", () => closeSheet());
   on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe", { tab: "dress" }); });
-  /* in the Wardrobe that is the page's own sheet for this garment, with this one in the picture */
+  /* in the Wardrobe the choices are in the page itself: it puts this one in the picture and shows them */
   on("cat", () => { closeSheet(true); if (app.screen === "wardrobe") app.screens.wardrobe.openPiece(zone, time); else openDress(zone, time); });
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });

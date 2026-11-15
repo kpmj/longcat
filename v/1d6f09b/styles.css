@@ -726,27 +726,35 @@ body { background: var(--sky, var(--soft)); }
 .tab .ti svg { display: block; }
 
 /* ---------- the Wardrobe's Dress up page (ui/wardrobe.js; the designer, 2026-11-15, wardrobe-one-page board, layout 甲) ----------
-   The picture, four buttons under it (scarf, top, hat, sky) and Take a postcard; and what the garment's sheet
-   (ui/cats.js openDress) gains there: the row that asks which one, and the line that leads to its steps. */
-.dress-pic.scene-wrap.small { height: clamp(170px, calc(100dvh - 432px), 340px); min-height: 0; }
-.mix-take { align-self: stretch; }
-.mix-take::before { content: "◉"; font-size: 13px; color: #f0b9a6; margin-right: 7px; }
-.mix-chip em { font-style: normal; font-size: 10.5px; line-height: 1.2; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sheet h4 i { font-style: normal; font-size: 12px; font-weight: 700; margin-left: 6px; opacity: .85; }
+   At the top the picture with a list beside it (scarf, top, hat, sky) and Take a postcard; it stays put while the
+   choices of the row picked (ui/cats.js paintDress: which one, who sings it, its yarn, the line to its steps)
+   scroll under it. */
+/* the page itself scrolls (the screen is as tall as what is in it), so the screen must not be the sticky top's own scroller */
+.screen.screen-wardrobe { overflow: visible; }
+.dress-top { position: sticky; top: 0; z-index: 3; flex: none; display: flex; gap: 10px; align-items: stretch; background: var(--paper); padding: 8px 0; margin: -8px 0; }
+.dress-pic.scene-wrap.small { height: min(250px, 61vw); min-height: 0; width: auto; aspect-ratio: 4 / 5; flex: none; }
+.dress-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dress-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px; }
+.dress-row { flex: 1; min-height: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 12px; background: var(--card); border: 1.5px solid var(--line); min-width: 0; text-align: left; }
+.dress-row.on { border-color: var(--key); box-shadow: var(--flat); }
+.dress-row > svg { width: 32px; height: auto; flex: none; }
+.dress-sky { display: block; width: 32px; height: 32px; flex: none; border-radius: 7px; overflow: hidden; border: 1.5px solid var(--key); }
+.dress-sky svg { width: 100%; height: 100%; display: block; }
+.dress-row > span { display: flex; flex-direction: column; min-width: 0; }
+.dress-row b { font-size: 13.5px; line-height: 1.2; }
+.dress-row em { font-style: normal; font-size: 11px; line-height: 1.25; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dress-side .mix-take { flex: none; min-height: 44px; padding: 0 6px; font-size: 14.5px; white-space: nowrap; }
+.dress-panel { display: flex; flex-direction: column; gap: 8px; }
+.dress-panel h4 { font-size: 14px; color: var(--muted); margin-top: 2px; }
+:is(.sheet, .dress-panel) h4 i { font-style: normal; font-size: 12px; font-weight: 700; margin-left: 6px; opacity: .85; }
 .dress-which { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dress-which .wcell { padding: 5px 2px 6px; font: inherit; color: inherit; }
+.dress-which .wcell .dress-sky { width: 44px; height: 44px; }
+/* a garment with nothing sung yet, or of a time of day not reached: grey */
+.wcell.locked :is(svg, .dress-sky) { filter: grayscale(1); opacity: .55; }
+.wcell.locked:disabled { opacity: .6; background: var(--soft); border-style: dashed; }
 .dress-link { align-self: center; min-height: 36px; font-size: 13.5px; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-.mix-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
-.mix-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 3px 7px; border-radius: 14px; background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); min-width: 0; }
-.mix-chip:active { transform: translateY(1px); }
-.mix-chip > svg { width: 46px; height: auto; }
-.mix-chip b { font-size: 12px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mix-sky { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--key); display: block; }
-.mix-sky svg { width: 100%; height: 100%; display: block; }
-.mix-dots { display: flex; gap: 4px; margin-top: 1px; }
-.mix-dots u { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--line); background: none; }
-.mix-dots u.ok { border-color: var(--key); }
-.mix-dots u.on { border-color: var(--key); background: var(--key); }
+.mix-take::before { content: "◉"; font-size: 13px; color: #f0b9a6; margin-right: 7px; }
 
 /* ---------- Places behind Home's chip, the Album inside the Wardrobe, Settings in the bottom row (the designer, 2026-11-15) ---------- */
 .sheet .places { gap: 8px; }
