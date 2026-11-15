@@ -309,8 +309,10 @@ export function garmentSpec(S, place, time, zone, extra = {}) {
   const shapes = Array.from({ length: STEPS }, (_, i) => (i < n ? steps[i]?.shape || null : null));
   const tufts = Array.from({ length: STEPS }, (_, i) => (i < n ? !!steps[i]?.tuft : false));
   const folds = Array.from({ length: STEPS }, (_, i) => (i < n && Array.isArray(steps[i]?.folds) ? steps[i].folds : null));
-  const singer = singerAt(S, place, time, zone);
-  return { zone, ...singerLook(place, time, zone, singer), singer, yarn: yarnOf(S, place, time, zone), steps: n, shapes, tufts, folds, ...extra };
+  const singer = singerAt(S, place, time, zone), yarn = yarnOf(S, place, time, zone), who = singerLook(place, time, zone, singer);
+  /* `fur` is the knit weight of the sleeve. With no sleeve it would be the cat's fur, which stays short all day */
+  if (!yarn) who.look = { ...who.look, fur: "short" };
+  return { zone, ...who, singer, yarn, steps: n, shapes, tufts, folds, ...extra };
 }
 
 /* ---------- yarn (the designer, 2026-11-14) ----------
@@ -320,9 +322,12 @@ export function garmentSpec(S, place, time, zone, extra = {}) {
    garment of that month, as often as you like, and come off again ("收到的毛線可以換到當月任何一件上"). How thick
    the knitting is stays with the time of day. Yarn belongs to its month (place): the next month's box starts empty.
    Stored per month as yarns[garment] = the garment the yarn is borrowed from; a garment in its own yarn is not stored.
+   A garment can also go without any yarn (the designer, 2026-11-15: "cat can choose no yarn at all too"): stored as NO_YARN,
+   always allowed, nothing to collect. Then it is the cat itself with no sleeve, in its own coat and its own short fur.
    This replaces the coats of earlier the same day, which worked the same way on the cats' fur: with the sleeve, the
    fur is the cat's and stays put. Old saves' `coats` are dropped (migrate). */
 export const yarnKey = (time, zone) => gkey(time, zone);
+export const NO_YARN = "none";
 const yarnParts = (key) => { const [t, z] = String(key).split("."); return TIME_IDS.includes(t) && ZONE_IDS.includes(z) ? { time: t, zone: z } : null; };
 /* the yarn a key stands for at this place: the designed yarn of the garment it comes from */
 export const yarnAt = (place, key) => { const src = yarnParts(key); return src ? yarnFor(place, src.time, src.zone) : null; };
@@ -333,14 +338,17 @@ export function collectedYarns(S, place) {
 /* which yarn a garment is in, as a key: its own unless it borrowed one that is (still) collected */
 export function yarnKeyOf(S, place, time, zone) {
   const own = gkey(time, zone), k = peek(S, place).yarns?.[own], src = k && k !== own ? yarnParts(k) : null;
+  if (k === NO_YARN) return NO_YARN;
   return src && garmentDone(S, place, src.time, src.zone) ? k : own;
 }
 export const yarnOf = (S, place, time, zone) => yarnAt(place, yarnKeyOf(S, place, time, zone));
-/* put a collected yarn on a garment (key = null or its own key: back to its own). False when it is not collected */
+/* put a collected yarn on a garment (key = null or its own key: back to its own; NO_YARN: none at all). False when
+   it is not collected */
 export function setYarn(S, place, time, zone, key) {
   const own = gkey(time, zone), m = monthOf(S, place);
   if (!m.yarns || typeof m.yarns !== "object") m.yarns = {};
   if (!key || key === own) { delete m.yarns[own]; return true; }
+  if (key === NO_YARN) { m.yarns[own] = NO_YARN; return true; }
   if (!collectedYarns(S, place).some((c) => c.key === key)) return false;
   m.yarns[own] = key;
   return true;
@@ -410,7 +418,9 @@ export function cardScene(S, card, extra = {}) {
     const who = card.cats?.[z]
       ? singerLook(card.place, card.set[z], z, card.cats[z])
       : { animal: animalFor(card.place, card.set[z], z), kind: card.kinds?.[z] || kindFor(card.place, z), look: garmentLook(card.place, card.set[z], z) };
-    return { ...g, ...who, yarn: yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z) };
+    const bare = card.yarns?.[z] === NO_YARN;
+    if (bare) who.look = { ...who.look, fur: "short" };
+    return { ...g, ...who, yarn: bare ? null : yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z) };
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }

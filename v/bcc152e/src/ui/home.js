@@ -195,7 +195,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     buttons = `<div class="row"><button class="btn primary" data-a="wear">Wear this one</button><button class="btn" data-a="close">Not now</button></div>`;
   }
   const el = sheet(`
-    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? esc(upper(yarnName(g.yarn))) : `${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}`}, ${KNIT[g.look.fur] || ""}.</p><button class="who-btn" data-a="cat">Sung by ${esc(singerLabel(S, g.singer))} · change</button></div></div>
+    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">Sung by ${esc(singerLabel(S, g.singer))} · change</button></div></div>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}

@@ -22,6 +22,8 @@ function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclic
      collected ones, as swatches. The picture above is the judge wearing that time's three garments, so a change
      shows at once; home, the singing screen and the Outfit tab follow. Next month's box starts empty. */
 let yarnTime = null;
+/* the swatch of "no yarn": an empty outline the size of a yarn swatch (the art's yarnSwatchSvg is 96 x 40) */
+const NO_SWATCH = `<svg viewBox="0 0 96 40" aria-hidden="true"><rect x="7" y="11" width="82" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 4" opacity=".55"/></svg>`;
 /* a short label under a swatch: the colour of a plain yarn, the pattern of the others (each pattern comes once a month) */
 const yarnLabel = (y) => { const s = y.type === "plain" ? YARN_COLOR_NAMES[y.a] || "Plain" : (YARN_PATTERNS.find((x) => x.id === y.type) || YARN_PATTERNS[0]).name; return s.charAt(0).toUpperCase() + s.slice(1); };
 function yarn(root) {
@@ -39,8 +41,10 @@ function yarn(root) {
   const who = (z) => singerLabel(S, St.singerAt(S, place, time, z)).split(", ").map((w) => `<i>${esc(w)}</i>`).join("");
   const row = (z) => {
     const own = St.yarnKey(time, z.id), worn = St.yarnKeyOf(S, place, time, z.id);
-    const opts = [{ key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
-    return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${esc(yarnName(c.yarn))}${c.key === own ? ", its own yarn" : ""}">${yarnSwatchSvg(c.yarn, time)}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
+    /* its own yarn first, then none at all (the cat as it is; the designer, 2026-11-15), then the collected ones. "No yarn"
+       comes second so that it is in view however many yarns the row holds */
+    const opts = [{ key: own, label: "Its own", yarn: St.yarnAt(place, own) }, { key: St.NO_YARN, label: "No yarn", yarn: null }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
+    return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${c.yarn ? yarnSwatchSvg(c.yarn, time) : NO_SWATCH}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
   };
   root.innerHTML = `
     <header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(place).name)}</span></div></header>
@@ -49,7 +53,7 @@ function yarn(root) {
     <section class="wardrobe kinds">
       ${reached.length > 1 ? `<div class="wrow bgs"><span class="wlab">Time</span>${TIMES.map((t) => `<button class="bgchip t-${t.id}${time === t.id ? " on" : ""}" data-cat-time="${t.id}" ${reached.includes(t.id) ? "" : "disabled"} aria-pressed="${time === t.id}">${esc(t.name)}</button>`).join("")}</div>` : ""}
       ${ZONES.map(row).join("")}
-      <p class="sub">${yarns.length ? "Any yarn you’ve collected can go on any garment this month." : "Finish a garment and its yarn lands here, for any garment this month."} The next place has a new box of yarn.</p>
+      <p class="sub">${yarns.length ? "Any yarn you’ve collected can go on any garment this month." : "Finish a garment and its yarn lands here, for any garment this month."} A cat can also go without. The next place has a new box of yarn.</p>
       ${asleep.length ? `<div class="nap"><span class="wlab">Asleep</span><div class="seg" id="nap">${nappingSvg({ baskets: asleep, time: o.time })}</div></div>
       <p class="sub">The ${St.specialFor(place) ? "guests" : "cats"} of the earlier ${asleep.length > 1 ? "times" : "time"} of day sleep here. You can pat them.</p>` : ""}
     </section>`;
