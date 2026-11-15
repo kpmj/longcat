@@ -422,9 +422,11 @@ function showCombo(n, live = true) {
   }
 }
 
-/* The judge's face for a whole take. While the first garment is still teaching faces it is one of the three
-   note faces; once all twelve are learned, a take in which every note landed gets one of those instead. */
-function takeFace(mood, learnedAll) {
+/* The judge's face for a whole take: one of the three note faces, except that a take in which every note landed
+   gets one of the twelve the judge learns in the first garment. During that garment it is the face learned at this
+   step (`learned`); nothing on the sheet says so and nothing lists them: an Easter egg (the designer, 2026-11-15). */
+function takeFace(mood, learnedAll, learned) {
+  if (mood === "good" && learned) return learned.id;
   if (mood !== "good" || !learnedAll) return NOTE_FACE[mood] || "neutral";
   return TUTORIAL_FACES[(app.S.takes.length * 7 + 3) % TUTORIAL_FACES.length].id;
 }
@@ -664,18 +666,16 @@ function finish(grade) {
      the game: the fold smooths out, the cat purrs, the judge's ear twitches. the designer wants to come back to it after
      the ten-day test. See docs/later.md. */
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  const learned = !retake && out.learned;
   /* the legend only for the first three results; the key buttons when half the notes or more got away
      (game-flow board, decision C: they move the same Lower / Higher as Settings) */
   const legend = S.takes.filter((t) => t.counted).length <= 3;
   const keyfix = grade.counts.off * 2 >= grade.notes.length;
   const el = sheet(`
-    <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
+    <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll, !retake && out.learned), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
     <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, yarn: g.yarn, kind: g.kind, animal: g.animal })}</div>
     <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
     ${treatLine(out.treats)}
-    ${learned ? `<div class="learn">${faceIconSvg(learned.id, { size: 44 })}<p><b>New face: ${esc(learned.name)}</b><span>${S.faces >= STEPS ? "All twelve learned. A take where every note lands gets one of them now." : `Kept in the Album. ${STEPS - S.faces} more to learn.`}</span></p></div>` : ""}
     <div class="row"><button class="btn" data-a="retake">Sing this step again</button><button class="btn primary" data-a="ok">Keep it</button></div>
     ${keyfix ? `<p class="keyfix" id="keyfix">Felt out of reach? <button data-a="lower" ${S.settings.nudge <= -5 ? "disabled" : ""}>Lower the key</button> · <button data-a="higher" ${S.settings.nudge >= 5 ? "disabled" : ""}>Raise the key</button></p>` : ""}`, { dismissable: false });
   el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); accept(ctx, outcome); };

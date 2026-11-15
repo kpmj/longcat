@@ -740,3 +740,27 @@ body { background: var(--sky, var(--soft)); }
 .segs button { position: relative; }
 .segs .dot { position: absolute; top: 6px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--coral); }
 .tab .ti svg { display: block; }
+
+/* ---------- postcards in one place (ui/album.js; the designer, 2026-11-15, postcards-together board, layout 甲) ----------
+   The Album's "Mix one" card and the maker's sheet: the picture and four buttons. */
+.pc.mini.mix-new { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1.5px dashed var(--key); box-shadow: none; background: var(--paper); color: var(--ink); }
+.mix-new b { font: 600 24px/1 var(--display); color: var(--coral); }
+.mix-new span { font-size: 11px; font-weight: 800; }
+.mix-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mix-head span { font-size: 13px; color: var(--muted); }
+#mix-body { display: flex; flex-direction: column; gap: 12px; }
+.mix-pic.scene-wrap.small { height: min(330px, calc(100dvh - 420px)); min-height: 170px; }
+.mix-hint { text-align: center; margin: -4px 0 0; }
+.sheet .mix-take::before { content: "◉"; font-size: 13px; color: #f0b9a6; margin-right: 7px; }
+.mix-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.mix-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 3px 7px; border-radius: 14px; background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); min-width: 0; }
+.mix-chip:active { transform: translateY(1px); }
+.mix-chip > svg { width: 46px; height: auto; }
+.mix-chip b { font-size: 12px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mix-sky { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--key); display: block; }
+.mix-sky svg { width: 100%; height: 100%; display: block; }
+.mix-dots { display: flex; gap: 4px; margin-top: 1px; }
+.mix-dots u { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--line); background: none; }
+.mix-dots u.ok { border-color: var(--key); }
+.mix-dots u.on { border-color: var(--key); background: var(--key); }
+.wear-earlier { align-self: center; min-height: 40px; font-size: 14px; }

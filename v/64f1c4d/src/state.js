@@ -78,6 +78,8 @@ export function migrate(o, real = new Date()) {
   S.catNames = o.catNames && typeof o.catNames === "object" ? { ...o.catNames } : {};
   S.treats = { ...base.treats, ...(o.treats && typeof o.treats === "object" ? o.treats : {}) };
   for (const k of ["earned", "spent", "n"]) S.treats[k] = Math.max(0, Math.floor(Number(S.treats[k]) || 0));
+  /* 2026-11-15: the album's dot counts postcards only; a mark that also counted the faces would hide new cards */
+  if (S.marks && S.marks.album > allCards(S).length) S.marks = { ...S.marks, album: allCards(S).length };
   /* a save from before the dots: everything in it counts as seen */
   if (!o.marks || typeof o.marks !== "object") S.marks = drawerCounts(S);
   return S;
@@ -405,6 +407,16 @@ export function ensureTimeCards(S, place, real) {
   }
   return made;
 }
+/* What a mixed postcard can be made of at a place: for each garment the times of day whose one is finished, and the
+   skies reached. `any` says there is something to mix: every garment has a finished one, and more than one picture
+   is possible (the Album only offers "Mix one" then; the designer, 2026-11-15). */
+export function mixable(S, place) {
+  const zones = {};
+  for (const z of ZONE_IDS) zones[z] = TIME_IDS.filter((t) => garmentDone(S, place, t, z));
+  const skies = reachedTimes(S, place);
+  const n = ZONE_IDS.reduce((k, z) => k * zones[z].length, 1) * skies.length;
+  return { zones, skies, any: n > 1 };
+}
 export function addMixCard(S, place, set, bg, real) {
   if (!reachedTimes(S, place).includes(bg)) return null;
   if (!ZONE_IDS.every((z) => garmentDone(S, place, set[z], z))) return null;
@@ -424,10 +436,11 @@ export function cardScene(S, card, extra = {}) {
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }
-/* What the album and the wardrobe hold, for the dock's "something new" dots. */
+/* What the album and the wardrobe hold, for the dock's "something new" dots. The album is its postcards: the
+   judge's faces are no longer kept there (the designer, 2026-11-15: an Easter egg, not a list). */
 export function drawerCounts(S) {
   return {
-    album: allCards(S).length + Math.min(S.faces || 0, STEPS),
+    album: allCards(S).length,
     wardrobe: PLACE_IDS.reduce((n, p) => n + garmentsDone(S, p), 0),
   };
 }

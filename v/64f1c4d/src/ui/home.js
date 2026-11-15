@@ -160,7 +160,7 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
   const fresh = ZONES.every((z) => St.progress(S, place, time, z.id) === 0);
   const el = sheet(`
     <h3>${after ? esc(after) + "<br>" : ""}${except ? "Wear which one instead?" : fresh ? "Which one first?" : "Which one next?"}</h3>
-    <p class="muted">${first ? "The first one is also the tutorial: every step you sing, the judge learns a new face." : except ? "The one you’re wearing keeps its steps and waits for you." : `${timeById(time).name} · ${timeById(time).flavour}: ${timeById(time).how}. Each cat sings it with its own sound.`}</p>
+    <p class="muted">${first ? "The first one is also the tutorial: twelve short steps, one at a time." : except ? "The one you’re wearing keeps its steps and waits for you." : `${timeById(time).name} · ${timeById(time).flavour}: ${timeById(time).how}. Each cat sings it with its own sound.`}</p>
     <div class="pick-row">${left.map((z) => `<button class="pick" data-zone="${z.id}">
       ${wardrobeThumbSvg({ zone: z.id, ...St.garmentSpec(S, place, time, z.id), steps: STEPS })}
       <b>${esc(garmentName(time, z.id))}</b><span>${esc(SOUNDS[z.id].cat)} · “${sylFor(z.id, time)}” · ${St.progress(S, place, time, z.id)} / ${STEPS}</span></button>`).join("")}</div>`, { onClose: () => {} });
@@ -197,8 +197,10 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   }).join("");
   let buttons = "", note = "";
   if (done) {
-    note = "It’s in the Wardrobe now.";
-    buttons = `<div class="row"><button class="btn primary" data-a="close">OK</button><button class="btn" data-a="wardrobe">Wardrobe</button></div>`;
+    /* opened from the Wardrobe's "Earlier garments" it needs no way there */
+    const inWardrobe = app.screen === "wardrobe";
+    note = inWardrobe ? "" : "It’s in the Wardrobe now.";
+    buttons = inWardrobe ? `<button class="btn primary" data-a="close">OK</button>` : `<div class="row"><button class="btn primary" data-a="close">OK</button><button class="btn" data-a="wardrobe">Wardrobe</button></div>`;
   } else if (active) {
     buttons = `<div class="row"><button class="btn primary" data-a="sing">Sing step ${n + 1}</button>${others.length && !inTutorial ? `<button class="btn" data-a="other">Wear another one</button>` : ""}</div>`;
   } else if (inTutorial) {
@@ -217,7 +219,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     ${buttons}`);
   const on = (a, fn) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.onclick = fn; };
   on("close", () => closeSheet());
-  on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe", { tab: "postcard" }); });
+  on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe", { tab: "wearing" }); });
   on("cat", () => { closeSheet(true); openDress(zone, time); });
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });

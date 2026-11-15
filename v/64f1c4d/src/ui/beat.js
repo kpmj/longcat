@@ -49,7 +49,7 @@ function render(root, { place, time }) {
         ${b.end ? `<p class="muted">The wardrobe is all open: mix the nine any way you like and take postcards. ${nx ? `The next place opens on ${St.monthLabel(nx.date)}. ` : ""}Old months never close.</p>` : ""}
         <div class="dots">${beats.map((_, i) => `<i class="${i === k ? "on" : ""}"></i>`).join("")}</div>
         ${b.card ? `<button class="btn ghost tight" data-a="share">Share or save this postcard</button>` : ""}
-        ${b.end ? `<div class="row"><button class="btn primary" data-a="wardrobe">Mix outfits</button><button class="btn" data-a="home">Home</button></div>`
+        ${b.end ? `<div class="row"><button class="btn primary" data-a="wardrobe">Mix a postcard</button><button class="btn" data-a="home">Home</button></div>`
           : `<button class="btn primary" data-a="next">${k === beats.length - 1 ? "Which one first?" : "Next"}</button>`}
       </div>`;
     const go = (screen) => { St.markBeatSeen(S, place, time); app.save(); show(screen); };
@@ -64,7 +64,7 @@ function render(root, { place, time }) {
     const sh = $("[data-a=share]", root);
     if (sh) sh.onclick = () => openCard(card);
     const w = $("[data-a=wardrobe]", root);
-    if (w) w.onclick = () => { St.markBeatSeen(S, place, time); app.save(); show("wardrobe", { tab: "postcard" }); };
+    if (w) w.onclick = () => { St.markBeatSeen(S, place, time); app.save(); show("album", { mix: true }); };
     const h = $("[data-a=home]", root);
     if (h) h.onclick = () => go("home");
   };
