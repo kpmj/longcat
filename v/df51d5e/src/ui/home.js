@@ -2,7 +2,9 @@
    whole screen (full-screen home board, 2026-11-14, the designer chose 丁); the controls float on it in one paper surface:
    place and time, music and settings at the top, and a small row of three cats' progress on the sheet that also
    holds the bottom row. Sing itself is the middle button of that bottom row, on every tab (app.js renderDock).
-   A cat's cell opens its Garment sheet. Nothing here counts streaks or shows a score. */
+   A cat's cell opens its Garment sheet. Nothing here counts streaks or shows a score.
+   Once a garment is finished, a button at the top turns the page into the place to wrap it by hand (ui/wrap.js;
+   the designer, 2026-11-15). */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } from "./app.js";
 import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
@@ -13,6 +15,7 @@ import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor, yarnName } from "../content.js";
 import { tip } from "./tips.js";
+import { openWrap, canWrap } from "./wrap.js";
 import { drillForStep } from "../drill/drills.js";
 
 /* Three cats, one line each: the cat (its coat is the garment's own), twelve ticks, a number. The cat stands for
@@ -64,6 +67,8 @@ function repaintHome() {
   paintArt(root);
 }
 
+/* three turns of a wrap. Drawn here until the art session draws one in the print's style */
+const WRAP_ICO = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5q8 -5 16 0"/><path d="M4 13.5q8 -5 16 0"/><path d="M5.5 18.5q6.5 -4.5 13 0"/></svg>`;
 let warnedSave = false;
 const musicOn = (S) => S.settings.music !== false && S.settings.sound !== false;
 
@@ -88,7 +93,7 @@ export function renderHome(root) {
     <div class="home-art" id="home-scene"></div>
     <header class="home-top">
       <button class="home-pill paper" data-act="places" aria-label="${esc(p.name)}, ${esc(T.name)}. Open the places"><b>${esc(p.name)}</b><span>${esc(T.name)}</span><i aria-hidden="true">▾</i></button>
-      <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button></div>
+      <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}${canWrap(S) ? `<button class="home-ico paper wrap" data-act="wrap" aria-label="Wrap a garment yourself">${WRAP_ICO}</button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button></div>
     </header>
     ${special ? '<span class="home-special paper">New Year month</span>' : ""}
     <section class="home-tray paper" aria-label="The three garments">
@@ -129,7 +134,9 @@ export function renderHome(root) {
   if (pc) pc.onclick = () => openPlaces();
   const lb = $("[data-act=letter]", root);
   if (lb) lb.onclick = () => openLetter(unread[0]);
-  if (!nt && time && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && openPicker(), 350);
+  const wb = $("[data-act=wrap]", root);
+  if (wb) wb.onclick = () => openWrap();
+  if (!nt && time && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && document.getElementById("home-scene") && openPicker(), 350);
   if (!app.canSave && !warnedSave) { warnedSave = true; setTimeout(() => toast("This browser won’t remember your progress."), 600); }
   setTimeout(() => homeTips(root, nt, unread), 450);
 }
@@ -148,7 +155,10 @@ function homeTips(root, nt, unread) {
     if (tip("step", scene, { text: `That’s one step. ${left === 11 ? "Eleven" : left} more and the ${name} is done.`, at: "below", x: p.x, y: p.y + 24 })) return;
   }
   const lb = $("[data-act=letter]", root);
-  if (lb && unread.length) tip("letter", lb, { at: "below", x: 0.3 });
+  if (lb && unread.length && tip("letter", lb, { at: "below", x: 0.3 })) return;
+  /* the first time there is something to wrap by hand */
+  const wb = $("[data-act=wrap]", root);
+  if (wb) tip("wrap", wb, { at: "below", x: 0.5 });
 }
 
 /* Which garment next: the player chooses (decided 2026-11-11). Colours come with the garment.

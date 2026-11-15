@@ -13,6 +13,7 @@ export const TIPS = {
   fold: "A fold marks a note that got away. Sing the step again to smooth it, or keep it.",
   garment: null, // "The scarf is in the Wardrobe now. Other places are open too."
   letter: "A letter came. Reading it doesn’t move you.",
+  wrap: "A garment is finished: you can wrap it round the judge yourself here.",
 };
 
 let cur = null;

@@ -314,7 +314,48 @@ export function garmentSpec(S, place, time, zone, extra = {}) {
   const singer = singerAt(S, place, time, zone), yarn = yarnOf(S, place, time, zone), who = singerLook(place, time, zone, singer);
   /* `fur` is the knit weight of the sleeve. With no sleeve it would be the cat's fur, which stays short all day */
   if (!yarn) who.look = { ...who.look, fur: "short" };
-  return { zone, ...who, singer, yarn, steps: n, shapes, tufts, folds, ...extra };
+  return { zone, ...who, singer, yarn, steps: n, shapes, tufts, folds, wrap: wrapOf(S, place, time, zone), ...extra };
+}
+
+/* ---------- a wrap laid by hand (the designer, 2026-11-15) ----------
+   While a garment is being sung, and when its twelfth step is done, the game wraps it round the judge itself. After
+   that the player may wrap it again by hand: a few strokes drawn on the judge, each one a turn of the garment
+   ("可以先圍一圈再圍斜斜的"). The strokes are kept per garment in the month, as lists of [x, y] in the picture's own
+   400 x 500; a garment with none is wrapped the game's way, and taking the strokes away goes back to that ("馬上圍成
+   原本系統圍好的"). Where a garment may be drawn (the hat on the head, and so on) and how long it may be is the
+   art's to say (art wrapArea) and the wrap screen's to keep (ui/wrap.js); here a wrap only has to be well formed. */
+export const WRAP_MAX = { strokes: 12, points: 120 };
+function cleanWrap(w) {
+  if (!Array.isArray(w)) return null;
+  const out = [];
+  for (const s of w.slice(0, WRAP_MAX.strokes)) {
+    if (!Array.isArray(s)) continue;
+    const pts = [];
+    for (const p of s.slice(0, WRAP_MAX.points)) {
+      if (!Array.isArray(p) || typeof p[0] !== "number" || typeof p[1] !== "number" || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+      pts.push([Math.round(Math.max(0, Math.min(400, p[0])) * 10) / 10, Math.round(Math.max(0, Math.min(500, p[1])) * 10) / 10]);
+    }
+    if (pts.length >= 2) out.push(pts);
+  }
+  return out.length ? out : null;
+}
+/* a finished garment's own wrap, or null for the game's */
+export function wrapOf(S, place, time, zone) {
+  const w = peek(S, place).wraps?.[gkey(time, zone)];
+  return w && garmentDone(S, place, time, zone) ? cleanWrap(w) : null;
+}
+/* keep a wrap for a finished garment; nothing (or nothing drawable) puts the game's wrap back. False when the
+   garment is not finished */
+export function setWrap(S, place, time, zone, strokes) {
+  if (!TIME_IDS.includes(time) || !ZONE_IDS.includes(zone) || !garmentDone(S, place, time, zone)) return false;
+  const m = monthOf(S, place), w = cleanWrap(strokes);
+  if (!m.wraps || typeof m.wraps !== "object") m.wraps = {};
+  if (w) m.wraps[gkey(time, zone)] = w; else delete m.wraps[gkey(time, zone)];
+  return true;
+}
+/* this month's finished garments, the ones that can be wrapped by hand: [{ time, zone }], newest time first */
+export function wrappable(S, place) {
+  return [...TIME_IDS].reverse().flatMap((t) => ZONE_IDS.filter((z) => garmentDone(S, place, t, z)).map((z) => ({ time: t, zone: z })));
 }
 
 /* ---------- yarn (the designer, 2026-11-14) ----------
@@ -393,6 +434,8 @@ function newCard(S, place, kind, bg, set, real) {
     /* a postcard keeps the singers and the yarns as they were when it was taken, whatever is changed afterwards */
     cats: Object.fromEntries(ZONE_IDS.map((z) => [z, singerAt(S, place, set[z], z)])),
     yarns: Object.fromEntries(ZONE_IDS.map((z) => [z, yarnKeyOf(S, place, set[z], z)])),
+    /* and the way each garment was wrapped (null = the game's way) */
+    wraps: Object.fromEntries(ZONE_IDS.map((z) => [z, wrapOf(S, place, set[z], z)])),
     caption: cardCaption(place, bg, set), date: todayKey(S, real),
   };
   m.cards.push(card);
@@ -440,7 +483,8 @@ export function cardScene(S, card, extra = {}) {
       : { animal: animalFor(card.place, card.set[z], z), kind: card.kinds?.[z] || kindFor(card.place, z), look: garmentLook(card.place, card.set[z], z) };
     const bare = card.yarns?.[z] === NO_YARN;
     if (bare) who.look = { ...who.look, fur: "short" };
-    return { ...g, ...who, yarn: bare ? null : yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z) };
+    /* a card from before garments could be wrapped by hand has no `wraps`: it shows the game's wrap, as it did */
+    return { ...g, ...who, yarn: bare ? null : yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z), wrap: card.wraps ? cleanWrap(card.wraps[z]) : null };
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }
