@@ -1,16 +1,17 @@
 /* Cats of one's own (the designer, 2026-11-14 and 15; boards: docs/design/longcat-yarn-shop-animals.md for the rules,
-   longcat-shop-screens.md for the screens, layout 甲).
-   - The Wardrobe's third tab, Cats: who sings now, the player's cats, the cats who live at this place, the
-     shelf of cats and other long animals that can be brought home for treats, and the baskets where the
-     player's cats that are not singing sleep.
-   - Three sheets: one of the player's own (name it, say where it sings), one to bring home, and "Who sings the
-     scarf?", which the Garment sheet on Home opens too.
+   longcat-shop-screens.md for the shop, longcat-wardrobe-redesign.md for the Wardrobe by garment, layout 甲).
+   - The Wardrobe's Cats tab: the player's cats, the cats who live at this place, the shelf of cats and other long
+     animals that can be brought home for treats, and the baskets where the player's cats that are not singing
+     sleep.
+   - The garment sheet (openDress): who sings one garment, and its yarn. Opened from a card on the Wardrobe's
+     Wearing tab, from the Postcard tab's list and from the Garment sheet on Home.
+   - Two sheets for one singer: the player's own (name it, say where it sings) and one to bring home.
    - The line on the result sheet that says what a take earned.
    Treats are only ever earned by singing (state.js earnTreats); nothing here sells them. */
 import { app, show, esc, $, $$, sheet, closeSheet, toast, wireTaps } from "./app.js";
 import * as St from "../state.js";
-import { catKindSvg, guestSvg, nappingSvg } from "../art/index.js";
-import { ZONES, ZONE_IDS, TREATS, isAnimal, priceOf, catCoat, singerWords, singerNote, placeById } from "../content.js";
+import { catKindSvg, guestSvg, nappingSvg, yarnSwatchSvg } from "../art/index.js";
+import { ZONES, ZONE_IDS, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName } from "../content.js";
 
 /* the coin: a gold disc with a small fish. Drawn here until the art session draws one in the print's style */
 export const treatIcon = (s = 16) => `<svg class="treat" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#e6b84f" stroke="#3e2a3c" stroke-width="1.6"/><path d="M5.2 10c1.6-2.6 4.6-2.9 6.6-.9l2.4-1.7v5.2l-2.4-1.7c-2 2-5 1.7-6.6-.9z" fill="#3e2a3c"/></svg>`;
@@ -20,10 +21,17 @@ const singerSvg = (id) => (isAnimal(id) ? guestSvg(id) : catKindSvg(id, { look: 
 /* what a singer is called: the player's name for it, or what it looks like */
 export const singerLabel = (S, id) => St.catName(S, id) || singerWords(id);
 const now = (S) => ({ place: S.here, time: St.currentTime(S, S.here) || "night" });
-const purse = (S) => `<span class="purse" role="img" aria-label="${num(St.treatsOf(S))} treats">${treatIcon(18)}${num(St.treatsOf(S))}</span>`;
+export const purse = (S) => `<span class="purse" role="img" aria-label="${num(St.treatsOf(S))} treats">${treatIcon(18)}${num(St.treatsOf(S))}</span>`;
 const again = () => show(app.screen, app.props);
+/* draw the screen again under an open sheet, where the screen knows how (wardrobe.js and home.js) */
+const repaint = () => { const scr = app.screens[app.screen]; if (scr && scr.repaint) scr.repaint(); };
+/* a yarn in a word or two: the colour of a plain yarn, the pattern of the others (each pattern comes once a month) */
+export const yarnLabel = (y) => { if (!y) return "No yarn"; const t = y.type === "plain" ? YARN_COLOR_NAMES[y.a] || "Plain" : (YARN_PATTERNS.find((x) => x.id === y.type) || YARN_PATTERNS[0]).name; return t.charAt(0).toUpperCase() + t.slice(1); };
+/* a yarn as a swatch; none at all is an empty outline the same size (the art's yarnSwatchSvg is 96 x 40) */
+const NO_SWATCH = `<svg viewBox="0 0 96 40" aria-hidden="true"><rect x="7" y="11" width="82" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 4" opacity=".55"/></svg>`;
+export const yarnSwatch = (y, time) => (y ? yarnSwatchSvg(y, time) : NO_SWATCH);
 
-const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}${o.say ? `, ${esc(o.say)}` : ""}">${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${o.under || ""}</button>`;
+const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}${o.say ? `, ${esc(o.say)}` : ""}">${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${o.zz ? `<i class="cat-zz" aria-hidden="true">z z</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${o.under || ""}</button>`;
 const price = (id, word = "") => `<em class="${word ? "keep" : ""}">${treatIcon(13)}${word ? `${word} ` : ""}${num(priceOf(id))}</em>`;
 
 /* The player's cats that are not singing here nap in baskets, three to a basket, and can be patted (the designer,
@@ -39,31 +47,30 @@ function napsSvg(ids, time) {
   return rows.join("");
 }
 
-/* ---------- the Wardrobe's Cats tab ---------- */
-export function renderCats(root, segs, wireSegs) {
+/* ---------- the Wardrobe's Cats tab ----------
+   Who sings is chosen per garment (the Wearing tab's cards, openDress), so this tab is only the cats themselves:
+   the player's (a tag says which garment one is singing, "z z" that it is asleep), the ones who live here, the
+   shelf, and the baskets. A cat of the player's opens its own sheet; any other opens the one to bring it home. */
+export function renderCats(root, topbar, segs, wireSegs) {
   const S = app.S, { place, time } = now(S);
   const cast = St.castAt(S, place, time), shelf = St.shelfAt(S, place), singing = (id) => ZONES.find((z) => cast[z.id] === id);
-  const kindOf = (id) => (St.ownsCat(S, id) ? "yours" : St.specialFor(place) ? "a guest" : "lives here");
   const napping = S.cats.filter((id) => !singing(id));
   root.innerHTML = `
-    <header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(place).name)}</span></div>${purse(S)}</header>
+    ${topbar}
     ${segs}
     <section class="cats-tab">
-      <h4 class="cats-h">Singing now</h4>
-      <div class="cat-slots">${ZONES.map((z) => `<button class="cat-slot" data-zone="${z.id}" aria-label="${esc(z.name)}: ${esc(singerLabel(S, cast[z.id]))}. Change"><span class="cat-z">${esc(z.name)}</span>${singerSvg(cast[z.id])}<b>${esc(singerLabel(S, cast[z.id]))}</b><em>${kindOf(cast[z.id])}</em></button>`).join("")}</div>
-      <h4 class="cats-h">Your cats <i>${S.cats.length}</i></h4>
-      <div class="cat-shelf">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, tag: z ? z.name : "", say: z ? `sings the ${z.name.toLowerCase()}` : "" }); }).join("")}</div>
-      ${shelf.here.length ? `<h4 class="cats-h">They live here <i>and sing here for free</i></h4>
+      <h4 class="cats-h">Your cats <i>${S.cats.length}${napping.length ? " · the ones not singing are asleep" : ""}</i></h4>
+      <div class="cat-grid four">${S.cats.map((id) => { const z = singing(id); return card(S, id, { on: !!z, tag: z ? z.name : "", zz: !z, say: z ? `sings the ${z.name.toLowerCase()}` : "asleep" }); }).join("")}</div>
+      ${shelf.here.length ? `<h4 class="cats-h">They live here <i>keep one and it comes along</i></h4>
       <div class="cat-shelf">${shelf.here.map((id) => card(S, id, { tag: singing(id) ? singing(id).name : "", under: price(id, "Keep"), say: `keep for ${priceOf(id)} treats` })).join("")}</div>` : ""}
       ${shelf.cats.length + shelf.animals.length ? `<h4 class="cats-h">More to bring home</h4>
       <div class="cat-shelf">${[...shelf.cats.slice(0, 2), ...shelf.animals, ...shelf.cats.slice(2)].map((id) => card(S, id, { under: price(id), say: `${priceOf(id)} treats` })).join("")}</div>` : ""}
-      ${napping.length ? `<h4 class="cats-h">Asleep <i>${napping.length === 1 ? "the one who isn’t singing" : "the ones who aren’t singing"}. You can pat them</i></h4>
+      ${napping.length ? `<h4 class="cats-h">Asleep <i>you can pat them</i></h4>
       <div class="cat-naps" id="cat-naps">${napsSvg(napping, time)}</div>` : ""}
       <p class="sub">Every take you sing through earns ${TREATS.take} treats, for the first ${TREATS.perDay} of a day.</p>
     </section>`;
   wireSegs(root);
   wireTaps($("#cat-naps", root));
-  $$(".cat-slot", root).forEach((b) => (b.onclick = () => openChange(b.dataset.zone)));
   $$(".cat-card", root).forEach((b) => (b.onclick = () => openSinger(b.dataset.cat)));
 }
 
@@ -115,30 +122,42 @@ function openBring(id) {
     app.save();
     closeSheet(true);
     again();
-    toast(`${singerWords(id)} is yours now.`);
-    setTimeout(() => openOwn(id), 500);
+    /* its own sheet opens next: a name for it, and where it sings. That sheet is the "it is yours" */
+    setTimeout(() => openOwn(id), 350);
   };
 }
 
-/* ---------- who sings this garment: the player's cats and the ones who live here ---------- */
-export function openChange(zone) {
-  const S = app.S, { place, time } = now(S), cast = St.castAt(S, place, time), z = ZONES.find((x) => x.id === zone) || ZONES[0];
-  const home = [...new Set(Object.values(St.homeCast(place, time)))].filter((id) => !St.ownsCat(S, id));
-  const tagOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id); return cast[zone] === id ? "Now" : at ? at.name : ""; };
+/* ---------- one garment: who sings it, and its yarn ----------
+   Everything about one garment on one sheet (wardrobe redesign, layout 甲). The singer is the place's for that
+   zone, the same at every time of day; the yarn is this garment's own choice (state.js setSinger, setYarn). A tap
+   changes it at once and the screen underneath is drawn again, so the picture follows while the sheet stays open. */
+export function openDress(zone, time) {
+  const S = app.S, place = S.here, z = ZONES.find((x) => x.id === zone) || ZONES[0];
+  const t = time || St.currentTime(S, place) || "night";
   const el = sheet(`
-    <h3>Who sings the ${esc(z.name.toLowerCase())}?</h3>
-    <p class="muted">Your cats, and the ones who ${St.specialFor(place) ? "are visiting" : "live here"}. One already singing changes places.</p>
-    <div class="cat-grid">${S.cats.map((id) => card(S, id, { on: cast[zone] === id, tag: tagOf(id) })).join("")}${home.map((id) => card(S, id, { on: cast[zone] === id, tag: tagOf(id) || (St.specialFor(place) ? "Guest" : "Lives here") })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
-    <button class="btn" data-a="close">Not now</button>`, { tall: true });
+    <div class="dress-head"><h3>${esc(z.name)}</h3><span>${esc(timeById(t).name)} · ${St.progress(S, place, t, z.id)} / ${STEPS}</span></div>
+    <div id="dress-body"></div>
+    <button class="btn primary" data-a="close">Done</button>`, { onClose: repaint });
+  const body = $("#dress-body", el);
+  const paint = () => {
+    const cast = St.castAt(S, place, t), cur = cast[z.id];
+    const home = [...new Set(Object.values(St.homeCast(place, t)))].filter((id) => !St.ownsCat(S, id));
+    const ids = [cur, ...S.cats.filter((id) => id !== cur), ...home.filter((id) => id !== cur)];
+    const tagOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id); return id === cur ? "Now" : at ? at.name : ""; };
+    const own = St.yarnKey(t, z.id), worn = St.yarnKeyOf(S, place, t, z.id);
+    /* none at all first (the designer: "can you have no yarn to be the first option"), then its own, then the collected */
+    const yarns = [{ key: St.NO_YARN, label: "No yarn", yarn: null }, { key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...St.collectedYarns(S, place).filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
+    body.innerHTML = `
+      <h4>Who sings it</h4>
+      <div class="cat-shelf">${ids.map((id) => card(S, id, { on: id === cur, tag: tagOf(id), say: id === cur ? "sings it now" : "" })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
+      <h4>Its yarn</h4>
+      <div class="dress-yarns">${yarns.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${yarnSwatch(c.yarn, t)}<span>${esc(c.label)}</span></button>`).join("")}</div>`;
+    $$(".cat-card[data-cat]", body).forEach((b) => (b.onclick = () => { if (!St.setSinger(S, place, t, z.id, b.dataset.cat)) return; app.save(); paint(); repaint(); }));
+    $$(".coat", body).forEach((b) => (b.onclick = () => { if (!St.setYarn(S, place, t, z.id, b.dataset.yarn)) return; app.save(); paint(); repaint(); }));
+    $("[data-a=more]", body).onclick = () => { closeSheet(true); show("wardrobe", { tab: "cats" }); };
+  };
+  paint();
   $("[data-a=close]", el).onclick = () => closeSheet();
-  $("[data-a=more]", el).onclick = () => { closeSheet(true); show("wardrobe", { tab: "cats" }); };
-  $$(".cat-card[data-cat]", el).forEach((b) => (b.onclick = () => {
-    if (!St.setSinger(S, place, time, zone, b.dataset.cat)) return;
-    app.save();
-    closeSheet(true);
-    if (app.screen === "home") show("home", { noAutoPick: true, picked: zone }); else again();
-    toast(`${singerLabel(S, b.dataset.cat)} sings the ${z.name.toLowerCase()} now.`);
-  }));
 }
 
 /* ---------- the result sheet's line: what this take earned (t = recordTake's or retakeStep's `treats`) ---------- */

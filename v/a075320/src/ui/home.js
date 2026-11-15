@@ -7,7 +7,7 @@ import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat } fro
 import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
-import { openChange, singerLabel } from "./cats.js";
+import { openDress, singerLabel, yarnLabel } from "./cats.js";
 import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor, yarnName } from "../content.js";
@@ -49,6 +49,19 @@ function paintArt(root = document.getElementById("screen")) {
 }
 function onResize() { clearTimeout(resizeT); resizeT = setTimeout(() => paintArt(), 120); }
 function leaveHome() { stopMusic(); window.removeEventListener("resize", onResize); clearTimeout(resizeT); }
+
+/* a card says which cat it is about: that cat hops once as its sheet opens */
+function wireCells(root) {
+  $$(".home-cell", root).forEach((b) => (b.onclick = () => { hopCat($("#home-scene", root), b.dataset.zone); openGarment(b.dataset.zone); }));
+}
+/* the picture and the three cells again, under an open sheet: the garment sheet changes a cat or a yarn */
+function repaintHome() {
+  const root = document.getElementById("screen"), cells = root && $(".home-cells", root), S = app.S;
+  if (!cells || app.screen !== "home") return;
+  cells.innerHTML = garmentCells(S, S.here, St.currentTime(S, S.here) || "night");
+  wireCells(root);
+  paintArt(root);
+}
 
 let warnedSave = false;
 const musicOn = (S) => S.settings.music !== false && S.settings.sound !== false;
@@ -106,7 +119,7 @@ export function renderHome(root) {
   };
   $$("[data-go]", root).forEach((b) => (b.onclick = () => show(b.dataset.go)));
   /* a card says which cat it is about: that cat hops once as its sheet opens */
-  $$(".home-cell", root).forEach((b) => (b.onclick = () => { hopCat($("#home-scene", root), b.dataset.zone); openGarment(b.dataset.zone); }));
+  wireCells(root);
   /* the garment just put on (Wear this one, the picker): its cat hops once */
   if (app.props.picked) setTimeout(() => app.screen === "home" && hopCat(document.getElementById("home-scene"), app.props.picked), 250);
   const tc = $("[data-act=times]", root);
@@ -195,7 +208,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     buttons = `<div class="row"><button class="btn primary" data-a="wear">Wear this one</button><button class="btn" data-a="close">Not now</button></div>`;
   }
   const el = sheet(`
-    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">Sung by ${esc(singerLabel(S, g.singer))} · change</button></div></div>
+    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">${esc(singerLabel(S, g.singer))} · ${esc(yarnLabel(g.yarn).toLowerCase())} · change</button></div></div>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}
@@ -203,8 +216,8 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     ${buttons}`);
   const on = (a, fn) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.onclick = fn; };
   on("close", () => closeSheet());
-  on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe"); });
-  on("cat", () => { closeSheet(true); openChange(zone); });
+  on("wardrobe", () => { closeSheet(true); if (app.screen !== "wardrobe") show("wardrobe", { tab: "postcard" }); });
+  on("cat", () => { closeSheet(true); openDress(zone, time); });
   on("sing", () => { closeSheet(true); show("take", { ctx: St.nextTake(S, place) }); });
   on("other", () => { closeSheet(true); openPicker({ except: zone }); });
   on("wear", () => { St.chooseZone(S, place, zone); app.save(); closeSheet(true); show("home", { noAutoPick: true, picked: zone }); });
@@ -250,4 +263,4 @@ function askRedo(place, time, zone, step) {
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }
 
-app.screens.home = { render: renderHome, openPicker, openGarment, leave: leaveHome };
+app.screens.home = { render: renderHome, repaint: repaintHome, openPicker, openGarment, leave: leaveHome };

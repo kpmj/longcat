@@ -713,3 +713,25 @@ body { background: var(--sky, var(--soft)); }
 /* the player's cats that are not singing, asleep in baskets (the art's nappingSvg, one row of three baskets each) */
 .cat-naps { display: flex; flex-direction: column; border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden; background: #efe6d2; }
 .cat-naps svg { display: block; width: 100%; height: auto; }
+
+/* ---------- the Wardrobe by garment (wardrobe redesign board, layout 甲; the designer, 2026-11-15) ----------
+   Wearing: one card per garment, with its cat and its yarn. The garment sheet: who sings it, and its yarn. */
+.wear-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.wear-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px 8px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); min-width: 0; }
+.wear-slot .wear-z { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.wear-pair { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 42px; }
+.wear-pair .cat-ico { width: 40px; height: 40px; flex: none; }
+.wear-pair > svg:not(.cat-ico) { width: 52px; height: auto; flex: none; }
+.wear-none { font-size: 10.5px; font-weight: 700; color: var(--muted); border: 1.5px dashed var(--line); border-radius: 9px; padding: 3px 6px; }
+.wear-slot b { font-size: 13px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wear-slot em { font-style: normal; font-size: 11px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.dress-head span { font-size: 13px; color: var(--muted); }
+#dress-body { display: flex; flex-direction: column; gap: 8px; }
+.dress-yarns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.dress-yarns .coat { flex: none; min-width: 0; }
+.dress-yarns .coat svg { width: 100%; max-width: 54px; }
+.sheet .cat-shelf .cat-card.more { min-height: 0; flex: 0 0 78px; }
+.cat-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 7px; }
+.cat-card .cat-zz { position: absolute; top: 2px; right: 5px; font-size: 10px; font-weight: 800; color: var(--muted); font-style: normal; }
+.row.tight > .btn { flex: 1 1 130px; min-height: 40px; font-size: 13.5px; padding: 0 10px; }
