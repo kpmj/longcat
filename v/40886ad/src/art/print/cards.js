@@ -78,7 +78,7 @@ export function placeThumbSvg(place, time) {
 export function wardrobeThumbSvg(o = {}) {
   o = o || {};
   const zone = zoneId(o.zone) || "bottom", look = lookOf(o.look, zone, "morning"), time = TIME_OF_FUR[look.fur], steps = int(o.steps, 0, 12, 12);
-  const g = { zone, look, kind: kindId(o.kind), animal: animalId(o.animal), steps };
+  const g = { zone, look, kind: kindId(o.kind), animal: animalId(o.animal), steps, yarn: o.yarn };
   const L = steps ? garmentLayers(g, { time, animate: false }) : null;
   /* a hat goes on the head with the fruit seated on top of it, as in the scene; the frame moves up to keep the fruit in */
   const H = L && drawZone(zone) === "hat" ? hatOnHead(L) : null;

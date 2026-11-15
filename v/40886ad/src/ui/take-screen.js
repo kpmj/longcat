@@ -599,7 +599,7 @@ function draw(v, dt = 1 / 60) {
   /* the cat's mouth shows the sound: while a demo note sounds, while it waits for the singer, and while it hears one */
   const open = R.saying || (T.phase === "demo" ? currentIndex(T) >= 0 : T.phase === "count" ? true : !!v);
   const mouth = open || P.mouth === "mm" ? P.mouth : null;
-  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
+  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
 }
 
 function wireTouch(root) {
@@ -670,7 +670,7 @@ function finish(grade) {
   const keyfix = grade.counts.off * 2 >= grade.notes.length;
   const el = sheet(`
     <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
-    <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, kind: g.kind, animal: g.animal })}</div>
+    <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, yarn: g.yarn, kind: g.kind, animal: g.animal })}</div>
     <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
     ${learned ? `<div class="learn">${faceIconSvg(learned.id, { size: 44 })}<p><b>New face: ${esc(learned.name)}</b><span>${S.faces >= STEPS ? "All twelve learned. A take where every note lands gets one of them now." : `Kept in the Album. ${STEPS - S.faces} more to learn.`}</span></p></div>` : ""}

@@ -4,6 +4,7 @@
 import { f, num, int, svgDoc } from "../util.js";
 import { lookOf, animalId, kindId, FUR } from "../palettes.js";
 import { headFor, tailFor, palFor as guestPal } from "./guests.js";
+import { yarnOf, yarnInk, sleeveMarkup, yarnPill, KNIT, CAT_W } from "./yarn.js";
 import { COATS, KEY, LWC, bodyMarkup, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked } from "./cat.js";
 
 const MOODS = ["listen", "sing", "smug", "squint", "wide", "sleep"];
@@ -60,7 +61,13 @@ export function laneCatSvg(o = {}) {
   if (o.tail && typeof o.tail === "object") out += tailOf(animal, kind, num(o.tail.x), num(o.tail.y), dir, w * .45, pal, mood === "sleep");
   const tw = o.slim ? w * .52 : w * .26;
   if (td) out += stroke(td, KEY, tw + 2 * lw * .7) + stroke(td, pal.fur, tw) + (o.slim ? stroke(td, pal.belly, tw * .28, ` transform="translate(0 ${f(tw * .22)})"`) : "");
-  if (d) {
+  /* o.yarn: the body being sung is knitting (print/yarn.js). Still a handful of strokes: the ground, and the yarn's
+     second colour as one dashed stroke; head and tail stay the cat's own */
+  const ink = yarnInk(o.yarn);
+  if (d && ink) {
+    out += stroke(d, KEY, w + 2 * lw) + stroke(d, ink.a, w);
+    if (ink.rep) out += `<path d="${d}" stroke="${ink.b}" stroke-width="${f(ink.rep[2] ? w * .28 : w)}" stroke-dasharray="${f(ink.rep[0] * w)} ${f(ink.rep[1] * w)}" stroke-dashoffset="${f(-ink.rep[1] * w / 2)}"${ink.rep[2] ? ` stroke-linecap="round"` : ""} stroke-linejoin="round" fill="none"/>`;
+  } else if (d) {
     const fluffy = look.fur !== "short", dots = ` stroke-dasharray="0 ${f(w * .42)}"`;
     out += (fluffy ? stroke(d, KEY, w + 3 + 2 * lw, dots) : "") + stroke(d, KEY, w + 2 * lw) + (fluffy ? stroke(d, pal.fur, w + 3, dots) : "")
       + stroke(d, pal.fur, w) + stroke(d, pal.belly, w * .26, ` transform="translate(0 ${f(w * .27)})"`);
@@ -90,9 +97,13 @@ export function segmentSvg(o = {}) {
     pts.push({ x: x0 + len * t, y: y - v * amp * Math.sin(t * Math.PI), tx: 1, ty: 0, fluff: FUR[look.fur].fluff * w / 25 });
   }
   const hs = w / 22, end = pts[n - 1];
+  /* o.yarn: the piece is a sleeve with its two cuffs; the cat inside is short-furred and a little narrower */
+  const yarn = yarnOf(o.yarn), K0 = KNIT[{ short: "morning", mid: "golden", long: "night" }[look.fur]];
+  const S = yarn ? sleeveMarkup([{ pts }], yarn, { w, bump: K0.bump }) : null, wc = S ? w * CAT_W / K0.w : w;
+  if (S) for (const p of pts) p.fluff = 0;
   let folds = "";
-  for (const x of foldSpots(o.folds, o.tuft)) folds += foldMarkup(pts[int((.06 + x * .8) * n, 2, n - 4)], w, pal, hs);
-  const body = bodyMarkup([pts], w, pal, { tuftR: FUR[look.fur].tuftR, lw: LWC * .9 * hs }) + coatMarkup([{ pts: pts.filter((_, i) => i % 2 === 0), pattern: look.pattern }], w, pal, animal === "cat" ? 1 : .55);
+  for (const x of foldSpots(o.folds, o.tuft)) { const q = pts[int((.06 + x * .8) * n, 2, n - 4)]; folds += S ? yarnPill(q, w, yarn, hs) : foldMarkup(q, w, pal, hs); }
+  const body = bodyMarkup([pts], wc, pal, { tuftR: S ? .5 : FUR[look.fur].tuftR, lw: LWC * .9 * hs }) + coatMarkup([{ pts: pts.filter((_, i) => i % 2 === 0), pattern: look.pattern }], wc, pal, animal === "cat" ? 1 : .55) + (S ? S.art + (S.cuffs || "") : "");
   const art = tailOf(animal, kind, x0 - 2, y + 2, 1, w * .38, pal, false) + pawPair(x0 + 12 * hs, y + w * .5, 1, .9 * hs, pal) + body + folds
     + pawPair(end.x + 3 * hs, end.y + w * .55, 1, hs, pal) + headOf(animal, kind, end.x + 8 * hs, end.y - 5 * hs, 1, "smug", .9 * hs, pal);
   return svgDoc(`0 0 ${f(W)} ${f(H)}`, art);

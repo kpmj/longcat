@@ -6,6 +6,7 @@ export { sceneSvg, judgeBustSvg, nappingSvg, PLACE_UI } from "./print/scene.js";
 export { stepPoint, ZONE_NAME, drawZone } from "./print/garments.js";
 export { faceIconSvg } from "./print/judge.js";
 export { laneCatSvg, segmentSvg } from "./print/lane.js";
+export { yarnSwatchSvg, YARN_COLORS, YARN_TYPES } from "./print/yarn.js";
 export { postcardSvg, letterSvg, placeThumbSvg, wardrobeThumbSvg, catKindSvg, guestSvg, wrapCaption } from "./print/cards.js";
 export { ART_CSS } from "./css.js";
 

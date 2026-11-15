@@ -304,6 +304,61 @@ export function kindFor(placeId, zoneId) {
   return cast[Math.max(0, ["scarf", "top", "bottom"].indexOf(zoneId))];
 }
 
+/* ---------- yarn (the designer, 2026-11-14) ----------
+   A garment is a cat in a knitted sleeve, and the sleeve's yarn belongs to the place and the time of day: "每個地點
+   的早晨，都是基本的三個顏色，我們系統自己選，搭配那個地點的顏色色調。從第二個時間開始，傍晚和晚上，玩家可以解鎖有
+   特色的毛線，像是格子、條紋等等，搭配適合的顏色（也是由系統選擇）". So every place has nine yarns, one per garment:
+   three plain ones in the morning, three patterns in two colours at golden hour, three more at night.
+   A yarn is { type, a, b, c }: a pattern id (YARN_PATTERNS) and colour ids (YARN_COLOR_NAMES; the art knows the
+   colours, src/art/print/yarn.js). a = the ground, b = the second colour, c = a thin third line.
+   Rules for choosing them (docs/design/longcat-sleeve-test.md, section 六): a plain yarn or a pattern's main colour
+   is one of the place's three strong colours, which must hold on the hat under the fruit and beside a grey, ginger
+   or cream cat. Yellows and milk are second colours only.
+   DRAFT: the onsen's nine are my proposal on that board, not yet answered by the designer; the other eleven places are a
+   first pass made by the same rules. */
+export const YARN_PATTERNS = [
+  { id: "plain", name: "Plain" }, { id: "stripe", name: "Fine stripes" }, { id: "wide", name: "Wide stripes" }, { id: "check", name: "Gingham" },
+  { id: "dots", name: "Dots" }, { id: "zigzag", name: "Zigzag" }, { id: "diamond", name: "Argyle" }, { id: "star", name: "Stars" },
+];
+export const YARN_COLOR_NAMES = {
+  vermilion: "vermilion", indigo: "indigo", moss: "moss", yuzu: "yuzu", milk: "milk", sky: "sky", plum: "plum", teal: "teal", rose: "rose",
+  wine: "wine", forest: "forest", navy: "navy", sea: "sea", coral: "coral", lilac: "lilac", mint: "mint", slate: "slate", lantern: "lantern",
+};
+/* a place's box from its three strong colours, a light one, an accent and a soft one. `turn` moves the yarns round
+   the three garments so that neighbouring months do not put the same pattern on the same garment */
+function yarnBox([g0, g1, g2], light, accent, soft, turn = 0) {
+  const [zA, zB, zC] = [0, 1, 2].map((i) => ["scarf", "bottom", "top"][(i + turn) % 3]);
+  return {
+    morning: { [zA]: { type: "plain", a: g0 }, [zB]: { type: "plain", a: g1 }, [zC]: { type: "plain", a: g2 } },
+    golden: { [zA]: { type: "stripe", a: g0, b: light }, [zB]: { type: turn % 2 ? "zigzag" : "dots", a: g2, b: accent }, [zC]: { type: "check", a: light, b: g1 } },
+    night: { [zA]: { type: "wide", a: g0, b: g1, c: light }, [zB]: { type: "star", a: turn ? g2 : g1, b: light }, [zC]: { type: "diamond", a: g1, b: soft, c: accent } },
+  };
+}
+const YARN_BOX = {
+  onsen: yarnBox(["vermilion", "indigo", "moss"], "milk", "yuzu", "sky", 0),
+  livingroom: yarnBox(["wine", "forest", "plum"], "milk", "rose", "lilac", 1),
+  nightmarket: yarnBox(["vermilion", "navy", "teal"], "milk", "lantern", "sky", 2),
+  train: yarnBox(["forest", "wine", "navy"], "milk", "yuzu", "mint", 0),
+  beach: yarnBox(["sea", "coral", "navy"], "milk", "yuzu", "sky", 1),
+  library: yarnBox(["plum", "forest", "wine"], "milk", "lantern", "lilac", 2),
+  camping: yarnBox(["vermilion", "forest", "navy"], "milk", "yuzu", "mint", 0),
+  cinema: yarnBox(["navy", "plum", "teal"], "milk", "lantern", "lilac", 1),
+  bus: yarnBox(["coral", "moss", "plum"], "milk", "yuzu", "rose", 2),
+  museum: yarnBox(["slate", "wine", "moss"], "milk", "lantern", "lilac", 0),
+  rooftop: yarnBox(["teal", "plum", "coral"], "milk", "yuzu", "sky", 1),
+  skilift: yarnBox(["indigo", "forest", "vermilion"], "milk", "yuzu", "sky", 2),
+};
+/* the yarn a garment is knitted in: its own, designed for that place, time and garment */
+export function yarnFor(placeId, timeId, zoneId) {
+  const box = YARN_BOX[placeId] || YARN_BOX.onsen, row = box[timeId] || box.morning;
+  return { ...(row[zoneId] || row.scarf) };
+}
+/* "Plain vermilion", "Fine stripes, vermilion and milk" */
+export function yarnName(y) {
+  const p = YARN_PATTERNS.find((x) => x.id === (y && y.type)) || YARN_PATTERNS[0], a = YARN_COLOR_NAMES[y && y.a] || "wool";
+  return p.id === "plain" || !y.b ? `${p.name} ${a}` : `${p.name}, ${a} and ${YARN_COLOR_NAMES[y.b] || "wool"}`;
+}
+
 export function garmentName(timeId, zoneId) {
   return GARMENT_NAMES[timeId][zoneId];
 }

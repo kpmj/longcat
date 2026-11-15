@@ -1,28 +1,29 @@
 /* The wardrobe (design doc section 5): three rows of garments, one row of backgrounds, one button. Only
    finished garments and times already reached can be chosen; this month only; photos only (home never changes);
-   no list of combinations and no counter. The Cats tab shows this month's three cats (cast by the game) and lets
-   the player put any coat collected this month on any of them: the judge above changes as you pick. */
+   no list of combinations and no counter. The Yarn tab shows this month's three cats (cast by the game) and lets
+   the player put any yarn collected this month on any garment: the judge above changes as you pick. */
 import { app, show, esc, $, $$, sheet, closeSheet, wireTaps, hopCat } from "./app.js";
 import * as St from "../state.js";
-import { sceneSvg, wardrobeThumbSvg, nappingSvg, loaf } from "../art/index.js";
-import { ZONES, TIMES, STEPS, PATTERNS, PALETTE_NAMES, garmentName, placeById, timeById, kindFor, catWords } from "../content.js";
+import { sceneSvg, wardrobeThumbSvg, nappingSvg, yarnSwatchSvg } from "../art/index.js";
+import { ZONES, TIMES, STEPS, YARN_PATTERNS, YARN_COLOR_NAMES, garmentName, placeById, timeById, kindFor, catWords, yarnName } from "../content.js";
 import { openCard } from "./album.js";
 
 let pick = null, mode = "outfit";
 
-const segs = () => `<div class="segs" role="tablist"><button role="tab" data-mode="outfit" aria-selected="${mode === "outfit"}" class="${mode === "outfit" ? "on" : ""}">Outfit</button><button role="tab" data-mode="cats" aria-selected="${mode === "cats"}" class="${mode === "cats" ? "on" : ""}">Cats</button></div>`;
+const segs = () => `<div class="segs" role="tablist"><button role="tab" data-mode="outfit" aria-selected="${mode === "outfit"}" class="${mode === "outfit" ? "on" : ""}">Outfit</button><button role="tab" data-mode="cats" aria-selected="${mode === "cats"}" class="${mode === "cats" ? "on" : ""}">Yarn</button></div>`;
 function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(root); })); }
 
-/* Cats (the designer, 2026-11-14): this month's three cats and their coats.
+/* Yarn (the designer, 2026-11-14): this month's three cats and the yarn their sleeves are knitted in. The tab's id is still
+   "cats"; it was the Cats tab while the thing to swap was the cats' coats, earlier the same day.
    - The cats are cast by the game: three different kinds a month, one per garment (content.js kindFor). Nothing to
-     choose and nothing to unlock there; the row at the top only shows who they are.
-   - The coats are the player's: every finished garment of this month adds its coat (pattern and colour), and any
-     cat of this month can wear any of them (state.js, coats). Each garment row lists its own coat first, then the
-     collected ones, drawn on that very cat. The picture above is the judge wearing that time's three garments, so a
-     change shows at once; home, the baskets and the Outfit tab follow. Next month starts with none. */
+     choose and nothing to unlock there; each row's label says who the cat is. Its coat is its own and stays.
+   - The yarn is the player's: every finished garment of this month adds its yarn to the box, and any garment of
+     this month can be knitted in any of them (state.js, yarn). Each garment row lists its own yarn first, then the
+     collected ones, as swatches. The picture above is the judge wearing that time's three garments, so a change
+     shows at once; home, the singing screen and the Outfit tab follow. Next month's box starts empty. */
 let catTime = null;
-const catIcon = (place, time, zone, key) => `<svg viewBox="-27 -29 54 43" aria-hidden="true">${loaf(0, 0, 1, { zone, look: St.coatLook(place, time, zone, key), kind: kindFor(place, zone), animal: St.animalFor(place, time, zone) }, "normal", 1, zone, time)}</svg>`;
-const coatName = (place, c) => { const l = c.look, p = PATTERNS.find((x) => x.id === l.pattern); return `${p ? p.name : l.pattern}, ${PALETTE_NAMES[l.palette] || l.palette}`; };
+/* a short label under a swatch: the colour of a plain yarn, the pattern of the others (each pattern comes once a month) */
+const yarnLabel = (y) => { const s = y.type === "plain" ? YARN_COLOR_NAMES[y.a] || "Plain" : (YARN_PATTERNS.find((x) => x.id === y.type) || YARN_PATTERNS[0]).name; return s.charAt(0).toUpperCase() + s.slice(1); };
 function cats(root) {
   const S = app.S, place = S.here;
   const reached = St.reachedTimes(S, place), cur = St.currentTime(S, place) || "night";
@@ -31,15 +32,15 @@ function cats(root) {
   const o = time === cur
     ? St.homeScene(S, place, app.real(), { cushion: null, animate: true })
     : { place, time, garments: ZONES.map((z) => St.garmentSpec(S, place, time, z.id)), baskets: [], cushion: null, special: St.specialFor(place), animate: true, seed: 3, landscape: true };
-  const coats = St.collectedCoats(S, place);
+  const yarns = St.collectedYarns(S, place);
   /* the cats that have finished and gone to sleep: off the home page (it was too full), kept here (the designer, 2026-11-14) */
   const asleep = St.basketsFor(S, place);
   /* who this cat is, under the garment's name: its shape, and its charm when it wears one */
   const who = (z) => { const w = catWords(kindFor(place, z)); return `<i>${esc(w.shape)}</i>${w.charm ? `<i>${esc(w.charm.replace(/^a /, ""))}</i>` : ""}`; };
   const row = (z) => {
-    const own = St.coatKey(time, z.id), worn = St.coatOf(S, place, time, z.id);
-    const opts = [{ key: own, label: "Its own", name: "its own coat" }, ...coats.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: garmentName(c.time, c.zone), name: coatName(place, c) }))];
-    return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-coat="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${esc(c.name)}">${catIcon(place, time, z.id, c.key)}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
+    const own = St.yarnKey(time, z.id), worn = St.yarnKeyOf(S, place, time, z.id);
+    const opts = [{ key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
+    return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${esc(yarnName(c.yarn))}${c.key === own ? ", its own yarn" : ""}">${yarnSwatchSvg(c.yarn, time)}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
   };
   root.innerHTML = `
     <header class="topbar"><div class="where"><span class="place">Wardrobe</span><span class="time-chip">${esc(placeById(place).name)}</span></div></header>
@@ -48,14 +49,14 @@ function cats(root) {
     <section class="wardrobe kinds">
       ${reached.length > 1 ? `<div class="wrow bgs"><span class="wlab">Time</span>${TIMES.map((t) => `<button class="bgchip t-${t.id}${time === t.id ? " on" : ""}" data-cat-time="${t.id}" ${reached.includes(t.id) ? "" : "disabled"} aria-pressed="${time === t.id}">${esc(t.name)}</button>`).join("")}</div>` : ""}
       ${ZONES.map(row).join("")}
-      <p class="sub">${coats.length ? "Any coat you’ve collected can go on any cat this month." : "Finish a garment and its coat lands here, for any cat this month."} Next month brings three other cats, and its coats start again.</p>
+      <p class="sub">${yarns.length ? "Any yarn you’ve collected can go on any garment this month." : "Finish a garment and its yarn lands here, for any garment this month."} Next month brings three other cats, and a new box of yarn.</p>
       ${asleep.length ? `<div class="nap"><span class="wlab">Asleep</span><div class="seg" id="nap">${nappingSvg({ baskets: asleep, time: o.time })}</div></div>
       <p class="sub">The ${St.specialFor(place) ? "guests" : "cats"} of the earlier ${asleep.length > 1 ? "times" : "time"} of day sleep here. You can pat them.</p>` : ""}
     </section>`;
   wireTaps($(".scene-wrap", root));
   wireTaps($("#nap", root));
   $$(".coat", root).forEach((b) => (b.onclick = () => {
-    if (!St.setCoat(S, place, time, b.dataset.zone, b.dataset.coat)) return;
+    if (!St.setYarn(S, place, time, b.dataset.zone, b.dataset.yarn)) return;
     app.save();
     cats(root);
     hopCat($(".scene-wrap", root), b.dataset.zone);

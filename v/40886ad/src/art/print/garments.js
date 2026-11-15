@@ -4,6 +4,11 @@
    - the three garments are a hat, a scarf and a top. The hat replaces the old lap garment: the game's zone id is still
      `bottom` (saves keep working), and this module draws it on the head. `hat` is accepted as the same zone.
    - an off note leaves a pill of fluff (foldMarkup in ./cat.js), not a fold.
+   - a garment with a yarn (g.yarn, ./yarn.js) is a cat in a knitted sleeve: "整件毛衣", the designer's choice of 2026-11-14
+     after the test board docs/design/longcat-sleeve-test.md. Head, tail, paws and a short piece of body at each end
+     are the cat's own coat, in short fur; the body between is the yarn, with a ribbed cuff where the fur comes out.
+     The knitting is thin, medium or thick with the time of day, as fur length was. The scarf has no fringe then (it
+     crowded the tail end). A garment without a yarn is drawn as before: the cat itself is the garment.
    Guests come from ./guests.js. */
 import { f, num, int, clamp, quad, sample, dPath, rng, hash } from "../util.js";
 import { FUR, lookOf, animalId, kindId, zoneId, timeId } from "../palettes.js";
@@ -11,6 +16,7 @@ import { ZONES as OLD, moodOf } from "../garments.js";
 import { headFor, tailFor, palFor } from "./guests.js";
 import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
 import { zzPrint } from "./judge.js";
+import { yarnOf, sleeveMarkup, yarnPill, KNIT, CAT_W } from "./yarn.js";
 
 /* rows lowest first: [y, sag, x0, x1]. The hat is a small cap of three rows between the judge's ears; it runs right
    to left so the cat's head ends on the left, clear of the yuzu, which sits in the top row like an egg in a nest */
@@ -75,7 +81,9 @@ export function garmentLayers(g, ctx = {}) {
   const steps = int(g.steps, 0, 12, 0);
   if (!steps) return null;
   const Z = ZONES[zone], time = timeId(ctx.time), look = lookOf(g.look, zone === "hat" ? "bottom" : zone, time), animal = animalId(g.animal), kind = kindId(g.kind);
-  const F = FUR[look.fur], cat = animal === "cat", pal = palFor(animal, look), w = F.w, hd = Math.sign(Z.rows[0][3] - Z.rows[0][2]);
+  const yarn = yarnOf(g.yarn), cat = animal === "cat", pal = palFor(animal, look), hd = Math.sign(Z.rows[0][3] - Z.rows[0][2]);
+  /* inside a sleeve the cat is short-furred and a little narrower than the knitting */
+  const F = yarn ? FUR.short : FUR[look.fur], w = yarn ? CAT_W : F.w;
   const shapes = Array.isArray(g.shapes) ? g.shapes : [], tuftFlags = Array.isArray(g.tufts) ? g.tufts : [], folds = Array.isArray(g.folds) ? g.folds : [];
   const R = rng(hash(`${ctx.seed || 0}|${zone}`));
   const phase = Array.from({ length: 12 }, () => R() * Math.PI * 2);
@@ -103,6 +111,13 @@ export function garmentLayers(g, ctx = {}) {
   /* one key line round the whole garment: every row's line first, then every row's fur with a soft rim under the higher rows */
   let art = rows.map(({ pts }) => `<g fill="${KEY}">${tufts(pts, w, F, LW)}</g>` + st(pts, KEY, w + 2 * LW)).join("");
   let pills = "";
+  const S = yarn ? sleeveMarkup(rows, yarn, KNIT[time]) : null;
+  /* a pill sits on the knitting when there is some under it, on the fur otherwise */
+  const pillAt = (i, j, n) => {
+    const R0 = S && S.rows[i];
+    if (!R0 || R0.s1 - R0.s0 < 12) return foldMarkup(rows[i].pts[j], w, pal);
+    return yarnPill(R0.Ln.at(clamp((j + .5) / n * R0.Ln.len, R0.s0 + 5, R0.s1 - 5)), S.ws, yarn);
+  };
   rows.forEach(({ r, n, pts }, i) => {
     const patches = [];
     for (let c = 0; c * 24 < n; c++) patches.push({ pattern: look.pattern, pts: Array.from({ length: 12 }, (_, j) => (c * 24 + 2 * j < n ? pts[c * 24 + 2 * j] : null)) });
@@ -112,16 +127,18 @@ export function garmentLayers(g, ctx = {}) {
       if (s >= steps) break;
       for (const x of foldSpots(folds[s], tuftFlags[s])) {
         const j = clamp(Math.round((k + x) / Z.per * ZN), 2, n - 3);
-        if (j >= 2) pills += foldMarkup(pts[j], w, pal);
+        if (j >= 2) pills += pillAt(i, j, n);
       }
     }
   });
   const first = rows[0].pts[0], lastRow = rows[rows.length - 1].pts, end = lastRow[lastRow.length - 1], tucked = mood === "asleep";
   /* the trim that says which garment it is: fringe on the scarf, a ribbed hem on the top, a ribbed brim on the hat */
   let trim = "";
-  if (zone === "scarf") trim = [-7, -2, 3, 8].map(dx => `<path d="M${f(first.x + 8 + dx)} ${f(first.y + w * .45)}v${f(13 - Math.abs(dx) * .4)}" fill="none" ${keyLine(1.6)}/>`).join("");
+  if (zone === "scarf" && !S) trim = [-7, -2, 3, 8].map(dx => `<path d="M${f(first.x + 8 + dx)} ${f(first.y + w * .45)}v${f(13 - Math.abs(dx) * .4)}" fill="none" ${keyLine(1.6)}/>`).join("");
   let rib = "";
-  if (zone !== "scarf") { const S0 = rows[0].pts; for (let i = 3; i < S0.length; i += 4) rib += `M${f(S0[i].x)} ${f(S0[i].y + w * .1)}v${f(w * .36)}`; }
+  if (zone !== "scarf" && !S) { const S0 = rows[0].pts; for (let i = 3; i < S0.length; i += 4) rib += `M${f(S0[i].x)} ${f(S0[i].y + w * .1)}v${f(w * .36)}`; }
+  /* on a sleeve the ribbed hem runs along the lower edge of the knitting's first row */
+  if (zone !== "scarf" && S && S.piece) { const A = S.piece[0]; for (let s = A.s0 + 7; s < A.s1 - 3; s += 5.2) { const a = A.Ln.at(s, hd * S.ws * .16), b = A.Ln.at(s, hd * S.ws * .46); rib += `M${f(a.x)} ${f(a.y)}L${f(b.x)} ${f(b.y)}`; } }
   const tail = cat ? (tucked ? catTailTucked : catTail)(kind, first.x - hd * 2, first.y + 2, hd, w * .38, pal) : tailFor(animal, kind, first.x - hd * 2, first.y + 2, hd, w * .38, pal, tucked);
   const hind = zone === "hat" ? "" : pawPair(first.x + hd * 12, first.y + w * .5, hd, .9, pal);
   const hx = end.x + hd * Z.headDx, hy = end.y + Z.headDy - num(ctx.headLift);
@@ -144,10 +161,10 @@ export function garmentLayers(g, ctx = {}) {
   /* animated: an awake cat stretches now and then (each garment at its own moment); a sleeping one breathes */
   /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */
   const head = (ctx.animate ? `<g data-tap="cat" data-group="g-${zone}" data-zone="${zone}">${hop(`<g class="${tucked ? "lc-snooze" : "lc-stretch"}" style="--lc-d:${hd};animation-delay:${-beat}s"><g class="lc-nuzzle">${head0}</g></g>`)}${petHearts(hx, hy - 26)}</g>` : head0) + (mood === "asleep" ? zzPrint(hx + 14, hy - 20) : "");
-  const artAll = trim + tailG + hind + art + (rib ? `<path d="${rib}" stroke="${pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + pills;
+  const artAll = trim + tailG + hind + art + (S ? S.art : "") + (rib ? `<path d="${rib}" stroke="${S ? S.rim : pal.furDk}" stroke-width="1.5" stroke-linecap="round" fill="none"/>` : "") + (S && S.cuffs ? S.cuffs : "") + pills;
   /* how high the garment reaches at scene x: the top of its fur within 9 px of x, and the top of the cat's head when
      that is under x. Infinity where nothing is there yet. The judge's fruit is seated on this (hatOnHead) */
-  const furTop = w / 2 + (F.tuftR > .51 || F.fluff ? Math.max(0, w * F.tuftR + F.fluff - w / 2) : 0);
+  const furTop = S ? S.top : w / 2 + (F.tuftR > .51 || F.fluff ? Math.max(0, w * F.tuftR + F.fluff - w / 2) : 0);
   const topAt = x => {
     let top = Infinity;
     for (const { pts } of rows) for (const p of pts) if (Math.abs(p.x - x) <= 9) top = Math.min(top, p.y - furTop);
