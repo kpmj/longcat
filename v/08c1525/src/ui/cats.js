@@ -135,14 +135,16 @@ function openBring(id) {
    - straight in the Wardrobe's Dress up page (ui/wardrobe.js), with `which`: a first row asks which one it is, of
      the three times of day, and tells the page through which(time); a last line leads to that garment's steps
      (Home's Garment sheet), where a step can be sung again. Which one only changes the page's picture, never Home.
-     A garment with nothing sung yet is grey and cannot be picked (the designer, 2026-11-15: "show it grey for the cloth
-     that hasn't been unlocked"); so is one of a time of day not reached.
+     A garment not finished yet is grey and cannot be picked (the designer, 2026-11-15: "show it grey for the cloth that
+     hasn't been unlocked", and then of one at 1 / 12: "This one doesn't grey out"); so is one of a time of day not
+     reached. The one being knitted is still in the picture, grey in this row, while nothing of its kind is
+     finished (state.js dressStart).
    - in a sheet (openDress), from the Garment sheet on Home: who sings it and its yarn only. */
 export function paintDress(body, zone, t, { which = null, changed = () => {} } = {}) {
   const S = app.S, place = S.here, z = ZONES.find((x) => x.id === zone) || ZONES[0];
   const n = St.progress(S, place, t, z.id), reached = St.reachedTimes(S, place);
   const cell = (x) => {
-    const k = St.progress(S, place, x.id, z.id), ok = reached.includes(x.id), locked = !ok || k === 0, name = garmentName(x.id, z.id);
+    const k = St.progress(S, place, x.id, z.id), ok = reached.includes(x.id), locked = k < STEPS, name = garmentName(x.id, z.id);
     return `<button class="wcell${x.id === t ? " on" : ""}${locked ? " locked" : ""}" data-time="${x.id}" aria-pressed="${x.id === t}" ${locked && x.id !== t ? "disabled" : ""} aria-label="${esc(name)}, ${esc(x.name.toLowerCase())}${k >= STEPS ? "" : !ok ? ", not yet" : k ? `, ${k} of ${STEPS} steps` : ", not started"}">${wardrobeThumbSvg({ ...St.garmentSpec(S, place, x.id, z.id) })}<span>${k >= STEPS ? esc(name) : ok ? `${k} / ${STEPS}` : "Not yet"}</span></button>`;
   };
   const cast = St.castAt(S, place, t), cur = cast[z.id];

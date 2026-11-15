@@ -92,7 +92,7 @@ function dressUp(root) {
    knows which one it was). */
 function openPiece(zone, time) {
   const S = app.S, p = picked(S, S.here);
-  if (time && St.reachedTimes(S, S.here).includes(time) && St.progress(S, S.here, time, zone)) p.set[zone] = time;
+  if (time && St.garmentDone(S, S.here, time, zone)) p.set[zone] = time;
   sel = zone;
   repaint();
 }
