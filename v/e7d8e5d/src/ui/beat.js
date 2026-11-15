@@ -1,6 +1,7 @@
 /* The reset beat (design doc section 3): when the third garment of a time is finished, five things happen in
    order, each one putting something away rather than taking it: the postcard is taken, the sky changes, the
-   three cats climb down into a basket, the judge looks down at itself and raises a brow, three new cats wait.
+   three cats climb down into a basket, the judge looks down at itself and raises a brow, and the three are back
+   (since 2026-11-15 a place has three singers all day long, so it is the same three after a nap, not new ones).
    Since 2026-11-14 the middle of it moves (the scene options leaving / react / paws / arriving, see
    docs/art-style.md): the cats let go one by one and run to the basket; the judge, with nothing on, feels a
    breeze, holds its tummy and raises one eyebrow as if that was the plan. Cute, never rude: it is a capybara
@@ -30,7 +31,7 @@ function render(root, { place, time }) {
     { cap: `One by one the ${special ? "guests" : "cats"} let go, hop down and curl up in a basket. Its tag says “${tName}”.`, scene: { ...base, time: next, garments: [], leaving: done(time), baskets: withThis } },
     { cap: "The judge looks down at itself. No hat. No scarf. No top.", scene: { ...base, time: next, garments: [], baskets: withThis, face: "look-down", react: "plop" } },
     { cap: "A small breeze. It holds its tummy and raises one eyebrow, as if this was the plan.", scene: { ...base, time: next, garments: [], baskets: withThis, face: "brow", react: "shiver", paws: "tummy" } },
-    { cap: `Three new ${special ? "guests" : "cats"} are waiting. Their yarn is a little thicker than the last.`, scene: { ...base, time: next, garments: ZONE_IDS.map((z) => St.garmentSpec(S, place, next, z)), baskets: withThis, arriving: true } },
+    { cap: `After a nap the three are back on the shelf. Their yarn is a little thicker than the last.`, scene: { ...base, time: next, garments: ZONE_IDS.map((z) => St.garmentSpec(S, place, next, z)), baskets: prevBaskets, arriving: true } },
   ] : [
     { cap: "The night postcard is taken and put in the album.", html: postcardSvg({ ...St.cardScene(S, card), caption: card.caption, title: placeById(place).name, dateLabel: St.monthLabel(card.date) }), card: true },
     { cap: "All nine are on.", scene: { ...base, time: "night", garments: done("night"), baskets: prevBaskets, face: St.tutorialDone(S) ? "content-sleep" : "neutral" }, end: true },

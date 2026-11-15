@@ -1,9 +1,11 @@
 /* The save, and everything derived from it. Pure functions over a plain object; the browser layer persists it.
    The save is only "things that happened" (design doc section 8): takes, garments with each step's shape, the
-   judge's learned faces, the singing days, and each month's postcards. Nothing in it ever goes down. */
+   judge's learned faces, the singing days, each month's postcards, the treats earned and spent and the cats
+   brought home. Nothing in it ever goes down (treats are earned minus spent, and both only grow). */
 import {
   STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, LAUNCH, SPECIAL_MONTHS, GUEST_BY_ZONE, NEWYEAR_NIGHT_SCARF,
   TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName, kindFor, yarnFor,
+  TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat,
 } from "./content.js";
 import { drillForStep } from "./drill/drills.js";
 
@@ -46,6 +48,9 @@ export function freshSave(real = new Date()) {
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
+    cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
+    catNames: {},                    // the names the player gave them
+    treats: { earned: 0, spent: 0, day: null, n: 0 }, // n = the takes that earned treats on `day`
     dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "rec", recVoice: true, drillEdits: null, homeMusic: "box" },
   };
 }
@@ -68,6 +73,11 @@ export function migrate(o, real = new Date()) {
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
   if (!Array.isArray(S.tips)) S.tips = [];
   if (!Array.isArray(S.said)) S.said = [];
+  /* 2026-11-15: treats and cats of one's own. A save from before starts with the four free cats and no treats */
+  S.cats = [...new Set([...FREE_CATS, ...(Array.isArray(o.cats) ? o.cats.filter((id) => typeof id === "string") : [])])];
+  S.catNames = o.catNames && typeof o.catNames === "object" ? { ...o.catNames } : {};
+  S.treats = { ...base.treats, ...(o.treats && typeof o.treats === "object" ? o.treats : {}) };
+  for (const k of ["earned", "spent", "n"]) S.treats[k] = Math.max(0, Math.floor(Number(S.treats[k]) || 0));
   /* a save from before the dots: everything in it counts as seen */
   if (!o.marks || typeof o.marks !== "object") S.marks = drawerCounts(S);
   return S;
@@ -196,7 +206,7 @@ export function recordTake(S, ctx, grade, real = new Date()) {
   S.here = ctx.place;
   let learned = null;
   if (S.faces < STEPS) { S.faces++; learned = TUTORIAL_FACES[S.faces - 1]; }
-  const out = { counted: true, step: list.length, learned, garmentDone: false, timeDone: null, monthDone: false };
+  const out = { counted: true, step: list.length, learned, garmentDone: false, timeDone: null, monthDone: false, treats: earnTreats(S, real) };
   if (list.length >= STEPS) {
     out.garmentDone = true;
     if (m.active[ctx.time] === ctx.zone) m.active[ctx.time] = null;
@@ -215,7 +225,81 @@ export function retakeStep(S, ctx, grade, real = new Date()) {
   const list = stepsOf(S, ctx.place, ctx.time, ctx.zone);
   if (!list[ctx.step - 1]) return { counted: false, stale: true };
   list[ctx.step - 1] = stepRecord(grade, S, real);
-  return { counted: true, step: ctx.step, retake: true };
+  return { counted: true, step: ctx.step, retake: true, treats: earnTreats(S, real) };
+}
+
+/* ---------- treats and cats (the designer, 2026-11-14 and 15; content.js has the rules in words) ----------
+   Treats: every finished take that heard a voice earns the same, whatever the grade and whether it is a new step or
+   one sung again, for the first TREATS.perDay takes of a day; after that singing goes on and earns nothing, so
+   nobody sings their voice sore for them. No streaks: a day missed costs nothing. */
+export const treatsOf = (S) => Math.max(0, (S.treats?.earned || 0) - (S.treats?.spent || 0));
+export function earnTreats(S, real = new Date()) {
+  const t = S.treats || (S.treats = { earned: 0, spent: 0, day: null, n: 0 }), today = todayKey(S, real);
+  if (t.day !== today) { t.day = today; t.n = 0; }
+  if (t.n >= TREATS.perDay) return { got: 0, left: 0, total: treatsOf(S) };
+  t.n++;
+  t.earned += TREATS.take;
+  /* first = this take is the one that made a cat affordable: the result sheet shows the way to the shop once */
+  const total = treatsOf(S);
+  return { got: TREATS.take, left: TREATS.perDay - t.n, total, first: total >= TREATS.cat && total - TREATS.take < TREATS.cat };
+}
+export const ownsCat = (S, id) => (S.cats || []).includes(id);
+/* the cats that live at a place: its cast of three, by zone. In a special month the guests sing instead (animalFor) */
+export const catsHere = (place) => (specialFor(place) ? [] : ZONE_IDS.map((z) => kindFor(place, z)));
+/* what can be brought home from here: the place's own cats and the shelf, without the ones already at home */
+export function shelfAt(S, place) {
+  const free = (id) => !ownsCat(S, id);
+  return { here: catsHere(place).filter(free), cats: SHOP_CATS.filter(free), animals: SHOP_ANIMALS.filter(free) };
+}
+export function canBuy(S, id, place = S.here) {
+  const s = shelfAt(S, place);
+  return [...s.here, ...s.cats, ...s.animals].includes(id) && treatsOf(S) >= priceOf(id);
+}
+export function buyCat(S, id, place = S.here) {
+  if (!canBuy(S, id, place)) return false;
+  S.treats.spent += priceOf(id);
+  S.cats.push(id);
+  return true;
+}
+export const catName = (S, id) => (S.catNames && typeof S.catNames[id] === "string" ? S.catNames[id] : "");
+export function nameCat(S, id, name) {
+  if (!ownsCat(S, id)) return false;
+  const n = String(name || "").replace(/\s+/g, " ").trim().slice(0, 14);
+  if (!S.catNames || typeof S.catNames !== "object") S.catNames = {};
+  if (n) S.catNames[id] = n; else delete S.catNames[id];
+  return true;
+}
+/* Who sings a garment. A place has three singers, one per zone, the same at every time of day: its own three cats
+   until the player puts one of theirs in ("玩家選，每月有貓來玩"). Stored per place as cast[zone] = id, only for
+   the zones the player changed. A singer who may no longer sing here falls back to the place's own. */
+const homeSinger = (place, time, zone) => { const a = animalFor(place, time, zone); return a === "cat" ? kindFor(place, zone) : a; };
+/* the place's own three at a time of day, by zone: its cats, or a special month's guests */
+export const homeCast = (place, time) => Object.fromEntries(ZONE_IDS.map((z) => [z, homeSinger(place, time, z)]));
+const guestsHere = (place) => (specialFor(place) === "newyear" ? [...Object.values(GUEST_BY_ZONE), NEWYEAR_NIGHT_SCARF] : []);
+const maySing = (S, place, id) => ownsCat(S, id) || catsHere(place).includes(id) || guestsHere(place).includes(id);
+export function castAt(S, place, time) {
+  const stored = peek(S, place).cast || {}, out = {}, used = new Set();
+  for (const z of ZONE_IDS) { const id = stored[z]; if (id && maySing(S, place, id) && !used.has(id)) { out[z] = id; used.add(id); } }
+  for (const z of ZONE_IDS) if (!out[z]) { const id = homeSinger(place, time, z); out[z] = id; used.add(id); }
+  return out;
+}
+export const singerAt = (S, place, time, zone) => castAt(S, place, time)[zone];
+/* put a singer on a zone. If it was singing another zone, the two change places. False when it may not sing here */
+export function setSinger(S, place, time, zone, id) {
+  if (!ZONE_IDS.includes(zone) || !maySing(S, place, id)) return false;
+  const now = castAt(S, place, time), m = monthOf(S, place);
+  if (!m.cast || typeof m.cast !== "object") m.cast = {};
+  const from = ZONE_IDS.find((z) => now[z] === id);
+  if (from === zone) return true;
+  if (from) m.cast[from] = now[zone];
+  m.cast[zone] = id;
+  return true;
+}
+/* a singer as the art takes it. A cat's coat is its own; an animal has one look (the art's GUEST_PAL). `fur` comes
+   from the time of day and only sets how thick the knitting is */
+function singerLook(place, time, zone, id) {
+  const base = garmentLook(place, time, zone);
+  return isAnimal(id) ? { animal: id, kind: "point", look: base } : { animal: "cat", kind: id, look: { ...base, ...catCoat(id) } };
 }
 
 /* ---------- what the art draws ---------- */
@@ -225,8 +309,8 @@ export function garmentSpec(S, place, time, zone, extra = {}) {
   const shapes = Array.from({ length: STEPS }, (_, i) => (i < n ? steps[i]?.shape || null : null));
   const tufts = Array.from({ length: STEPS }, (_, i) => (i < n ? !!steps[i]?.tuft : false));
   const folds = Array.from({ length: STEPS }, (_, i) => (i < n && Array.isArray(steps[i]?.folds) ? steps[i].folds : null));
-  const animal = animalFor(place, time, zone);
-  return { zone, look: garmentLook(place, time, zone), yarn: yarnOf(S, place, time, zone), animal, kind: kindFor(place, zone), steps: n, shapes, tufts, folds, ...extra };
+  const singer = singerAt(S, place, time, zone);
+  return { zone, ...singerLook(place, time, zone, singer), singer, yarn: yarnOf(S, place, time, zone), steps: n, shapes, tufts, folds, ...extra };
 }
 
 /* ---------- yarn (the designer, 2026-11-14) ----------
@@ -262,15 +346,10 @@ export function setYarn(S, place, time, zone, key) {
   return true;
 }
 
-export function basketsFor(S, place) {
-  const cur = currentTime(S, place);
-  const upto = cur ? TIME_IDS.indexOf(cur) : TIME_IDS.length - 1; // month done: the night set stays on the judge
-  return TIME_IDS.slice(0, upto).map((t) => ({
-    time: t,
-    /* asleep in the basket a cat wears no sleeve: it is just the cat, in its own coat */
-    cats: ZONE_IDS.map((z) => ({ zone: z, look: garmentLook(place, t, z), kind: kindFor(place, z), animal: animalFor(place, t, z) })),
-  }));
-}
+/* No cats stay asleep in baskets any more (2026-11-15): a place has three singers, and the three that finish a time
+   of day are the three that sing the next. They still nap in a basket during the reset beat (ui/beat.js builds
+   that basket itself). Kept so that callers need not change. */
+export function basketsFor() { return []; }
 
 export function homeScene(S, place = S.here, real, extra = {}) {
   const cur = currentTime(S, place) || "night";
@@ -301,8 +380,8 @@ function newCard(S, place, kind, bg, set, real) {
   const m = monthOf(S, place);
   const card = {
     id: `${place}-${kind}-${m.cards.length + 1}-${Date.now().toString(36)}`, kind, place, bg, set: { ...set },
-    /* a postcard keeps the cats and the yarns as they were when it was taken, whatever is changed afterwards */
-    kinds: Object.fromEntries(ZONE_IDS.map((z) => [z, kindFor(place, z)])),
+    /* a postcard keeps the singers and the yarns as they were when it was taken, whatever is changed afterwards */
+    cats: Object.fromEntries(ZONE_IDS.map((z) => [z, singerAt(S, place, set[z], z)])),
     yarns: Object.fromEntries(ZONE_IDS.map((z) => [z, yarnKeyOf(S, place, set[z], z)])),
     caption: cardCaption(place, bg, set), date: todayKey(S, real),
   };
@@ -326,8 +405,12 @@ export function addMixCard(S, place, set, bg, real) {
 export function cardScene(S, card, extra = {}) {
   const garments = ZONE_IDS.map((z) => {
     const g = garmentSpec(S, card.place, card.set[z], z);
-    /* an older card has no yarns: it shows each garment in its own yarn */
-    return { ...g, kind: card.kinds?.[z] || g.kind, yarn: yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z) };
+    /* a card from before cats could be chosen (it has `kinds`, or nothing) shows the place's own cat in the coat
+       it wore at that time of day, as it did then; an older card still has no yarns and shows each garment's own */
+    const who = card.cats?.[z]
+      ? singerLook(card.place, card.set[z], z, card.cats[z])
+      : { animal: animalFor(card.place, card.set[z], z), kind: card.kinds?.[z] || kindFor(card.place, z), look: garmentLook(card.place, card.set[z], z) };
+    return { ...g, ...who, yarn: yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z) };
   });
   return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
 }

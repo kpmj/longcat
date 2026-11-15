@@ -1,42 +1,42 @@
 /* The wardrobe (design doc section 5): three rows of garments, one row of backgrounds, one button. Only
    finished garments and times already reached can be chosen; this month only; photos only (home never changes);
-   no list of combinations and no counter. The Yarn tab shows this month's three cats (cast by the game) and lets
-   the player put any yarn collected this month on any garment: the judge above changes as you pick. */
+   no list of combinations and no counter. The Yarn tab lets the player put any yarn collected this month on any
+   garment: the judge above changes as you pick. The Cats tab (ui/cats.js) is who sings, and the cats to bring home. */
 import { app, show, esc, $, $$, sheet, closeSheet, wireTaps, hopCat } from "./app.js";
 import * as St from "../state.js";
 import { sceneSvg, wardrobeThumbSvg, nappingSvg, yarnSwatchSvg } from "../art/index.js";
-import { ZONES, TIMES, STEPS, YARN_PATTERNS, YARN_COLOR_NAMES, garmentName, placeById, timeById, kindFor, catWords, yarnName } from "../content.js";
+import { ZONES, TIMES, STEPS, YARN_PATTERNS, YARN_COLOR_NAMES, garmentName, placeById, timeById, yarnName } from "../content.js";
 import { openCard } from "./album.js";
+import { renderCats, singerLabel } from "./cats.js";
 
 let pick = null, mode = "outfit";
 
-const segs = () => `<div class="segs" role="tablist"><button role="tab" data-mode="outfit" aria-selected="${mode === "outfit"}" class="${mode === "outfit" ? "on" : ""}">Outfit</button><button role="tab" data-mode="cats" aria-selected="${mode === "cats"}" class="${mode === "cats" ? "on" : ""}">Yarn</button></div>`;
+const TABS = [["outfit", "Outfit"], ["yarn", "Yarn"], ["cats", "Cats"]];
+const segs = () => `<div class="segs three" role="tablist">${TABS.map(([id, name]) => `<button role="tab" data-mode="${id}" aria-selected="${mode === id}" class="${mode === id ? "on" : ""}">${name}</button>`).join("")}</div>`;
 function wireSegs(root) { $$(".segs [data-mode]", root).forEach((b) => (b.onclick = () => { mode = b.dataset.mode; render(root); })); }
 
-/* Yarn (the designer, 2026-11-14): this month's three cats and the yarn their sleeves are knitted in. The tab's id is still
-   "cats"; it was the Cats tab while the thing to swap was the cats' coats, earlier the same day.
-   - The cats are cast by the game: three different kinds a month, one per garment (content.js kindFor). Nothing to
-     choose and nothing to unlock there; each row's label says who the cat is. Its coat is its own and stays.
+/* Yarn (the designer, 2026-11-14): the yarn the three sleeves are knitted in.
+   - Each row's label says who sings that garment (chosen in the Cats tab). Its coat is its own and stays.
    - The yarn is the player's: every finished garment of this month adds its yarn to the box, and any garment of
      this month can be knitted in any of them (state.js, yarn). Each garment row lists its own yarn first, then the
      collected ones, as swatches. The picture above is the judge wearing that time's three garments, so a change
      shows at once; home, the singing screen and the Outfit tab follow. Next month's box starts empty. */
-let catTime = null;
+let yarnTime = null;
 /* a short label under a swatch: the colour of a plain yarn, the pattern of the others (each pattern comes once a month) */
 const yarnLabel = (y) => { const s = y.type === "plain" ? YARN_COLOR_NAMES[y.a] || "Plain" : (YARN_PATTERNS.find((x) => x.id === y.type) || YARN_PATTERNS[0]).name; return s.charAt(0).toUpperCase() + s.slice(1); };
-function cats(root) {
+function yarn(root) {
   const S = app.S, place = S.here;
   const reached = St.reachedTimes(S, place), cur = St.currentTime(S, place) || "night";
-  if (!reached.includes(catTime)) catTime = cur;
-  const time = catTime;
+  if (!reached.includes(yarnTime)) yarnTime = cur;
+  const time = yarnTime;
   const o = time === cur
     ? St.homeScene(S, place, app.real(), { cushion: null, animate: true })
     : { place, time, garments: ZONES.map((z) => St.garmentSpec(S, place, time, z.id)), baskets: [], cushion: null, special: St.specialFor(place), animate: true, seed: 3, landscape: true };
   const yarns = St.collectedYarns(S, place);
-  /* the cats that have finished and gone to sleep: off the home page (it was too full), kept here (the designer, 2026-11-14) */
+  /* nobody sleeps here any more: the three who finish a time of day sing the next (state.js basketsFor) */
   const asleep = St.basketsFor(S, place);
-  /* who this cat is, under the garment's name: its shape, and its charm when it wears one */
-  const who = (z) => { const w = catWords(kindFor(place, z)); return `<i>${esc(w.shape)}</i>${w.charm ? `<i>${esc(w.charm.replace(/^a /, ""))}</i>` : ""}`; };
+  /* who sings this garment, under its name: the cat's name, or what it looks like */
+  const who = (z) => singerLabel(S, St.singerAt(S, place, time, z)).split(", ").map((w) => `<i>${esc(w)}</i>`).join("");
   const row = (z) => {
     const own = St.yarnKey(time, z.id), worn = St.yarnKeyOf(S, place, time, z.id);
     const opts = [{ key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
@@ -49,7 +49,7 @@ function cats(root) {
     <section class="wardrobe kinds">
       ${reached.length > 1 ? `<div class="wrow bgs"><span class="wlab">Time</span>${TIMES.map((t) => `<button class="bgchip t-${t.id}${time === t.id ? " on" : ""}" data-cat-time="${t.id}" ${reached.includes(t.id) ? "" : "disabled"} aria-pressed="${time === t.id}">${esc(t.name)}</button>`).join("")}</div>` : ""}
       ${ZONES.map(row).join("")}
-      <p class="sub">${yarns.length ? "Any yarn you’ve collected can go on any garment this month." : "Finish a garment and its yarn lands here, for any garment this month."} Next month brings three other cats, and a new box of yarn.</p>
+      <p class="sub">${yarns.length ? "Any yarn you’ve collected can go on any garment this month." : "Finish a garment and its yarn lands here, for any garment this month."} The next place has a new box of yarn.</p>
       ${asleep.length ? `<div class="nap"><span class="wlab">Asleep</span><div class="seg" id="nap">${nappingSvg({ baskets: asleep, time: o.time })}</div></div>
       <p class="sub">The ${St.specialFor(place) ? "guests" : "cats"} of the earlier ${asleep.length > 1 ? "times" : "time"} of day sleep here. You can pat them.</p>` : ""}
     </section>`;
@@ -58,15 +58,18 @@ function cats(root) {
   $$(".coat", root).forEach((b) => (b.onclick = () => {
     if (!St.setYarn(S, place, time, b.dataset.zone, b.dataset.yarn)) return;
     app.save();
-    cats(root);
+    yarn(root);
     hopCat($(".scene-wrap", root), b.dataset.zone);
   }));
-  $$("[data-cat-time]", root).forEach((b) => (b.onclick = () => { catTime = b.dataset.catTime; cats(root); }));
+  $$("[data-cat-time]", root).forEach((b) => (b.onclick = () => { yarnTime = b.dataset.catTime; yarn(root); }));
   wireSegs(root);
 }
 
 function render(root) {
-  if (mode === "cats") return cats(root);
+  /* another screen can ask for a tab: show("wardrobe", { tab: "cats" }) */
+  if (app.props.tab && TABS.some(([id]) => id === app.props.tab)) { mode = app.props.tab; app.props.tab = null; }
+  if (mode === "yarn") return yarn(root);
+  if (mode === "cats") return renderCats(root, segs(), wireSegs);
   const S = app.S, place = S.here, p = placeById(place);
   const reached = St.reachedTimes(S, place);
   if (!pick || pick.place !== place) {

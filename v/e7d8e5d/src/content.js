@@ -304,6 +304,52 @@ export function kindFor(placeId, zoneId) {
   return cast[Math.max(0, ["scarf", "top", "bottom"].indexOf(zoneId))];
 }
 
+/* ---------- treats, and the cats a player owns (the designer, 2026-11-14 and 15) ----------
+   Board: docs/design/longcat-yarn-shop-animals.md (the rules) and longcat-shop-screens.md (the screens, layout 甲).
+   - Treats are the game's coin ("遊戲幣則是必須得做 drill 來獲得"): the same number for every finished take,
+     whatever the grade, a step sung again too, for the first few takes of a day. Never bought with money.
+   - A singer is a cat (its id is its kind, "fold+bow") or another long animal (its id is the animal, "otter").
+     A cat has one coat of its own, for good ("每隻貓固定一種").
+   - The player starts with four cats ("一開始只給四隻免費的貓") and keeps every one brought home ("永久擁有").
+   - The three cats of KIND_CAST live at their place: they sing there without being owned, and can be kept for
+     treats. The thirty-six of them are a year's cats; the thirteen kinds no place has are the four free ones and
+     the shop's shelf, so no cat is in two of these lists.
+   - Other long animals are on the shelf too ("甲：長的都可以"). Only the three the art has checked in a sleeve. */
+export const TREATS = { take: 10, perDay: 12, cat: 400, animal: 1200 };
+export const FREE_CATS = ["tuft", "fold", "round", "point+bow"];
+export const SHOP_CATS = ["big+plum", "curl+bell", "small+bell", "fold+leaf", "round+berry", "tuft+bow", "curl+camellia", "big+berry", "small+plum"];
+export const SHOP_ANIMALS = ["otter", "dachshund", "ferret"];
+/* the coats of the thirteen cats no place has: [pattern, palette] */
+const OWN_COATS = {
+  tuft: ["plain", "cream"], fold: ["tabby", "grey"], round: ["spots", "ginger"], "point+bow": ["pin", "grey"],
+  "big+plum": ["freckles", "cream"], "curl+bell": ["pale3", "cream"], "small+bell": ["plain", "ginger"], "fold+leaf": ["bold", "cream"],
+  "round+berry": ["tabby", "grey"], "tuft+bow": ["twotone", "grey"], "curl+camellia": ["stripes5", "ginger"], "big+berry": ["bands3", "ginger"], "small+plum": ["spots", "grey"],
+};
+export const isAnimal = (id) => Object.prototype.hasOwnProperty.call(GUESTS, id);
+export const priceOf = (id) => (isAnimal(id) ? TREATS.animal : TREATS.cat);
+/* a cat's own coat, { pattern, palette }: a place's cat keeps the coat it wore there in the morning */
+export function catCoat(kind) {
+  const own = OWN_COATS[kind];
+  if (own) return { pattern: own[0], palette: own[1] };
+  for (let p = 0; p < KIND_CAST.length; p++) {
+    const j = KIND_CAST[p].indexOf(kind);
+    if (j >= 0) { const l = garmentLook(PLACE_IDS[p % PLACE_IDS.length], "morning", ["scarf", "top", "bottom"][j]); return { pattern: l.pattern, palette: l.palette }; }
+  }
+  return { pattern: "plain", palette: "ginger" };
+}
+/* a singer in words, when it has no name of its own: "Folded, bow" or "Otter" */
+export function singerWords(id) {
+  if (isAnimal(id)) return GUESTS[id].name;
+  const w = catWords(id);
+  return w.charm ? `${w.shape}, ${w.charm.replace(/^an? /, "")}` : w.shape;
+}
+/* one line about it: "Grey. Folded ears, a bow." or "A flat tail." */
+export function singerNote(id) {
+  if (isAnimal(id)) return `${GUESTS[id].mark.charAt(0).toUpperCase()}${GUESTS[id].mark.slice(1)}.`;
+  const p = PALETTE_NAMES[catCoat(id).palette] || "ginger";
+  return `${p.charAt(0).toUpperCase()}${p.slice(1)}.`;
+}
+
 /* ---------- yarn (the designer, 2026-11-14) ----------
    A garment is a cat in a knitted sleeve, and the sleeve's yarn belongs to the place and the time of day: "每個地點
    的早晨，都是基本的三個顏色，我們系統自己選，搭配那個地點的顏色色調。從第二個時間開始，傍晚和晚上，玩家可以解鎖有

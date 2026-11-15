@@ -662,3 +662,51 @@ body { background: var(--sky, var(--soft)); }
 :root .take-head > div { flex: 1 1 auto; min-width: 0; }
 :root .take-head .skip { flex: none; min-height: 40px; padding: 0 14px; white-space: nowrap; }
 :root .wake b { background: var(--brand); color: var(--brand-ink); }
+
+/* ---------- cats of one's own, and treats (ui/cats.js; the designer, 2026-11-15, shop screens board, layout 甲) ----------
+   The Wardrobe's Cats tab, the three sheets and the result sheet's line. Paper, key line and flat shadow as on
+   every page; indigo only on the button that brings a cat home. */
+.treat { flex: none; vertical-align: -3px; }
+.purse { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 22px; background: var(--paper); border: 1.5px solid var(--key); box-shadow: var(--flat); font-family: var(--display); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cats-tab { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.cats-h { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 0; font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink); }
+.cats-h i { font-style: normal; font-family: var(--body); font-weight: 700; font-size: 12px; color: var(--muted); }
+.cat-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cat-slot { display: flex; flex-direction: column; align-items: center; padding: 6px 4px 7px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); min-width: 0; }
+.cat-slot svg { width: 100%; max-width: 92px; height: auto; }
+.cat-slot .cat-z { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cat-slot b { font-size: 12.5px; line-height: 1.2; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-slot em { font-style: normal; font-size: 10.5px; color: var(--muted); }
+.cat-shelf { display: flex; gap: 7px; overflow-x: auto; padding: 6px 2px 5px; margin: -4px -2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cat-shelf::-webkit-scrollbar { display: none; }
+.cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; padding-top: 4px; }
+.cat-card { position: relative; flex: 0 0 78px; display: flex; flex-direction: column; align-items: center; padding: 3px 3px 6px; border-radius: 14px; background: var(--card); border: 1.5px solid var(--line); min-width: 0; }
+.cat-grid .cat-card { flex: none; }
+.cat-card > svg:not(.treat) { width: 100%; max-width: 86px; height: auto; }
+.cat-card span { font-size: 10.5px; line-height: 1.2; color: var(--ink); font-weight: 700; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cat-card em { font-style: normal; display: inline-flex; align-items: center; gap: 3px; margin-top: 2px; font-size: 11px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cat-card em.keep { padding: 1px 6px 1px 4px; border-radius: 10px; border: 1.5px solid var(--key); background: var(--paper); font-size: 10.5px; }
+.cat-card.on { border-color: var(--key); box-shadow: var(--flat); }
+.cat-card .cat-tag { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); padding: 0 6px; border-radius: 8px; background: var(--coral); color: #fffdf6; font-style: normal; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+.cat-card.more { justify-content: center; gap: 2px; border-style: dashed; border-color: var(--key); color: var(--ink); font-weight: 800; font-size: 12px; min-height: 96px; }
+.cat-card.more b { font-family: var(--display); font-size: 26px; line-height: 1; }
+.cat-hero { display: flex; align-items: center; gap: 12px; }
+.cat-hero > svg { flex: none; width: 128px; height: auto; background: var(--card); border: 1.5px solid var(--key); box-shadow: var(--flat); border-radius: 16px; }
+.cat-hero > div { min-width: 0; }
+.cat-hero h3 { font-size: 21px; line-height: 1.2; overflow-wrap: anywhere; }
+.cat-hero p:not(.eyebrow) { font-size: 13.5px; color: var(--muted); }
+.cat-name { display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 14px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--key); }
+.cat-name span { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cat-name input { flex: 1 1 auto; min-width: 0; min-height: 40px; border: 0; background: none; font: inherit; font-size: 16px; font-weight: 700; color: var(--ink); outline: none; }
+.cat-name:focus-within { box-shadow: 0 0 0 3px rgba(29, 49, 80, .25); }
+.sheet .pick.on { border-color: var(--key); background: var(--soft); box-shadow: none; }
+.treat-have { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 14px; background: var(--soft); font-size: 14px; }
+.treat-have b { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+.treat-have.short { background: none; border: 1.5px dashed var(--key); }
+.sheet .btn .treat { margin: 0 2px 0 6px; }
+.sheet .btn[data-a=buy] { white-space: nowrap; }
+.treat-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--soft); font-size: 13.5px; color: var(--muted); }
+.treat-line b { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+/* in the Garment sheet: who sings it, and the way to change that */
+.who-btn { align-self: flex-start; margin-top: 4px; min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1.5px solid var(--key); background: var(--card); font-size: 12.5px; font-weight: 700; color: var(--ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ghead > div { display: flex; flex-direction: column; min-width: 0; }
