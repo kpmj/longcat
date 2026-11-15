@@ -41,9 +41,9 @@ function yarn(root) {
   const who = (z) => singerLabel(S, St.singerAt(S, place, time, z)).split(", ").map((w) => `<i>${esc(w)}</i>`).join("");
   const row = (z) => {
     const own = St.yarnKey(time, z.id), worn = St.yarnKeyOf(S, place, time, z.id);
-    /* its own yarn first, then none at all (the cat as it is; the designer, 2026-11-15), then the collected ones. "No yarn"
-       comes second so that it is in view however many yarns the row holds */
-    const opts = [{ key: own, label: "Its own", yarn: St.yarnAt(place, own) }, { key: St.NO_YARN, label: "No yarn", yarn: null }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
+    /* none at all first (the cat as it is; the designer, 2026-11-15: "can you have no yarn to be the first option"), then
+       its own yarn, then the collected ones */
+    const opts = [{ key: St.NO_YARN, label: "No yarn", yarn: null }, { key: own, label: "Its own", yarn: St.yarnAt(place, own) }, ...yarns.filter((c) => c.key !== own).map((c) => ({ key: c.key, label: yarnLabel(c.yarn), yarn: c.yarn }))];
     return `<div class="coat-row"><span class="wlab">${z.name}${who(z.id)}</span><div class="coats">${opts.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-zone="${z.id}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${esc(garmentName(time, z.id))}: ${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${c.yarn ? yarnSwatchSvg(c.yarn, time) : NO_SWATCH}<span>${esc(c.label)}</span></button>`).join("")}</div></div>`;
   };
   root.innerHTML = `
