@@ -38,7 +38,7 @@ export function boot() {
 }
 
 /* ---------- router ----------
-   Four tabs: Home, Wardrobe, Settings, Store (the designer, 2026-11-15). The Store is where the Wardrobe's Cats tab went;
+   Four tabs: Home, Wardrobe, Store, Settings (the designer, 2026-11-15; Store and Settings changed places the same day). The Store is where the Wardrobe's Cats tab went;
    Settings took the Album's spot (it was the gear on Home) and the Album is a tab of the Wardrobe; Places opens
    from the chip at the top left of Home. */
 const BAG = `<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 7.4h12.8l-1 9.6H4.6z"/><path d="M7.1 7.4V6a2.9 2.9 0 0 1 5.8 0v1.4"/></svg>`;
@@ -46,8 +46,8 @@ const COG = `<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke=
 const DOCK = [
   { id: "home", label: "Home", icon: "⌂" },
   { id: "wardrobe", label: "Wardrobe", icon: "◫" },
-  { id: "settings", label: "Settings", icon: COG },
   { id: "store", label: "Store", icon: BAG },
+  { id: "settings", label: "Settings", icon: COG },
 ];
 /* The sky of where the player is, for the strip at the top of every tab: the colour at the top of that place's
    picture at that time of day (the art's L.up), a paler band under it, and the sun or moon of that time. */
