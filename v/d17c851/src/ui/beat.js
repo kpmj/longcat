@@ -30,7 +30,7 @@ function render(root, { place, time }) {
     { cap: `One by one the ${special ? "guests" : "cats"} let go, hop down and curl up in a basket. Its tag says “${tName}”.`, scene: { ...base, time: next, garments: [], leaving: done(time), baskets: withThis } },
     { cap: "The judge looks down at itself. No hat. No scarf. No top.", scene: { ...base, time: next, garments: [], baskets: withThis, face: "look-down", react: "plop" } },
     { cap: "A small breeze. It holds its tummy and raises one eyebrow, as if this was the plan.", scene: { ...base, time: next, garments: [], baskets: withThis, face: "brow", react: "shiver", paws: "tummy" } },
-    { cap: `Three new ${special ? "guests" : "cats"} are waiting, their fur a little longer than the last.`, scene: { ...base, time: next, garments: ZONE_IDS.map((z) => St.garmentSpec(S, place, next, z)), baskets: withThis, arriving: true } },
+    { cap: `Three new ${special ? "guests" : "cats"} are waiting. Their yarn is a little thicker than the last.`, scene: { ...base, time: next, garments: ZONE_IDS.map((z) => St.garmentSpec(S, place, next, z)), baskets: withThis, arriving: true } },
   ] : [
     { cap: "The night postcard is taken and put in the album.", html: postcardSvg({ ...St.cardScene(S, card), caption: card.caption, title: placeById(place).name, dateLabel: St.monthLabel(card.date) }), card: true },
     { cap: "All nine are on.", scene: { ...base, time: "night", garments: done("night"), baskets: prevBaskets, face: St.tutorialDone(S) ? "content-sleep" : "neutral" }, end: true },

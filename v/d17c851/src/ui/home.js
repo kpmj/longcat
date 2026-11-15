@@ -9,7 +9,7 @@ import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { wardrobeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
-import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor } from "../content.js";
+import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, sylFor, yarnName } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
 
@@ -161,7 +161,9 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
 /* The Garment sheet: one garment's twelve steps at a glance, and the way to wear another one mid-way
    (game-flow board, decision D). During the tutorial the first garment is worn to the end. */
 const PATTERN_NAME = Object.fromEntries(PATTERNS.map((x) => [x.id, x.name]));
-const FUR = { short: "short fur", mid: "mid fur", long: "long fur" };
+/* a garment's `look.fur` is how thick its knitting is: a cat's own fur no longer changes with the time (the designer, 2026-11-14) */
+const KNIT = { short: "thin knit", mid: "medium knit", long: "thick knit" };
+const upper = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "night") {
   const S = app.S, place = S.here;
   const g = St.garmentSpec(S, place, time, zone), steps = St.stepsOf(S, place, time, zone);
@@ -192,7 +194,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     buttons = `<div class="row"><button class="btn primary" data-a="wear">Wear this one</button><button class="btn" data-a="close">Not now</button></div>`;
   }
   const el = sheet(`
-    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}, ${FUR[g.look.fur] || ""}.</p></div></div>
+    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? esc(upper(yarnName(g.yarn))) : `${esc(PATTERN_NAME[g.look.pattern] || "")} on ${esc(g.look.palette)}`}, ${KNIT[g.look.fur] || ""}.</p></div></div>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}

@@ -621,7 +621,7 @@ function resultLine(grade, mood) {
   const n = grade.notes.length, c = grade.counts;
   if (mood === "good") return "Every note landed. The cat looks smug.";
   if (mood === "mid") return c.good ? `${c.good} of ${n} notes landed. The ${c.mid === 1 ? "other was" : "others were"} close.` : "Close on every note. Nearly there.";
-  return c.off === 1 ? "One note got away. It left a fold in the fur." : `${c.off} notes got away. Each left a fold in the fur.`;
+  return c.off === 1 ? "One note got away. It left a pill in the knitting." : `${c.off} notes got away. Each left a pill in the knitting.`;
 }
 
 function finish(grade) {
