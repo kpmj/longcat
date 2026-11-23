@@ -15,9 +15,11 @@
      neck, the top on the body (the dashed shape; the art's wrapArea).
    - The finger does not draw: it takes the cat round, a whole turn at a time (the designer, 2026-11-22: "我想要手指的感覺是把
      貓咪在水豚繞一圈的感覺", then "限制玩家一定要圍到範圍的邊緣"; the gesture is ui/wind.js). Across the front the cat is
-     a taut band from the edge it came out of to the finger; it is a turn only when it reaches the far edge (a tick,
-     a ring, a tap where the phone can), and a band let go before that is taken up again. Then the cat must go round
-     the back: it follows the finger's own path behind the judge to the other edge, and comes out there at the
+     a taut band from the spot it came out at to the finger; it is a turn when it has gone across and the finger
+     goes off the shape or reaches a side (a tick, a ring, a tap where the phone can), and a band let go before that
+     is taken up again. Then the cat is behind the judge, on the finger's own path, and may come out at any other
+     spot of the outline: a side, over a shoulder, a corner (the designer: "the flexibility to wrap around from any spot").
+     Its head peeks at the spot nearest the finger until the finger comes onto the shape; it comes out there, at the
      finger's height. Between touches the screen shows where the cat is and a finger shows the next move.
    - There is only so much cat: a bar shows how much is left, and a band stops when it is used up.
    The wrap shows wherever the garment does: Home, the Wardrobe, the singing screen, and the postcards taken from
@@ -136,13 +138,13 @@ function render(root, props = {}) {
   /* what the tray says: whose turn it is, then what is happening */
   function paintTray() {
     const n = strokes.length, left = leftOf(), turns = `${n} turn${n === 1 ? "" : "s"} round`, m = W.mode;
-    const [title, say] = short ? ["All the way across", "A turn counts when it reaches the other side."]
-      : dragging && m === "back" ? ["Round the back it goes", "Take it right round to the other side."]
-      : dragging && m === "armed" ? ["Now across again", "The cat comes out where your finger is."]
-      : dragging && liveLen ? [n ? turns : "That’s it, right across", "Take it all the way to the other side."]
+    const [title, say] = short ? ["Further across", "A turn has to go across before the cat goes behind."]
+      : dragging && m === "back" ? ["Round the back it goes", "Take it round, any way you like, to where it should come out."]
+      : dragging && m === "armed" ? ["It can come out here", "Slide round to pick the spot, then pull it across."]
+      : dragging && liveLen ? [n ? turns : "That’s it, right across", "Take it across and off the other side."]
       : left < A.stroke ? ["That’s all of the cat", `${turns}. Tap Done, or undo a turn.`]
       : !n ? ["Your turn", `Pull the cat across the ${part}, from one side right to the other.`]
-      : m === "back" ? [turns, "Next: take the cat round the back, to the other side."]
+      : m === "back" ? [turns, "Next: take the cat round the back. It can come out at any other spot."]
       : m === "armed" ? [turns, "Next: pull it across again. Or tap Done."]
       : [turns, "Pull the cat across again, from either side. Or tap Done."];
     $("#wrap-title", root).textContent = title;
@@ -201,7 +203,7 @@ function render(root, props = {}) {
       }
       headShown = go;
     }
-    const faint = go && W.mode === "back"; // the faint copy on top is for when the judge hides it, not when it peeks
+    const faint = go; // a faint copy on top: the judge may hide the real one, behind the neck or the chin too
     if (x) { x.toggleAttribute("hidden", !faint); if (faint) move(x); }
     liveLen = L ? lenOf(L) : 0;
     /* the next move, shown while no finger is down and there is cat left */
