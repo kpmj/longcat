@@ -539,6 +539,11 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 #wrap-live, #wrap-live-key, #wrap-ghost, #wrap-head { pointer-events: none; }
 #wrap-live, #wrap-live-key { opacity: .9; }
 #wrap-ghost { opacity: .75; }
+#wrap-mid, #wrap-fore { pointer-events: none; }
+#wrap-bhead, #wrap-xhead { transition: transform .16s ease-out; pointer-events: none; }
+#wrap-xhead { opacity: .3; }
+#wrap-bhead[hidden], #wrap-xhead[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { #wrap-bhead, #wrap-xhead { transition: none; } }
 #wrap-head[hidden] { display: none; }
 .wrap-tray { flex: none; border-width: 1.5px 0 0; border-radius: 22px 22px 0 0; box-shadow: 0 -2.5px 0 rgba(62, 42, 60, .2); padding: 10px max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 8px; }
 .wrap-picks { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch; }

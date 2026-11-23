@@ -18,7 +18,7 @@
    then on (a postcard keeps the wrap it was taken with). */
 import { app, show, esc, $, $$, toast } from "./app.js";
 import * as St from "../state.js";
-import { sceneParts, wrapArea, wardrobeThumbSvg, YARN_COLORS } from "../art/index.js";
+import { sceneParts, wrapArea, wardrobeThumbSvg, garmentLayers, YARN_COLORS } from "../art/index.js";
 import { garmentName, timeById } from "../content.js";
 import { winder, lenOf } from "./wind.js";
 import { catIconSvg } from "./home-art.js";
@@ -47,6 +47,8 @@ function render(root, props = {}) {
   cur = has(want) ? want : has(cur) ? cur : list.find((g) => g.time === now) || list[0];
   let strokes = null, W = null, liveLen = 0, dragging = false;
   let band = null, backD = "", painted = 0, later = 0; // the band being pulled, the way round the back, and when the picture was last drawn
+  let hideHead = false; // the garment's head is off the garment: the cat is behind the judge, or just coming out
+  let headArt = null, headShown = false; // the garment's own head ({ html, at }), and whether it is travelling behind the judge now
 
   const area = () => wrapArea(cur.zone);
   const leftOf = () => Math.max(0, area().max - total(strokes));
@@ -59,16 +61,30 @@ function render(root, props = {}) {
     const tall = Math.min(500, r.width > 0 && r.height > 0 ? (w * r.height) / r.width : h);
     return `${x} ${Math.round(Math.max(0, Math.min(500 - tall, y + h / 2 - tall / 2)))} ${w} ${Math.round(tall)}`;
   }
-  /* the picture: the judge with this one garment, close up. While a wrap is being drawn it shows the turns so far */
+  /* The picture: the judge with this one garment, close up, in two layers (what is behind the judge, and the judge)
+     so that a third between them can hold the cat on its way round the back. While a band is pulled it is drawn as
+     the garment's last turn. While the cat is behind the judge its head is not on the garment: the same head, the
+     art's own, travels in the middle layer (showLive). */
   function paintPicture() {
     const g = spec(), lay = band ? [...(strokes || []), band] : strokes;
     const worn = !lay ? [g] : lay.length ? [{ ...g, wrap: lay }] : [];
     clearTimeout(later); later = 0; painted = performance.now();
     const p = sceneParts({ place, time: cur.time, face: "neutral", garments: worn, baskets: [], cushion: null, special: St.specialFor(place), animate: false, seed: 3, landscape: true });
-    $("#wrap-base", root).innerHTML = `<svg viewBox="${viewBox()}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${p.L.back}${p.special}${p.L.seat}<g id="wrap-behind"><path d="${backD}" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="${backD}" fill="none" stroke="${inkOf()}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/></g>${p.character}${p.L.front}</svg>`;
+    const Lr = worn.length ? garmentLayers(worn[0], { time: cur.time, animate: false, seed: 3, ink: p.L.ink }) : null;
+    headArt = Lr && Lr.head && p.character.includes(Lr.head) ? { html: Lr.head, at: [Lr.headAt.x, Lr.headAt.y] } : null;
+    const away = hideHead && !!headArt, vb = viewBox();
+    $("#wrap-base", root).innerHTML = `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${p.L.back}${p.special}${p.L.seat}</svg>`;
+    $("#wrap-fore", root).innerHTML = `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${away ? p.character.replace(headArt.html, "") : p.character}${p.L.front}</svg>`;
+    if (headArt) for (const id of ["#wrap-bhead", "#wrap-xhead"]) { const el = $(id, root); if (el) el.innerHTML = headArt.html; }
   }
   function paintOver() {
     const A = area(), d = `M${A.poly.map((q) => q.join(" ")).join("L")}Z`, ink = inkOf();
+    /* behind the judge: the cat on its way round, and its head */
+    $("#wrap-mid", root).innerHTML = `<svg viewBox="${viewBox()}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path class="wrap-b" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <path class="wrap-b" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
+      <g id="wrap-bhead" hidden>${headArt ? headArt.html : ""}</g></svg>`;
+    headShown = false;
     const head = catIconSvg(spec(), cur.zone, cur.time).replace("<svg ", '<svg x="-20" y="-11" width="40" height="39.2" ');
     $("#wrap-over", root).innerHTML = `<svg viewBox="${viewBox()}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Pull the cat across the judge’s ${PART[cur.zone]} and round, to wrap the ${esc(garmentName(cur.time, cur.zone).toLowerCase())}">
       <path d="${d}" fill="#fffdf6" fill-opacity=".1" stroke="#262122" stroke-width="3.4" stroke-linejoin="round" stroke-opacity=".55"/>
@@ -76,7 +92,8 @@ function render(root, props = {}) {
       <path id="wrap-ghost" fill="none" stroke="#fffdf6" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 11"/>
       <path id="wrap-live-key" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path id="wrap-live" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
-      <g id="wrap-head" hidden>${head}</g></svg>`;
+      <g id="wrap-head" hidden>${head}</g>
+      <g id="wrap-xhead" hidden>${headArt ? headArt.html : ""}</g></svg>`;
     W = winder({ poly: A.poly, sag: SAG[A.zone] || 0, stroke: A.stroke });
     wirePointer($("#wrap-over svg", root));
   }
@@ -107,7 +124,7 @@ function render(root, props = {}) {
   function pick(g) {
     cur = g;
     strokes = St.wrapOf(S, place, cur.time, cur.zone);
-    band = null; backD = "";
+    band = null; backD = ""; hideHead = false;
     paintPicture(); paintOver(); paintTray();
     const on = $(".wrap-pick.on", root);
     if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -121,34 +138,49 @@ function render(root, props = {}) {
     else if (!later) later = setTimeout(paintPicture, 16);
   }
   /* A band long enough to be a turn is drawn by the picture itself, as the garment's last turn: the real cat in its
-     sleeve, its head at the finger. A shorter one is a plain band with the cat's face on it, on top. The way round
-     the back is a dotted line on top and a band under the judge, which shows only where it passes the judge's side. */
-  function showLive(r) {
-    const A = area(), L = (r && r.live) || null, real = !!L && lenOf(L) >= A.stroke, had = !!band;
+     sleeve, its head at the finger. A shorter one is a plain band with the cat's face on it, on top.
+     Round the back (the designer, 2026-11-22: "animate the cat head to the back of the capybara"): the cat is a band in the
+     layer under the judge, and its head goes with it there, from where it left the front to where the finger is,
+     so the judge hides it; a faint copy on top and a dotted line say where it is. `must`: the picture has changed. */
+  function showLive(r, must = false) {
+    const A = area(), L = (r && r.live) || null, real = !!L && lenOf(L) >= A.stroke, had = !!band, wasHide = hideHead;
     band = real ? thin(L) : null;
     backD = dOf(r && r.back);
+    hideHead = !!backD || (!!L && !real);
+    if (must || hideHead !== wasHide) paintPicture();
+    else if (band || had) paintSoon();
     const d = real ? "" : dOf(L);
     $("#wrap-live", root)?.setAttribute("d", d);
     $("#wrap-live-key", root)?.setAttribute("d", d);
     $("#wrap-ghost", root)?.setAttribute("d", backD);
-    $$("#wrap-behind path", root).forEach((el) => el.setAttribute("d", backD));
+    $$("#wrap-mid .wrap-b", root).forEach((el) => el.setAttribute("d", backD));
     const h = $("#wrap-head", root);
     if (h) {
       const on = !!L && !real && !!r.head;
       h.toggleAttribute("hidden", !on);
       if (on) h.setAttribute("transform", `translate(${r.head[0].toFixed(1)} ${r.head[1].toFixed(1)})`);
     }
-    if (band || had) paintSoon();
+    /* the head behind the judge: it starts where the garment's head was and slides to where the cat has got to */
+    const go = !!backD && !!headArt && !!r.head, heads = [$("#wrap-bhead", root), $("#wrap-xhead", root)].filter(Boolean);
+    for (const el of heads) {
+      el.toggleAttribute("hidden", !go);
+      if (!go) continue;
+      if (!headShown) { el.style.transition = "none"; el.style.transform = "translate(0px, 0px)"; el.getBoundingClientRect(); el.style.transition = ""; }
+      el.style.transform = `translate(${(r.head[0] - headArt.at[0]).toFixed(1)}px, ${(r.head[1] - headArt.at[1]).toFixed(1)}px)`;
+    }
+    headShown = go;
     liveLen = L ? lenOf(L) : 0;
     if (strokes !== null) $("#wrap-left", root).style.width = `${Math.round((Math.max(0, leftOf() - liveLen) / area().max) * 100)}%`;
   }
   /* what the gesture answered: a band begun, a band laid, the cat run out */
   function apply(r) {
+    let must = false;
     /* the first band of a new wrap takes the game's wrap off */
-    if ((r.live || r.commit) && strokes === null) { strokes = []; paintPicture(); paintTray(); }
-    if (r.commit) { strokes.push(thin(r.commit)); band = null; keep(); paintPicture(); paintPicks(); paintTray(); }
+    if ((r.live || r.commit) && strokes === null) { strokes = []; must = true; paintTray(); }
+    if (r.commit) { strokes.push(thin(r.commit)); band = null; keep(); must = true; }
     else if (r.spent) toast("That’s all of the cat. Undo a turn first.");
-    showLive(r);
+    showLive(r, must);
+    if (r.commit) { paintPicks(); paintTray(); }
   }
   function wirePointer(svg) {
     const at = (e) => { const m = svg.getScreenCTM(); if (!m) return null; const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); return [p.x, p.y]; };
@@ -182,7 +214,7 @@ function render(root, props = {}) {
       <span class="home-pill paper"><b>Wrap it yourself</b></span>
       <button class="btn primary wrap-done" data-a="done">Done</button>
     </header>
-    <div class="wrap-stage"><div id="wrap-base"></div><div id="wrap-over"></div></div>
+    <div class="wrap-stage"><div id="wrap-base"></div><div id="wrap-mid"></div><div id="wrap-fore"></div><div id="wrap-over"></div></div>
     <section class="wrap-tray paper" aria-label="Wrapping">
       <div class="wrap-picks" id="wrap-picks"></div>
       <p class="wrap-say" id="wrap-say" aria-live="polite"></p>

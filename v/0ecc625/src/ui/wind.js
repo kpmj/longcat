@@ -5,8 +5,8 @@
    - Across the front the cat is taut: one smooth band from where it came out to where the finger is, curved the way
      the game's own rows curve round that part of the judge. Going back along it takes it up again.
    - Past the far edge, or turning back near it, the cat goes round the back. That pass lays nothing in front.
-   - Once the finger is back on the other side the cat comes out there, at the height the finger is at, and the next
-     band starts. To and fro, or round and round, both wind it: every other pass is behind.
+   - Once the finger is back on the other side the cat waits there, its head just past the judge's side, at the
+     height the finger is at; coming onto the shape again, it comes out and the next band starts. To and fro, or round and round, both wind it: every other pass is behind.
    - A band still ends where the finger is lifted, so a short or slanted turn is as easy as before.
    A band is a list of [x, y] in the scene, kept inside the garment's shape, the same thing the art already draws
    (art/print/garments.js wrapRows). */
@@ -113,7 +113,11 @@ export function winder({ poly, sag = 0, stroke = 30, edge = EDGE }) {
       else { const u = uOf(p); A = u <= TURN ? edgeAt(-1, p[1]) : u >= 1 - TURN ? edgeAt(1, p[1]) : p; }
       mode = "front"; peak = null; live = null;
     }
-    if (mode !== "front") return done();
+    if (mode !== "front") {
+      /* come round and waiting: all the way behind, its head just past the side it will come out of */
+      if (mode === "armed" && from && B) { R.back = behind([from * 1e6, q[1]]); R.head = R.back[R.back.length - 1]; }
+      return done();
+    }
     if (!isIn) {
       /* off the shape: by a side, the cat goes round the back; by the top or the bottom, the band just ends */
       const P = live, ok = P && lenOf(P) >= stroke, sideways = uq <= TURN || uq >= 1 - TURN, s = uq > 0.5 ? 1 : -1;
