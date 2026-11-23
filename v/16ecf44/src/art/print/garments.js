@@ -57,18 +57,21 @@ for (const k in ZONES) {
    reaches the head's sides too (the designer: "帽子也拉寬"), but only under the ears, which stay in sight: between the ears
    (y 100 to 122) it stays inside them; under them it goes out to the head's sides (x 122 / 278 at y 134, measured
    from the drawn head), and it stops at y 134, clear of the eyes (y 151).
-   `shut` lists the heights of the level edges that are not the judge's outline, only a line across the judge:
-   the cat cannot go behind there, there is body (the designer, 2026-11-22: "the scarf can't be wrapped around from that
-   direction since there's whole body down there"). The scarf's bottom, the hat's bottom (the face is under it)
-   and the top's top and bottom. */
+   `shut` lists the edges of a shape (as lines of points) where the cat cannot go behind the judge, because the
+   judge goes on there: it can only go round where the judge's outline has air beyond it. The scarf's bottom (the designer,
+   2026-11-22: "the scarf can't be wrapped around from that direction since there's whole body down there") and
+   its whole top, along the neck and under the chin (the designer, the same day: "The scarf should wrap around the right
+   shoulder instead of from the neck … The cloth should wrap around the gap of the body not penetrating from
+   somewhere"), so the scarf goes round at the shoulders and the sides; the hat's bottom (the face is under it);
+   the top's top and bottom. */
 const AREA = {
-  hat: { poly: [[158, 86], [242, 86], [257, 104], [259, 119], [275, 124], [278, 134], [122, 134], [125, 124], [141, 119], [143, 104]], view: [78, 34, 244, 226], shut: [134] },
+  hat: { poly: [[158, 86], [242, 86], [257, 104], [259, 119], [275, 124], [278, 134], [122, 134], [125, 124], [141, 119], [143, 104]], view: [78, 34, 244, 226], shut: [[[278, 134], [122, 134]]] },
   /* the sides of these two run on the body's own outline, as drawn (measured from the BODY path: x 96.4 at y 253,
      80.4 at 263, 67.5 at 276, 57 at 292, 50 at 308, 47.3 at 316, 44.7 at 326, 42.2 at 340, 40.5 at 356, 40 from 372).
      They were a few units inside it, and with the outline's own thickness that read as a gap (the designer, 2026-11-22: "Can
      you match the dotted lines to get closer to the edge of body?") */
-  scarf: { poly: [[96.4, 253], [128, 253], [160, 269], [240, 269], [272, 253], [303.6, 253], [312.7, 258], [319.6, 263], [327.3, 270], [332.5, 276], [338.3, 284], [343, 292], [346.9, 300], [350.1, 308], [352.7, 316], [47.3, 316], [49.9, 308], [53.1, 300], [57, 292], [61.7, 284], [67.5, 276], [72.7, 270], [80.4, 263], [87.3, 258]], view: [16, 176, 368, 250], shut: [316] },
-  top: { poly: [[44.7, 326], [355.3, 326], [357.8, 340], [359.5, 356], [360, 372], [360, 400], [40, 400], [40, 372], [40.5, 356], [42.2, 340]], view: [10, 216, 380, 268], shut: [326, 400] },
+  scarf: { poly: [[96.4, 253], [128, 253], [160, 269], [240, 269], [272, 253], [303.6, 253], [312.7, 258], [319.6, 263], [327.3, 270], [332.5, 276], [338.3, 284], [343, 292], [346.9, 300], [350.1, 308], [352.7, 316], [47.3, 316], [49.9, 308], [53.1, 300], [57, 292], [61.7, 284], [67.5, 276], [72.7, 270], [80.4, 263], [87.3, 258]], view: [16, 176, 368, 250], shut: [[[352.7, 316], [47.3, 316]], [[96.4, 253], [128, 253], [160, 269], [240, 269], [272, 253], [303.6, 253]]] },
+  top: { poly: [[44.7, 326], [355.3, 326], [357.8, 340], [359.5, 356], [360, 372], [360, 400], [40, 400], [40, 372], [40.5, 356], [42.2, 340]], view: [10, 216, 380, 268], shut: [[[44.7, 326], [355.3, 326]], [[360, 400], [40, 400]]] },
 };
 export function wrapArea(zone) {
   const z = drawZone(zone);
@@ -83,7 +86,7 @@ export function wrapArea(zone) {
     if (ay > mid !== by > mid) { const x = ax + (mid - ay) / (by - ay) * (bx - ax); l = Math.min(l, x); r = Math.max(r, x); }
   }
   const turns = Math.round((ZONES[z].rows.length + .5) * (r - l) * 1.08);
-  return { zone: z, poly: P.map(p => [...p]), view: [...AREA[z].view], shut: [...AREA[z].shut], own: Math.round(own), max: Math.max(Math.round(own * 1.1), turns), min: 60, stroke: 30 };
+  return { zone: z, poly: P.map(p => [...p]), view: [...AREA[z].view], shut: AREA[z].shut.map(line => line.map(p => [...p])), own: Math.round(own), max: Math.max(Math.round(own * 1.1), turns), min: 60, stroke: 30 };
 }
 /* A finger's line made soft: laid out again in even 5 px steps, then each point pulled towards its neighbours a few
    times (the two ends stay). No turn is left much tighter than half a sleeve, so the sideways offsets the patterns

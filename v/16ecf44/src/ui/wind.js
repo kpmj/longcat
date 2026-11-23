@@ -16,10 +16,12 @@
      went across; if it did not, the cat is behind the judge again where it was.
    - Then it is behind. It follows the finger's own path ("順著玩家手指畫出來的線走"), over the shape or off it, and
      nothing is laid. Lifting the finger leaves it there; the next touch goes on.
-   - Not every edge of the shape is the judge's outline: the scarf's bottom is only a line across the body, and
-     there is body below it (the designer, the same day: "I don't think we should stop at the bottom dotted line … we only
-     allow user to keep moving along the bottom dotted line"). Such an edge is `shut`: with the finger past it the
-     band's end slides along it and nothing is laid; the cat cannot come out there either.
+   - Not every edge of the shape is the judge's outline with air beyond it: the scarf's bottom is only a line
+     across the body (the designer, the same day: "we only allow user to keep moving along the bottom dotted line"), and its
+     top runs along the neck and under the chin, where the head is (the designer: "The scarf should wrap around the right
+     shoulder instead of from the neck"). Such an edge is `shut` (lines of points, from art wrapArea): with the
+     finger past it the band's end slides along it and nothing is laid; the cat cannot come out there either. It
+     goes round at the shoulders and the sides.
    - It can come out once the finger is off the shape, or right at a side, at a spot away from where it went in.
      From then on its head peeks out at the spot of the outline nearest the finger and goes round the outline with
      it; it comes out there when the finger comes onto the shape.
@@ -113,8 +115,9 @@ export function winder({ poly, sag = 0, stroke = 30, shut = [] }) {
   const far = (q) => Math.hypot(q[0] - B[0], q[1] - B[1]) >= apart; // far enough from where it went in to come out
   let mode = "start", touching = false, A = null, B = null, C = null, home = "start", path = [], live = null, spent = false, prev = null, prevOff = true;
   const uOf = (q) => { const e = span(poly, q[1]); return (q[0] - e.l) / (e.r - e.l || 1); };
-  /* on a level edge that is only a line across the judge (`shut` holds their heights), not on the judge's outline */
-  const onShut = (q) => shut.some((y) => Math.abs(q[1] - y) < 0.75);
+  /* on an edge where the judge goes on beyond it (`shut`: lines of points), not on its outline with air beyond */
+  const seg = (q, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], u = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(q[0] - a[0] - dx * u, q[1] - a[1] - dy * u); };
+  const onShut = (q) => shut.some((L) => L.some((a, i) => i > 0 && seg(q, L[i - 1], a) < 0.75));
   const edgeAt = (s, y) => { const e = span(poly, y); return [s < 0 ? e.l : e.r, e.y]; };
   /* the way round so far, a little softened: the finger's own line, not a straight one */
   const way = (end = null) => {
@@ -146,7 +149,9 @@ export function winder({ poly, sag = 0, stroke = 30, shut = [] }) {
         const last = path[path.length - 1];
         if (Math.hypot(q[0] - last[0], q[1] - last[1]) >= 3) { path.push(q); if (path.length > 400) path.splice(1, 1); }
         if (rail && !atSide) return waiting(); // below a shut edge: it stays where it was peeking
-        if (far(nr.p)) C = nr.p;
+        /* at a side, the side itself: a corner of a shut edge is not a way out, the side next to it is */
+        const at2 = atSide ? edgeAt(atSide, p[1]) : nr.p;
+        if (far(at2)) C = at2;
         else { mode = "back"; R.back = way(); R.head = q; return done(); }
         return waiting();
       }
