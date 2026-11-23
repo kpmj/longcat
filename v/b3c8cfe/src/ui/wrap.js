@@ -13,12 +13,12 @@
      up: "Wrap it for me".) Both ways out go back to Dress up, with that garment in the picture.
    - Only a finished garment can be wrapped, and only where it belongs: the hat on the head, the scarf round the
      neck, the top on the body (the dashed shape; the art's wrapArea).
-   - The finger does not draw: it pulls the cat round (the designer, 2026-11-22: "我想要手指的感覺是把貓咪在水豚繞一圈的感覺";
-     the gesture is ui/wind.js). Across the front the cat is a taut band from where it came out to the finger, curved
-     the way that part of the judge is round; past the far side, or turning back there, it goes round the back, and
-     it comes out again on the other side at the finger's height. To and fro or round and round, every other pass is
-     behind the judge. Each pass across the front is one turn; a slanted pass is a slanted turn; lifting the finger
-     ends the turn there. Later turns lie over earlier ones.
+   - The finger does not draw: it takes the cat round, a whole turn at a time (the designer, 2026-11-22: "我想要手指的感覺是把
+     貓咪在水豚繞一圈的感覺", then "限制玩家一定要圍到範圍的邊緣"; the gesture is ui/wind.js). Across the front the cat is
+     a taut band from the edge it came out of to the finger; it is a turn only when it reaches the far edge (a tick,
+     a ring, a tap where the phone can), and a band let go before that is taken up again. Then the cat must go round
+     the back: it follows the finger's own path behind the judge to the other edge, and comes out there at the
+     finger's height. Between touches the screen shows where the cat is and a finger shows the next move.
    - There is only so much cat: a bar shows how much is left, and a band stops when it is used up.
    The wrap shows wherever the garment does: Home, the Wardrobe, the singing screen, and the postcards taken from
    then on (a postcard keeps the wrap it was taken with). */
@@ -29,6 +29,7 @@ import { garmentName } from "../content.js";
 import { winder, lenOf, span, taut } from "./wind.js";
 import { catIconSvg } from "./home-art.js";
 import { buzz } from "./haptic.js";
+import { tick } from "../audio/synth.js";
 
 const PART = { bottom: "head", scarf: "neck", top: "body" };
 /* how the game's own rows curve on each part (art/garments.js): the handle of a band right across, as a share of the
@@ -54,15 +55,15 @@ function render(root, props = {}) {
   /* the garment as it is kept: what fades off at the start, and what "Cancel" leaves alone */
   const g0 = St.garmentSpec(S, place, cur.time, cur.zone);
   const ink = (g0.yarn && YARN_COLORS[g0.yarn.a]) || "#e8d9b8";
-  /* where the cat waits and where the finger's hint runs: across the middle of the shape, left to right */
+  /* where the cat waits at first, and the height the finger's hints run at: the middle of the shape */
   const midY = (Math.min(...A.poly.map((q) => q[1])) + Math.max(...A.poly.map((q) => q[1]))) / 2, E = span(A.poly, midY);
-  const waitAt = [E.l - 12, E.y], hintD = dOf(taut(A.poly, [E.l, E.y], [E.r, E.y], SAG[A.zone] || 0));
+  const waitAt = [E.l - 12, E.y];
 
   let strokes = [], dragging = false; // the turns laid on this visit; nothing is kept until Done
   let band = null, backD = "", liveLen = 0, painted = 0, later = 0; // the band being pulled, the way round the back, and when the picture was last drawn
   let hideHead = false; // the garment's head is off the garment: the cat is behind the judge, or just coming out
   let headArt = null, inPic = false, headShown = false; // the cat's own head ({ html, at }), whether the picture has it, whether it is out in the middle layer
-  let phase = "";
+  let phase = "", short = false, hintKind = null;
   const W = winder({ poly: A.poly, sag: SAG[A.zone] || 0, stroke: A.stroke });
   const leftOf = () => Math.max(0, A.max - total(strokes));
   const wearable = () => total(strokes) >= A.min;
@@ -103,31 +104,45 @@ function render(root, props = {}) {
     $("#wrap-over", root).innerHTML = svg(`
       <path class="wrap-zone" d="${d}" fill="#fffdf6" fill-opacity=".1" stroke="#262122" stroke-width="3.4" stroke-linejoin="round" stroke-opacity=".55"/>
       <path class="wrap-zone wrap-dash" d="${d}" fill="none" stroke="#fffdf6" stroke-width="1.8" stroke-linejoin="round" stroke-dasharray="5 6"/>
-      <g id="wrap-hint">
-        <path d="${hintD}" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" opacity=".3"/>
-        <path d="${hintD}" fill="none" stroke="#fffdf6" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9"/>
-        <g class="wrap-finger"><circle r="14" fill="#fffdf6" fill-opacity=".9" stroke="#262122" stroke-width="2.4"/><circle r="5.5" fill="#262122" fill-opacity=".3"/>
-          <animateMotion dur="2.4s" repeatCount="indefinite" path="${hintD}" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.7;1"/>
-          <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;0.1;0.7;0.85;1"/></g>
-      </g>
+      <g id="wrap-hint"></g>
       <path id="wrap-ghost" fill="none" stroke="#fffdf6" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 11"/>
       <path id="wrap-live-key" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path id="wrap-live" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
       <g id="wrap-head" hidden>${face}</g>
       <g id="wrap-xhead" hidden></g>
       <circle id="wrap-pop" r="17" fill="none" stroke="#fffdf6" stroke-width="3.2"/>`, `role="img" aria-label="Pull the cat across the judge’s ${part} and round, to wrap the ${esc(name.toLowerCase())}"`);
+    hintKind = null;
     wirePointer($("#wrap-over svg", root));
+  }
+  /* A finger that shows the next move, while no finger is down: across the front from the side the cat is at (a
+     faint band and a dotted line), or round the back to the other side (a dotted line over the top). */
+  function setHint(kind) {
+    if (kind === hintKind) return;
+    hintKind = kind;
+    const g = $("#wrap-hint", root);
+    if (!g) return;
+    if (!kind) { g.innerHTML = ""; return; }
+    const s = kind.endsWith("1") && !kind.endsWith("-1") ? 1 : -1, from = [s < 0 ? E.l : E.r, E.y], to = [s < 0 ? E.r : E.l, E.y];
+    let d, band = "";
+    if (kind.startsWith("front")) { d = dOf(taut(A.poly, from, to, SAG[A.zone] || 0)); band = `<path d="${d}" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" opacity=".3"/>`; }
+    else { const top = Math.min(...A.poly.map((q) => q[1])); d = `M${to[0].toFixed(1)} ${to[1].toFixed(1)}Q${((from[0] + to[0]) / 2).toFixed(1)} ${(top - 95).toFixed(1)} ${from[0].toFixed(1)} ${from[1].toFixed(1)}`; }
+    g.innerHTML = `${band}<path d="${d}" fill="none" stroke="#fffdf6" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9"/>
+      <g class="wrap-finger"><circle r="14" fill="#fffdf6" fill-opacity=".9" stroke="#262122" stroke-width="2.4"/><circle r="5.5" fill="#262122" fill-opacity=".3"/>
+        <animateMotion dur="2.4s" repeatCount="indefinite" path="${d}" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.7;1"/>
+        <animate attributeName="opacity" dur="2.4s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;0.1;0.7;0.85;1"/></g>`;
   }
   /* what the tray says: whose turn it is, then what is happening */
   function paintTray() {
-    const n = strokes.length, left = leftOf(), turns = `${n} turn${n === 1 ? "" : "s"} round`;
-    const [title, say] = phase === "back" ? ["Round the back it goes", "Bring your finger back to the other side."]
-      : phase === "wait" ? ["Now across again", "The cat comes out where your finger is."]
-      : phase === "pull" && !n ? ["That’s it, right across", "Past the side, the cat goes round the back."]
-      : !n ? ["Your turn", `Pull the cat across the ${part}, from one side to the other.`]
+    const n = strokes.length, left = leftOf(), turns = `${n} turn${n === 1 ? "" : "s"} round`, m = W.mode;
+    const [title, say] = short ? ["All the way across", "A turn counts when it reaches the other side."]
+      : dragging && m === "back" ? ["Round the back it goes", "Take it right round to the other side."]
+      : dragging && m === "armed" ? ["Now across again", "The cat comes out where your finger is."]
+      : dragging && liveLen ? [n ? turns : "That’s it, right across", "Take it all the way to the other side."]
       : left < A.stroke ? ["That’s all of the cat", `${turns}. Tap Done, or undo a turn.`]
-      : !wearable() ? ["A little more", "This is too short to wear yet."]
-      : [turns, "Keep going, to and fro, or tap Done. Start higher or lower, or slant it."];
+      : !n ? ["Your turn", `Pull the cat across the ${part}, from one side right to the other.`]
+      : m === "back" ? [turns, "Next: take the cat round the back, to the other side."]
+      : m === "armed" ? [turns, "Next: pull it across again. Or tap Done."]
+      : [turns, "Pull the cat across again, from either side. Or tap Done."];
     $("#wrap-title", root).textContent = title;
     $("#wrap-say", root).textContent = say;
     $("#wrap-left", root).style.width = `${Math.round((Math.max(0, left - liveLen) / A.max) * 100)}%`;
@@ -151,9 +166,10 @@ function render(root, props = {}) {
      Before the first turn the same head waits past the judge's side, and the finger's hint plays.
      `must`: the picture has changed. */
   function showLive(r, must = false) {
-    const L = (r && r.live) || null, real = !!L && lenOf(L) >= A.stroke, had = !!band, wasHide = hideHead;
+    if (!r) r = W.still(midY); // no finger down: where the cat was left
+    const L = r.live || null, real = !!L && lenOf(L) >= A.stroke, had = !!band, wasHide = hideHead;
     band = real ? thin(L) : null;
-    backD = dOf(r && r.back);
+    backD = dOf(r.back);
     hideHead = !!backD || (!!L && !real);
     if (must || hideHead !== wasHide) paintPicture();
     else if (band || had) paintSoon();
@@ -169,9 +185,9 @@ function render(root, props = {}) {
       if (on) h.setAttribute("transform", `translate(${r.head[0].toFixed(1)} ${r.head[1].toFixed(1)})`);
     }
     /* the head behind the judge: waiting at the side before the first turn; on a way round the back it starts where
-       the garment's head was and slides to where the cat has got to */
-    const fresh = !strokes.length && !L && !backD, go = !!backD && !!headArt && !!r.head;
-    const at = go ? r.head : fresh && headArt ? waitAt : null, b = $("#wrap-bhead", root), x = $("#wrap-xhead", root);
+       the garment's head was and goes where the cat has got to; round, it peeks past the judge's side */
+    const go = !!backD && !!headArt && !!r.head;
+    const at = go ? r.head : !strokes.length && !L && headArt ? waitAt : null, b = $("#wrap-bhead", root), x = $("#wrap-xhead", root);
     const move = (el) => (el.style.transform = `translate(${(at[0] - headArt.at[0]).toFixed(1)}px, ${(at[1] - headArt.at[1]).toFixed(1)}px)`);
     if (b) {
       b.toggleAttribute("hidden", !at);
@@ -181,10 +197,14 @@ function render(root, props = {}) {
       }
       headShown = !!at;
     }
-    if (x) { x.toggleAttribute("hidden", !go); if (go) move(x); }
-    $(".wrap-stage", root).classList.toggle("fresh", fresh);
+    const faint = go && W.mode === "back"; // the faint copy on top is for when the judge hides it, not when it peeks
+    if (x) { x.toggleAttribute("hidden", !faint); if (faint) move(x); }
     liveLen = L ? lenOf(L) : 0;
-    const now = backD ? (W.mode === "armed" ? "wait" : "back") : L ? "pull" : "rest";
+    /* the next move, shown while no finger is down and there is cat left */
+    const idle = !dragging && leftOf() >= A.stroke;
+    $(".wrap-stage", root).classList.toggle("fresh", idle);
+    setHint(idle ? `${W.mode === "back" ? "back" : "front"}${W.side || -1}` : "");
+    const now = `${dragging}|${W.mode}|${!!liveLen}|${short}`;
     if (now !== phase || must) { phase = now; paintTray(); }
     else $("#wrap-left", root).style.width = `${Math.round((Math.max(0, leftOf() - liveLen) / A.max) * 100)}%`;
   }
@@ -192,6 +212,7 @@ function render(root, props = {}) {
      make one (ui/haptic.js), and a ring that opens where the turn ended, for the phones that cannot */
   function laid(at) {
     buzz(12);
+    tick(null, true); // "搭": the game's own soft click, off with the game's sound
     const c = $("#wrap-pop", root);
     if (!c) return;
     c.setAttribute("cx", at[0].toFixed(1)); c.setAttribute("cy", at[1].toFixed(1));
@@ -209,7 +230,7 @@ function render(root, props = {}) {
       const q = at(e);
       if (!q) return;
       e.preventDefault();
-      dragging = true;
+      dragging = true; short = false;
       try { el.setPointerCapture(e.pointerId); } catch { /* an old browser: the cat still follows inside the picture */ }
       apply(W.down(q, leftOf()));
     };
@@ -217,9 +238,9 @@ function render(root, props = {}) {
     const up = () => {
       if (!dragging) return;
       dragging = false;
-      const r = W.up();
+      short = !!W.up().short; // a band let go before the far edge is taken up again, and the tray says so
       band = null;
-      if (r.commit) apply(r); else showLive(null, true);
+      showLive(null, true);
     };
     el.onpointerup = up;
     el.onpointercancel = up;
@@ -248,8 +269,9 @@ function render(root, props = {}) {
     back();
     toast(`The ${name.toLowerCase()} is wrapped your way.`);
   };
-  $("[data-a=undo]", root).onclick = () => { if (!strokes.length || dragging) return; strokes.pop(); showLive(null, true); };
-  $("[data-a=clear]", root).onclick = () => { if (!strokes.length || dragging) return; strokes = []; showLive(null, true); };
+  /* with a turn gone the cat is not where the gesture left it: the next band may come from either side again */
+  $("[data-a=undo]", root).onclick = () => { if (!strokes.length || dragging) return; strokes.pop(); W.reset(); short = false; showLive(null, true); };
+  $("[data-a=clear]", root).onclick = () => { if (!strokes.length || dragging) return; strokes = []; W.reset(); short = false; showLive(null, true); };
   paintLayers();
   showLive(null, true);
   /* the wrap it had fades off the judge: now it is the player's turn */
