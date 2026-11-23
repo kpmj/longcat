@@ -67,7 +67,7 @@ function render(root, props = {}) {
   let hideHead = false; // the garment's head is off the garment: the cat is behind the judge, or just coming out
   let headArt = null, inPic = false, headShown = false; // the cat's own head ({ html, at }), whether the picture has it, whether it is out in the middle layer
   let phase = "", short = false, hintKind = null;
-  const W = winder({ poly: A.poly, sag: SAG[A.zone] || 0, stroke: A.stroke });
+  const W = winder({ poly: A.poly, sag: SAG[A.zone] || 0, stroke: A.stroke, shut: A.shut });
   const leftOf = () => Math.max(0, A.max - total(strokes));
   const wearable = () => total(strokes) >= A.min;
 

@@ -16,6 +16,10 @@
      went across; if it did not, the cat is behind the judge again where it was.
    - Then it is behind. It follows the finger's own path ("順著玩家手指畫出來的線走"), over the shape or off it, and
      nothing is laid. Lifting the finger leaves it there; the next touch goes on.
+   - Not every edge of the shape is the judge's outline: the scarf's bottom is only a line across the body, and
+     there is body below it (the designer, the same day: "I don't think we should stop at the bottom dotted line … we only
+     allow user to keep moving along the bottom dotted line"). Such an edge is `shut`: with the finger past it the
+     band's end slides along it and nothing is laid; the cat cannot come out there either.
    - It can come out once the finger is off the shape, or right at a side, at a spot away from where it went in.
      From then on its head peeks out at the spot of the outline nearest the finger and goes round the outline with
      it; it comes out there when the finger comes onto the shape.
@@ -102,13 +106,15 @@ export function taut(poly, A, F, sag = 0) {
    not yet across from where it went in), "armed" (behind, peeking at the outline, ready to come out).
    `side` is the side the next band will come from, as near as can be said (-1 left, 1 right), for a hint.
    reset() puts it back to "start" (a turn was undone). */
-export function winder({ poly, sag = 0, stroke = 30 }) {
+export function winder({ poly, sag = 0, stroke = 30, shut = [] }) {
   const ys = poly.map((q) => q[1]), xs = poly.map((q) => q[0]);
   const cen = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
   const M = span(poly, cen[1]), across = ACROSS * (M.r - M.l), apart = Math.max(30, APART * (M.r - M.l));
   const far = (q) => Math.hypot(q[0] - B[0], q[1] - B[1]) >= apart; // far enough from where it went in to come out
   let mode = "start", touching = false, A = null, B = null, C = null, home = "start", path = [], live = null, spent = false, prev = null, prevOff = true;
   const uOf = (q) => { const e = span(poly, q[1]); return (q[0] - e.l) / (e.r - e.l || 1); };
+  /* on a level edge that is only a line across the judge (`shut` holds their heights), not on the judge's outline */
+  const onShut = (q) => shut.some((y) => Math.abs(q[1] - y) < 0.75);
   const edgeAt = (s, y) => { const e = span(poly, y); return [s < 0 ? e.l : e.r, e.y]; };
   /* the way round so far, a little softened: the finger's own line, not a straight one */
   const way = (end = null) => {
@@ -118,10 +124,12 @@ export function winder({ poly, sag = 0, stroke = 30 }) {
   /* its head just outside the outline at C */
   const peek = () => { const d = Math.hypot(C[0] - cen[0], C[1] - cen[1]) || 1; return [C[0] + ((C[0] - cen[0]) / d) * 12, C[1] + ((C[1] - cen[1]) / d) * 12]; };
   function move(q, room) {
-    const rawIn = inside(poly, q[0], q[1]), nr = nearest(poly, q[0], q[1]), off = !rawIn && nr.d > OFF, p = rawIn ? q : nr.p, uq = uOf(p);
+    const rawIn = inside(poly, q[0], q[1]), nr = nearest(poly, q[0], q[1]), p = rawIn ? q : nr.p, uq = uOf(p);
+    /* past a shut edge the finger is not off the shape: its spot on that edge stands for it */
+    const rail = !rawIn && onShut(nr.p), off = !rawIn && nr.d > OFF && !rail;
     /* the spot of the outline the finger is at, if it is at one: off the shape, on its rim, or right at a side */
     const atSide = uq <= NEAR ? -1 : uq >= 1 - NEAR ? 1 : 0;
-    const spot = !rawIn ? nr.p : atSide ? edgeAt(atSide, p[1]) : null;
+    const spot = atSide ? edgeAt(atSide, p[1]) : !rawIn && !rail ? nr.p : null;
     const R = { live: null, back: null, head: null, commit: null, spent: false };
     const done = () => { prev = q; prevOff = off; return R; };
     const waiting = () => { R.head = peek(); R.back = way(R.head); return done(); };
@@ -137,6 +145,7 @@ export function winder({ poly, sag = 0, stroke = 30 }) {
         /* off the shape: the head goes round the outline with the finger, or the cat is back where it went in */
         const last = path[path.length - 1];
         if (Math.hypot(q[0] - last[0], q[1] - last[1]) >= 3) { path.push(q); if (path.length > 400) path.splice(1, 1); }
+        if (rail && !atSide) return waiting(); // below a shut edge: it stays where it was peeking
         if (far(nr.p)) C = nr.p;
         else { mode = "back"; R.back = way(); R.head = q; return done(); }
         return waiting();
@@ -144,10 +153,11 @@ export function winder({ poly, sag = 0, stroke = 30 }) {
       if (room < stroke) { spent = R.spent = true; return waiting(); }
       A = C; home = "armed"; mode = "front";
     } else if (mode === "start") {
-      if (off) return done();
+      if (off || (!rawIn && nr.d > 30)) return done(); // a touch well below a shut edge starts nothing
       if (room < stroke) { spent = R.spent = true; return done(); }
       /* the first band: from where the finger came onto the shape, or from the nearer side */
-      A = prev && prevOff ? nearest(poly, prev[0], prev[1]).p : edgeAt(uq < 0.5 ? -1 : 1, p[1]);
+      const came = prev && prevOff ? nearest(poly, prev[0], prev[1]).p : null;
+      A = came && !onShut(came) ? came : edgeAt(uq < 0.5 ? -1 : 1, p[1]);
       home = "start"; mode = "front";
     }
     if (mode !== "front") return done();
