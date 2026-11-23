@@ -531,7 +531,8 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 :root .screen.screen-wrap { padding: 0; gap: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #e9d9c0; height: 100dvh; --hp: #f6efe0; --hp2: #fffdf6; --hi: #3e2a3c; --hm: #7a6470; --hind: #1d3150; --hred: #bf452d; color: var(--hi); }
 .screen-wrap button:focus-visible { outline: 3px solid var(--hind); outline-offset: 2px; }
 .wrap-top { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); }
-.wrap-top .wrap-done { min-height: 44px; border-radius: 22px; padding: 0 22px; }
+.wrap-top .wrap-done, .wrap-top .wrap-cancel { min-height: 44px; border-radius: 22px; padding: 0 20px; flex: none; }
+.wrap-top .home-pill { flex: 0 1 auto; }
 .wrap-stage { position: relative; flex: 1; min-height: 0; }
 .wrap-stage > div { position: absolute; inset: 0; }
 .wrap-stage svg { width: 100%; height: 100%; display: block; }
@@ -545,14 +546,19 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 #wrap-bhead[hidden], #wrap-xhead[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { #wrap-bhead, #wrap-xhead { transition: none; } }
 #wrap-head[hidden] { display: none; }
+/* the player's turn: the old wrap fades off, the shape to wrap pulses, a finger shows the way, the cat waits */
+#wrap-was { pointer-events: none; animation: wrap-was .7s ease-in .35s both; }
+@keyframes wrap-was { from { opacity: 1; } to { opacity: 0; } }
+#wrap-hint { pointer-events: none; display: none; }
+.wrap-stage.fresh #wrap-hint { display: inline; }
+.wrap-stage.fresh .wrap-dash { animation: wrap-pulse 1.5s ease-in-out infinite; }
+@keyframes wrap-pulse { 50% { opacity: .35; } }
+.wrap-stage.fresh .wrap-bob { animation: wrap-bob 1.7s ease-in-out infinite; }
+@keyframes wrap-bob { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .wrap-finger { display: none; } .wrap-stage.fresh .wrap-dash, .wrap-stage.fresh .wrap-bob { animation: none; } }
 .wrap-tray { flex: none; border-width: 1.5px 0 0; border-radius: 22px 22px 0 0; box-shadow: 0 -2.5px 0 rgba(62, 42, 60, .2); padding: 10px max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 8px; }
-.wrap-picks { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch; }
-.wrap-picks::-webkit-scrollbar { display: none; }
-.wrap-pick { flex: 0 0 70px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px 5px; border-radius: 12px; border: 1.5px solid rgba(62, 42, 60, .2); background: var(--hp2); min-width: 0; color: var(--hi); }
-.wrap-pick svg { width: 44px; height: auto; }
-.wrap-pick span { font-size: 10.5px; font-weight: 700; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.wrap-pick.on { border-color: var(--hi); box-shadow: 0 2px 0 rgba(62, 42, 60, .38); }
-.wrap-say { font-size: 13px; line-height: 1.35; color: var(--hm); min-height: 36px; }
+.wrap-title { font: 600 19px var(--display); color: var(--hi); margin: 0; }
+.wrap-say { font-size: 13.5px; line-height: 1.35; color: var(--hm); min-height: 37px; }
 .wrap-meter { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: var(--hm); }
 .wrap-meter i { flex: 1; height: 10px; border-radius: 5px; background: rgba(62, 42, 60, .15); overflow: hidden; }
 .wrap-meter u { display: block; height: 100%; border-radius: 5px; background: var(--hred); text-decoration: none; }
