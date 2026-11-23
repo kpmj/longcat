@@ -5,7 +5,7 @@
 import {
   STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, LAUNCH, SPECIAL_MONTHS, GUEST_BY_ZONE, NEWYEAR_NIGHT_SCARF,
   TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName, kindFor, yarnFor,
-  TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat,
+  TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat, knitOf, knitGarment,
 } from "./content.js";
 import { drillForStep } from "./drill/drills.js";
 
@@ -297,12 +297,14 @@ export function setSinger(S, place, time, zone, id) {
   m.cast[zone] = id;
   return true;
 }
-/* a singer as the art takes it. A cat's coat is its own; an animal has one look (the art's GUEST_PAL). `fur` comes
-   from the time of day and only sets how thick the knitting is */
+/* a singer as the art takes it. A cat's coat is its own; an animal has one look (the art's GUEST_PAL). `fur` only
+   sets how thick the knitting is, and it is the singer's own (content.js knitOf; until 2026-11-22 the time of day's) */
 function singerLook(place, time, zone, id) {
-  const base = garmentLook(place, time, zone);
+  const base = { ...garmentLook(place, time, zone), fur: knitOf(id) };
   return isAnimal(id) ? { animal: id, kind: "point", look: base } : { animal: "cat", kind: id, look: { ...base, ...catCoat(id) } };
 }
+/* a garment by name, with the size its singer gives it: "Thick scarf", "Light top" */
+export const garmentTitle = (S, place, time, zone) => knitGarment(knitOf(singerAt(S, place, time, zone)), zone);
 
 /* ---------- what the art draws ---------- */
 export function garmentSpec(S, place, time, zone, extra = {}) {
@@ -418,10 +420,10 @@ export function homeScene(S, place = S.here, real, extra = {}) {
 }
 
 /* ---------- postcards ---------- */
-export function cardCaption(place, bg, set) {
+export function cardCaption(place, bg, set, cats = null) {
   const p = placeById(place);
   const names = ZONE_IDS.map((z, i) => {
-    const n = garmentName(set[z], z);
+    const n = cats ? knitGarment(knitOf(cats[z]), z) : garmentName(set[z], z);
     return i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1);
   }).join(", ");
   const same = ZONE_IDS.every((z) => set[z] === bg);
@@ -436,7 +438,7 @@ function newCard(S, place, kind, bg, set, real) {
     yarns: Object.fromEntries(ZONE_IDS.map((z) => [z, yarnKeyOf(S, place, set[z], z)])),
     /* and the way each garment was wrapped (null = the game's way) */
     wraps: Object.fromEntries(ZONE_IDS.map((z) => [z, wrapOf(S, place, set[z], z)])),
-    caption: cardCaption(place, bg, set), date: todayKey(S, real),
+    caption: cardCaption(place, bg, set, Object.fromEntries(ZONE_IDS.map((z) => [z, singerAt(S, place, set[z], z)]))), date: todayKey(S, real),
   };
   m.cards.push(card);
   return card;

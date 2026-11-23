@@ -15,16 +15,34 @@ export const ZONE_IDS = ZONES.map((z) => z.id);
 export const TIMES = [
   { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Land", how: "short, slow notes close together: landing each one" },
   { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Move", how: "scales and leaps, up to an octave" },
-  { id: "night", name: "Night", fur: "long", weather: "Cold, time for something thicker", flavour: "Carry", how: "long notes and long, slow phrases; quiet is fine" },
+  { id: "night", name: "Night", fur: "long", weather: "Cold, the steam hangs in the air", flavour: "Carry", how: "long notes and long, slow phrases; quiet is fine" },
 ];
 export const TIME_IDS = TIMES.map((t) => t.id);
 
 /* Garment names per time and zone (design doc section 1). Every place uses the same nine names for now. */
-export const GARMENT_NAMES = {
-  morning: { scarf: "Thin scarf", top: "Light top", bottom: "Light cap" },
-  golden: { scarf: "Scarf", top: "Vest", bottom: "Cap" },
-  night: { scarf: "Thick scarf", top: "Sweater", bottom: "Wool hat" },
+/* A garment's size is its knit weight, and that comes from the cat that sings it (the designer, 2026-11-22: "I really can't
+   tell the size of the scarf … let's have the different cat type to define the size of the scarf"; until then it
+   followed the time of day, and Dress up had a row to pick which time's garment to show). The art still calls the
+   weight `fur`: short is thin, mid is medium, long is thick. A cat's weight goes with its shape: the bushy and the
+   stocky ones knit thick, the sleek ones thin (my assignment, at the designer's word: "assign based on … whatever makes
+   sense"). A charm does not change it. */
+export const KNITS = [{ id: "short", name: "Thin" }, { id: "mid", name: "Medium" }, { id: "long", name: "Thick" }];
+const KNIT_OF = {
+  point: "short", big: "short",              // pointy ears and a long tail; big ears and a thin tail: sleek
+  small: "mid", curl: "mid", round: "mid",   // small ears and a stub tail; curled ears; round ears: middling
+  tuft: "long", fold: "long",                // tufted ears and a bushy tail; folded ears and a short thick tail: plush
+  ferret: "short", dachshund: "mid", otter: "long", dragon: "long",
 };
+export const knitOf = (id) => KNIT_OF[String(id || "").split("+")[0]] || "mid";
+export const knitName = (id) => KNITS.find((k) => k.id === knitOf(id)).name;
+/* what a garment is called at each weight: "Thin scarf", "Vest", "Wool hat" */
+export const GARMENT_NAMES = {
+  short: { scarf: "Thin scarf", top: "Light top", bottom: "Light cap" },
+  mid: { scarf: "Scarf", top: "Vest", bottom: "Cap" },
+  long: { scarf: "Thick scarf", top: "Sweater", bottom: "Wool hat" },
+};
+/* a garment by its weight, for where the singer is known (state.js garmentTitle) */
+export const knitGarment = (knit, zoneId) => (GARMENT_NAMES[knit] || GARMENT_NAMES.mid)[zoneId];
 
 export const PATTERNS = [
   { id: "plain", name: "Plain" }, { id: "twotone", name: "Two-tone" }, { id: "bands3", name: "Three rings" },
@@ -427,6 +445,8 @@ export function yarnName(y) {
   return p.id === "plain" || !y.b ? `${p.name} ${a}` : `${p.name}, ${a} and ${YARN_COLOR_NAMES[y.b] || "wool"}`;
 }
 
+/* A garment by its plain name: "Scarf", "Top", "Hat". The time of day no longer says how big it is, so it no longer
+   names it; where the singer is known, state.js garmentTitle gives the name with its size. */
 export function garmentName(timeId, zoneId) {
-  return GARMENT_NAMES[timeId][zoneId];
+  return (ZONES.find((z) => z.id === zoneId) || ZONES[0]).name;
 }

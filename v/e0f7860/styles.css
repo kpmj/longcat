@@ -766,19 +766,30 @@ body { background: var(--sky, var(--soft)); }
    scroll under it. */
 /* the page itself scrolls (the screen is as tall as what is in it), so the screen must not be the sticky top's own scroller */
 .screen.screen-wardrobe { overflow: visible; }
-.dress-top { position: sticky; top: 0; z-index: 3; flex: none; display: flex; gap: 10px; align-items: stretch; background: var(--paper); padding: 8px 0; margin: -8px 0; }
-.dress-pic.scene-wrap.small { height: min(250px, 61vw); min-height: 0; width: auto; aspect-ratio: 4 / 5; flex: none; }
-.dress-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.dress-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5px; }
-.dress-row { flex: 1; min-height: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 12px; background: var(--card); border: 1.5px solid var(--line); min-width: 0; text-align: left; }
-.dress-row.on { border-color: var(--key); box-shadow: var(--flat); }
-.dress-row > svg { width: 32px; height: auto; flex: none; }
+.dress-top { position: sticky; top: 0; z-index: 3; flex: none; display: flex; flex-direction: column; gap: 7px; background: var(--paper); padding: 8px 0; margin: -8px 0; }
+/* the picture, as wide as the page: 400 by 350 of the scene, cut shorter from the bottom on a short screen */
+.dress-pic.scene-wrap.small { width: 100%; height: auto; aspect-ratio: 400 / 350; max-height: 48dvh; min-height: 0; flex: none; }
+.dress-pic > svg { width: 100%; height: 100%; display: block; }
+.dress-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.dress-tab { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 5px 2px 5px; border-radius: 13px; background: var(--card); border: 1.5px solid var(--line); min-width: 0; color: var(--ink); }
+.dress-tab.on { border-color: var(--key); box-shadow: var(--flat); background: var(--paper); }
+.dress-tab > svg { width: 34px; height: auto; flex: none; }
 .dress-sky { display: block; width: 32px; height: 32px; flex: none; border-radius: 7px; overflow: hidden; border: 1.5px solid var(--key); }
 .dress-sky svg { width: 100%; height: 100%; display: block; }
-.dress-row > span { display: flex; flex-direction: column; min-width: 0; }
-.dress-row b { font-size: 13.5px; line-height: 1.2; }
-.dress-row em { font-style: normal; font-size: 11px; line-height: 1.25; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dress-side .mix-take { flex: none; min-height: 44px; padding: 0 6px; font-size: 14.5px; white-space: nowrap; }
+.dress-tab .dress-sky { margin: 1px 0; }
+.dress-tab b { font-size: 12.5px; line-height: 1.25; }
+.dress-tab em { font-style: normal; font-size: 10px; line-height: 1.2; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dress-tab.shoot { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); box-shadow: 0 3px 0 rgba(10, 16, 30, .45); }
+.dress-tab.shoot em { color: inherit; opacity: .8; }
+.dress-tab.shoot:active:not(:disabled) { transform: translateY(1px); }
+.dress-cam { display: block; width: 32px; height: 32px; margin: 1px 0; border-radius: 50%; border: 2.5px solid currentColor; position: relative; }
+.dress-cam::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: #f0b9a6; }
+/* how thick a cat knits: a bar of that weight and the word */
+.cat-knit { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 800; color: var(--muted); line-height: 1.3; }
+.cat-knit i { display: block; width: 14px; border-radius: 4px; background: currentColor; }
+.cat-knit.k-short i { height: 3px; }
+.cat-knit.k-mid i { height: 6px; }
+.cat-knit.k-long i { height: 9px; }
 .dress-panel { display: flex; flex-direction: column; gap: 8px; }
 .dress-panel h4 { font-size: 14px; color: var(--muted); margin-top: 2px; }
 :is(.sheet, .dress-panel) h4 i { font-style: normal; font-size: 12px; font-weight: 700; margin-left: 6px; opacity: .85; }

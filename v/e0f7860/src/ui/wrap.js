@@ -27,7 +27,6 @@
 import { app, show, esc, $, toast } from "./app.js";
 import * as St from "../state.js";
 import { sceneParts, wrapArea, garmentLayers, YARN_COLORS } from "../art/index.js";
-import { garmentName } from "../content.js";
 import { winder, lenOf, span, taut } from "./wind.js";
 import { catIconSvg } from "./home-art.js";
 import { buzz } from "./haptic.js";
@@ -53,7 +52,7 @@ function render(root, props = {}) {
   const S = app.S, place = S.here, list = St.wrappable(S, place);
   const cur = list.find((g) => g.time === props.time && g.zone === props.zone) || list[0];
   if (!cur) return show("wardrobe");
-  const A = wrapArea(cur.zone), name = garmentName(cur.time, cur.zone), part = PART[cur.zone];
+  const A = wrapArea(cur.zone), name = St.garmentTitle(S, place, cur.time, cur.zone), part = PART[cur.zone];
   /* the garment as it is kept: what fades off at the start, and what "Cancel" leaves alone */
   const g0 = St.garmentSpec(S, place, cur.time, cur.zone);
   const ink = (g0.yarn && YARN_COLORS[g0.yarn.a]) || "#e8d9b8";

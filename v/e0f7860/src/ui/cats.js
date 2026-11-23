@@ -13,7 +13,7 @@ import { app, show, esc, $, $$, sheet, closeSheet, toast, wireTaps } from "./app
 import * as St from "../state.js";
 import { catKindSvg, guestSvg, nappingSvg, yarnSwatchSvg, wardrobeThumbSvg } from "../art/index.js";
 import { canWrap, wrappedByHand, openWrap } from "./wrap.js";
-import { ZONES, ZONE_IDS, TIMES, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, garmentName } from "../content.js";
+import { ZONES, ZONE_IDS, TIMES, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, garmentName, knitOf, knitName } from "../content.js";
 
 /* the coin: a gold disc with a small fish. Drawn here until the art session draws one in the print's style */
 export const treatIcon = (s = 16) => `<svg class="treat" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#e6b84f" stroke="#3e2a3c" stroke-width="1.6"/><path d="M5.2 10c1.6-2.6 4.6-2.9 6.6-.9l2.4-1.7v5.2l-2.4-1.7c-2 2-5 1.7-6.6-.9z" fill="#3e2a3c"/></svg>`;
@@ -36,7 +36,9 @@ export const yarnSwatch = (y, time) => (y ? yarnSwatchSvg(y, time) : NO_SWATCH);
 /* a singer's card. `note` is a line of plain words under the name: where it sings, or that it is asleep or lives
    here (the designer, 2026-11-15, who-sings board, layout 甲: the red tags "Now", "Top" did not say what a tap does).
    `check` ticks the one chosen. */
-const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}${o.say ? `, ${esc(o.say)}` : o.note ? `, ${esc(o.note)}` : ""}"${o.check !== undefined ? ` aria-pressed="${!!o.check}"` : ""}>${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${o.check ? `<i class="cat-check" aria-hidden="true">✓</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${o.note ? `<small class="cat-note">${esc(o.note)}</small>` : ""}${o.under || ""}</button>`;
+const card = (S, id, o = {}) => `<button class="cat-card${o.on ? " on" : ""}" data-cat="${esc(id)}" aria-label="${esc(singerLabel(S, id))}, knits ${knitName(id).toLowerCase()}${o.say ? `, ${esc(o.say)}` : o.note ? `, ${esc(o.note)}` : ""}"${o.check !== undefined ? ` aria-pressed="${!!o.check}"` : ""}>${o.tag ? `<i class="cat-tag">${esc(o.tag)}</i>` : ""}${o.check ? `<i class="cat-check" aria-hidden="true">✓</i>` : ""}${singerSvg(id)}<span>${esc(singerLabel(S, id))}</span>${knitTag(id)}${o.note ? `<small class="cat-note">${esc(o.note)}</small>` : ""}${o.under || ""}</button>`;
+/* how thick a singer knits: a small bar of that weight and the word (content.js knitOf) */
+function knitTag(id) { return `<small class="cat-knit k-${knitOf(id)}"><i aria-hidden="true"></i>${knitName(id)}</small>`; }
 /* where a singer sings here, in words: "on the top" */
 const onThe = (zone) => `on the ${zoneName(zone).toLowerCase()}`;
 const price = (id, word = "") => `<em class="${word ? "keep" : ""}">${treatIcon(13)}${word ? `${word} ` : ""}${num(priceOf(id))}</em>`;
@@ -175,7 +177,7 @@ export function paintDress(body, zone, t, { which = null, changed = () => {}, wr
     <h4>Which one <i>for this picture only</i></h4>
     <div class="dress-which">${TIMES.map(cell).join("")}</div>` : ""}
     <h4>Who sings the ${esc(gname)}</h4>
-    <p class="dress-say${said ? " said" : ""}" aria-live="polite">${said ? esc(said) : "Tap a cat. One on another garment swaps with this one."}</p>
+    <p class="dress-say${said ? " said" : ""}" aria-live="polite">${said ? esc(said) : "The cat sets the size: thin, medium or thick. One on another garment swaps with this one."}</p>
     <div class="cat-grid four dress-cats">${ids.map((id) => card(S, id, { on: id === cur, check: id === cur, note: noteOf(id), say: id === cur ? `sings the ${gname}` : "" })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
     ${wrap && canWrap(t, z.id) ? `<h4>How it is wrapped</h4>
     <div class="dress-wrap"><button class="btn" data-a="wrap">${WRAP_ICO}Wrap it yourself</button>${wrappedByHand(t, z.id) ? `<button class="dress-link" data-a="unwrap">Wrap it for me</button>` : `<span>The game wrapped this one.</span>`}</div>` : ""}
