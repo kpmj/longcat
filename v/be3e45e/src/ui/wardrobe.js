@@ -2,7 +2,10 @@
    - Dress up: one page where dressing the judge and taking a postcard are the same thing. At the top, the picture,
      as wide as the screen (the designer, 2026-11-22: "expand the view a bigger to fill from left to right … so user can see
      better"; it used to be a small picture with a list beside it), framed on the part being dressed. Under it one
-     row of tabs: Scarf, Top, Hat, Sky, and the button that takes the postcard. Under them, straight in the page,
+     row of tabs: Scarf, Top, Hat, Sky. The postcard is taken with the camera button at the top right of the
+     picture (the designer, 2026-11-22: "Move this icon to the top. Change it to a camera icon … show a flash light vfx and
+     play an animation that there's a postcard going into the album tab"): the picture flashes, and a small copy
+     of it flies up into the Album tab, which gets its dot. Under them, straight in the page,
      the choices of the tab picked (ui/cats.js paintDress): who sings the garment, which also sets how thick it is
      (content.js knitOf), its yarn, and the way to sing one of its steps again. For the sky: which time of day.
      The top stays put while the choices scroll under it.
@@ -24,7 +27,8 @@ import { sceneParts, wardrobeThumbSvg, placeThumbSvg } from "../art/index.js";
 import { ZONES, TIMES, STEPS, placeById, timeById } from "../content.js";
 import { paintDress } from "./cats.js";
 import { canWrap, wrappedByHand, openWrap } from "./wrap.js";
-import { renderAlbum, openCard } from "./album.js";
+import { renderAlbum } from "./album.js";
+import { tick } from "../audio/synth.js";
 
 let mode = "dress";
 
@@ -53,6 +57,30 @@ function picked(S, place) {
 /* the tab whose choices are in the page: a garment, or "sky"; whether its wrap choices are open; and the garment
    to hop once when the page is next drawn */
 let sel = ZONES[0].id, menu = false, flash = null;
+/* a camera, for the button that takes the postcard */
+const CAM_ICO = `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 9.5a2 2 0 0 1 2 -2h2.6l1.7 -2.6h6.4l1.7 2.6h2.6a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-15a2 2 0 0 1 -2 -2z"/><circle cx="13" cy="13.8" r="3.9"/></svg>`;
+/* The postcard is taken: the picture flashes white, and a small copy of it, a card with a paper edge, tilts and
+   flies up into the Album tab, which bumps as it lands. `from` is where the picture was on the screen. With
+   reduced motion there is only the flash's absence and the words. */
+function shootFx(root, from, copy) {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const fl = $(".dress-flash", root), tab = $(".segs [data-mode=album]", root);
+  if (fl) { fl.classList.remove("go"); fl.getBoundingClientRect(); fl.classList.add("go"); }
+  if (!tab || !from || !from.width) return;
+  const to = tab.getBoundingClientRect(), card = document.createElement("div");
+  card.className = "dress-fly";
+  card.setAttribute("aria-hidden", "true");
+  card.style.cssText = `left:${from.left}px;top:${from.top}px;width:${from.width}px;height:${from.height}px`;
+  card.innerHTML = copy;
+  document.body.appendChild(card);
+  const k = Math.max(0.08, Math.min(0.2, 46 / from.width));
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2);
+  card.getBoundingClientRect();
+  /* first it becomes a card (a little smaller, tilted), then it goes */
+  card.style.transform = "scale(.86) rotate(-4deg)";
+  setTimeout(() => { card.style.transition = "transform .6s cubic-bezier(.5, 0, .8, .4), opacity .6s ease-in"; card.style.transform = `translate(${dx}px, ${dy}px) scale(${k}) rotate(8deg)`; card.style.opacity = ".25"; }, 260);
+  setTimeout(() => { card.remove(); const t = document.querySelector(".segs [data-mode=album]"); if (t) { t.classList.remove("bump"); t.getBoundingClientRect(); t.classList.add("bump"); } }, 880);
+}
 /* three turns of a wrap. Drawn here until the art session draws one in the print's style */
 const WRAP_ICO = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5q8 -5 16 0"/><path d="M4 13.5q8 -5 16 0"/><path d="M5.5 18.5q6.5 -4.5 13 0"/></svg>`;
 
@@ -76,7 +104,7 @@ function dressUp(root) {
   const sky = `<button class="dress-tab${sel === "sky" ? " on" : ""}" role="tab" data-sel="sky" aria-selected="${sel === "sky"}" aria-label="Sky: ${esc(timeById(p.bg).name.toLowerCase())}"><i class="dress-sky">${placeThumbSvg(place, p.bg)}</i><b>Sky</b><em>${esc(timeById(p.bg).name)}</em></button>`;
   /* the picked garment's two ways of being wrapped, under its tab */
   const zi = ZONES.findIndex((z) => z.id === sel), open = menu && zi >= 0 && canWrap(p.set[sel], sel);
-  const wrapMenu = !open ? "" : `<div class="dress-menu" role="group" aria-label="How the ${esc(ZONES[zi].name.toLowerCase())} is wrapped" style="--at:${((zi + 0.5) / 5) * 100}%">
+  const wrapMenu = !open ? "" : `<div class="dress-menu" role="group" aria-label="How the ${esc(ZONES[zi].name.toLowerCase())} is wrapped" style="--at:${((zi + 0.5) / 4) * 100}%">
         <button class="btn" data-a="wrap">${WRAP_ICO}Wrap it yourself</button>
         <button class="btn" data-a="unwrap" ${wrappedByHand(p.set[sel], sel) ? "" : "disabled"}>Wrap it for me</button>
       </div>`;
@@ -84,8 +112,12 @@ function dressUp(root) {
     ${topbar(S)}
     ${segs()}
     <div class="dress-top">
-      <div class="scene-wrap small dress-pic">${picture}</div>
-      <div class="dress-tabs" role="tablist" aria-label="What to dress">${ZONES.map(tab).join("")}${sky}<button class="dress-tab shoot" data-a="shoot" ${ready ? "" : "disabled"} aria-label="Take a postcard${ready ? "" : ": it needs three finished garments"}"><i class="dress-cam" aria-hidden="true"></i><b>Postcard</b><em>${ready ? "Take it" : "Not yet"}</em></button></div>
+      <div class="dress-stage">
+        <div class="scene-wrap small dress-pic">${picture}</div>
+        <i class="dress-flash" aria-hidden="true"></i>
+        <button class="dress-shoot" data-a="shoot" ${ready ? "" : "disabled"} aria-label="Take a postcard${ready ? "" : ": it needs three finished garments"}">${CAM_ICO}</button>
+      </div>
+      <div class="dress-tabs" role="tablist" aria-label="What to dress">${ZONES.map(tab).join("")}${sky}</div>
       ${wrapMenu}
     </div>
     ${ready ? "" : `<p class="sub">A postcard needs three finished garments.</p>`}
@@ -121,13 +153,17 @@ function dressUp(root) {
     again();
   };
   $("[data-a=shoot]", root).onclick = () => {
+    const pic = $(".dress-pic", root), from = pic ? pic.getBoundingClientRect() : null, copy = pic ? pic.innerHTML : "";
     const card = St.addMixCard(S, place, p.set, p.bg, app.real());
     if (!card) return;
     app.save();
+    tick(null, true); // the shutter
     /* the new card is in the Album tab, which gets its dot, and so does the bottom row */
+    menu = false;
     again();
     paintDock();
-    openCard(card);
+    shootFx($("#screen"), from, copy);
+    toast("The postcard is in the Album.");
   };
 }
 
