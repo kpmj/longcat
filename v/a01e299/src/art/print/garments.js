@@ -53,9 +53,12 @@ for (const k in ZONES) {
    leaves the ears and the eyes showing, the scarf dips under the chin so the mouth stays in sight, and the top
    stays on the body. The sides of the scarf's and the top's are the body's own sides, a few units in (the designer,
    2026-11-22: "make sure that the edge of the dotted lines are close to the end of the body so it makes sense
-   that it's wrapping around"; the body is judge.js BODY: x 98 to 302 at the neck, 47 to 353 at y 316). */
+   that it's wrapping around"; the body is judge.js BODY: x 98 to 302 at the neck, 47 to 353 at y 316). The hat's
+   reaches the head's sides too (the designer: "帽子也拉寬"), but only under the ears, which stay in sight: between the ears
+   (y 100 to 122) it stays inside them; under them it goes out to the head's sides (x 122 / 278 at y 134, measured
+   from the drawn head), and it stops at y 134, clear of the eyes (y 151). */
 const AREA = {
-  hat: { poly: [[158, 86], [242, 86], [257, 104], [263, 129], [137, 129], [143, 104]], view: [78, 34, 244, 226] },
+  hat: { poly: [[158, 86], [242, 86], [257, 104], [259, 119], [275, 124], [278, 134], [122, 134], [125, 124], [141, 119], [143, 104]], view: [78, 34, 244, 226] },
   scarf: { poly: [[98, 253], [128, 253], [160, 269], [240, 269], [272, 253], [302, 253], [319, 263], [332, 276], [341, 292], [349, 316], [51, 316], [59, 292], [68, 276], [81, 263]], view: [16, 176, 368, 250] },
   top: { poly: [[52, 326], [348, 326], [362, 356], [358, 400], [42, 400], [38, 356]], view: [10, 216, 380, 268] },
 };
