@@ -536,7 +536,10 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .wrap-stage > div { position: absolute; inset: 0; }
 .wrap-stage svg { width: 100%; height: 100%; display: block; }
 #wrap-over svg { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
-#wrap-live, #wrap-live-key { pointer-events: none; opacity: .9; }
+#wrap-live, #wrap-live-key, #wrap-ghost, #wrap-head { pointer-events: none; }
+#wrap-live, #wrap-live-key { opacity: .9; }
+#wrap-ghost { opacity: .75; }
+#wrap-head[hidden] { display: none; }
 .wrap-tray { flex: none; border-width: 1.5px 0 0; border-radius: 22px 22px 0 0; box-shadow: 0 -2.5px 0 rgba(62, 42, 60, .2); padding: 10px max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 8px; }
 .wrap-picks { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch; }
 .wrap-picks::-webkit-scrollbar { display: none; }
