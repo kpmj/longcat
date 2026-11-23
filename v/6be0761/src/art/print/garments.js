@@ -51,17 +51,28 @@ for (const k in ZONES) {
    part of the picture worth showing while wrapping it, and how long the garment may be: the system's own rows and
    a little more, for a finger's wobble. The areas follow the system's rows and the designer's standing rules: the hat
    leaves the ears and the eyes showing, the scarf dips under the chin so the mouth stays in sight, and the top
-   stays on the body. */
+   stays on the body. The sides of the scarf's and the top's are the body's own sides, a few units in (the designer,
+   2026-11-22: "make sure that the edge of the dotted lines are close to the end of the body so it makes sense
+   that it's wrapping around"; the body is judge.js BODY: x 98 to 302 at the neck, 47 to 353 at y 316). */
 const AREA = {
   hat: { poly: [[158, 86], [242, 86], [257, 104], [263, 129], [137, 129], [143, 104]], view: [78, 34, 244, 226] },
-  scarf: { poly: [[84, 253], [128, 253], [160, 269], [240, 269], [272, 253], [316, 253], [323, 288], [300, 316], [100, 316], [77, 288]], view: [44, 176, 312, 250] },
+  scarf: { poly: [[98, 253], [128, 253], [160, 269], [240, 269], [272, 253], [302, 253], [319, 263], [332, 276], [341, 292], [349, 316], [51, 316], [59, 292], [68, 276], [81, 263]], view: [16, 176, 368, 250] },
   top: { poly: [[52, 326], [348, 326], [362, 356], [358, 400], [42, 400], [38, 356]], view: [10, 216, 380, 268] },
 };
 export function wrapArea(zone) {
   const z = drawZone(zone);
   if (!z) return null;
-  const own = FINE[z].reduce((a, F) => a + F.len, 0);
-  return { zone: z, poly: AREA[z].poly.map(p => [...p]), view: [...AREA[z].view], own: Math.round(own), max: Math.round(own * 1.1), min: 60, stroke: 30 };
+  const own = FINE[z].reduce((a, F) => a + F.len, 0), P = AREA[z].poly;
+  /* enough cat for as many whole turns, side to side across the middle of the shape, as the game's own rows, and
+     half a turn more: a turn by hand runs the whole width, which can be longer than a row of the game's */
+  const ys = P.map(p => p[1]), mid = (Math.min(...ys) + Math.max(...ys)) / 2;
+  let l = Infinity, r = -Infinity;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [ax, ay] = P[j], [bx, by] = P[i];
+    if (ay > mid !== by > mid) { const x = ax + (mid - ay) / (by - ay) * (bx - ax); l = Math.min(l, x); r = Math.max(r, x); }
+  }
+  const turns = Math.round((ZONES[z].rows.length + .5) * (r - l) * 1.08);
+  return { zone: z, poly: P.map(p => [...p]), view: [...AREA[z].view], own: Math.round(own), max: Math.max(Math.round(own * 1.1), turns), min: 60, stroke: 30 };
 }
 /* A finger's line made soft: laid out again in even 5 px steps, then each point pulled towards its neighbours a few
    times (the two ends stay). No turn is left much tighter than half a sleeve, so the sideways offsets the patterns

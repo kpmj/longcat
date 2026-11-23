@@ -55,9 +55,10 @@ function render(root, props = {}) {
   /* the garment as it is kept: what fades off at the start, and what "Cancel" leaves alone */
   const g0 = St.garmentSpec(S, place, cur.time, cur.zone);
   const ink = (g0.yarn && YARN_COLORS[g0.yarn.a]) || "#e8d9b8";
-  /* where the cat waits at first, and the height the finger's hints run at: the middle of the shape */
+  /* where the cat waits at first (the designer, 2026-11-22: "move the cat head to the front when starting"): in front of
+     the judge, just inside the left side, at the middle of the shape; the finger's hints run at that height too */
   const midY = (Math.min(...A.poly.map((q) => q[1])) + Math.max(...A.poly.map((q) => q[1]))) / 2, E = span(A.poly, midY);
-  const waitAt = [E.l - 12, E.y];
+  const waitAt = [E.l + 14, E.y];
 
   let strokes = [], dragging = false; // the turns laid on this visit; nothing is kept until Done
   let band = null, backD = "", liveLen = 0, painted = 0, later = 0; // the band being pulled, the way round the back, and when the picture was last drawn
@@ -90,7 +91,7 @@ function render(root, props = {}) {
     headArt = Lr && Lr.head && (inPic || !worn.length) ? { html: Lr.head, at: [Lr.headAt.x, Lr.headAt.y] } : null;
     $("#wrap-base", root).innerHTML = svg(`${p.L.back}${p.special}${p.L.seat}`);
     $("#wrap-fore", root).innerHTML = svg(`${hideHead && inPic ? p.character.replace(headArt.html, "") : p.character}${p.L.front}`);
-    if (headArt) for (const id of ["#wrap-bhead", "#wrap-xhead"]) { const el = $(id, root); if (el) el.innerHTML = `<g class="wrap-bob">${headArt.html}</g>`; }
+    if (headArt) for (const id of ["#wrap-bhead", "#wrap-xhead", "#wrap-fhead"]) { const el = $(id, root); if (el) el.innerHTML = `<g class="wrap-bob">${headArt.html}</g>`; }
   }
   /* the layers that stay while the picture is drawn again: behind the judge, and on top */
   function paintLayers() {
@@ -110,6 +111,7 @@ function render(root, props = {}) {
       <path id="wrap-live" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
       <g id="wrap-head" hidden>${face}</g>
       <g id="wrap-xhead" hidden></g>
+      <g id="wrap-fhead" hidden></g>
       <circle id="wrap-pop" r="17" fill="none" stroke="#fffdf6" stroke-width="3.2"/>`, `role="img" aria-label="Pull the cat across the judge’s ${part} and round, to wrap the ${esc(name.toLowerCase())}"`);
     hintKind = null;
     wirePointer($("#wrap-over svg", root));
@@ -187,15 +189,17 @@ function render(root, props = {}) {
     /* the head behind the judge: waiting at the side before the first turn; on a way round the back it starts where
        the garment's head was and goes where the cat has got to; round, it peeks past the judge's side */
     const go = !!backD && !!headArt && !!r.head;
-    const at = go ? r.head : !strokes.length && !L && headArt ? waitAt : null, b = $("#wrap-bhead", root), x = $("#wrap-xhead", root);
+    const front = !go && !strokes.length && !L && !!headArt; // not started: the head waits in front
+    const at = go ? r.head : front ? waitAt : null, b = $("#wrap-bhead", root), x = $("#wrap-xhead", root), fh = $("#wrap-fhead", root);
     const move = (el) => (el.style.transform = `translate(${(at[0] - headArt.at[0]).toFixed(1)}px, ${(at[1] - headArt.at[1]).toFixed(1)}px)`);
+    if (fh) { fh.toggleAttribute("hidden", !front); if (front) move(fh); }
     if (b) {
-      b.toggleAttribute("hidden", !at);
-      if (at) {
-        if (!headShown) { b.style.transition = "none"; b.style.transform = go ? "translate(0px, 0px)" : ""; if (!go) move(b); b.getBoundingClientRect(); b.style.transition = ""; }
+      b.toggleAttribute("hidden", !go);
+      if (go) {
+        if (!headShown) { b.style.transition = "none"; b.style.transform = "translate(0px, 0px)"; b.getBoundingClientRect(); b.style.transition = ""; }
         move(b);
       }
-      headShown = !!at;
+      headShown = go;
     }
     const faint = go && W.mode === "back"; // the faint copy on top is for when the judge hides it, not when it peeks
     if (x) { x.toggleAttribute("hidden", !faint); if (faint) move(x); }

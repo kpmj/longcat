@@ -543,7 +543,8 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 #wrap-mid, #wrap-fore { pointer-events: none; }
 #wrap-bhead, #wrap-xhead { transition: transform .16s ease-out; pointer-events: none; }
 #wrap-xhead { opacity: .3; }
-#wrap-bhead[hidden], #wrap-xhead[hidden] { display: none; }
+#wrap-bhead[hidden], #wrap-xhead[hidden], #wrap-fhead[hidden] { display: none; }
+#wrap-fhead { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { #wrap-bhead, #wrap-xhead { transition: none; } }
 #wrap-head[hidden] { display: none; }
 /* the player's turn: the old wrap fades off, the shape to wrap pulses, a finger shows the way, the cat waits */
