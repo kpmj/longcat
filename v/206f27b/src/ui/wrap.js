@@ -1,6 +1,7 @@
-/* Wrap it yourself (the designer, 2026-11-15: "讓玩家可以自己圍評審 … 直接在 main page 給玩家圍"). Opened by the button at
-   the top of Home, on the Home page itself: the picture closes in on one part of the judge and the player draws
-   on it with a finger.
+/* Wrap it yourself (the designer, 2026-11-15: "讓玩家可以自己圍評審"). A screen of its own, opened from the Wardrobe: a finished
+   garment's choices in Dress up have "Wrap it yourself" (the designer, 2026-11-22: "圍圍巾的ui感覺應該要在 wardrobe 裡面"; it
+   used to be a button at the top of Home). The picture closes in on one part of the judge and the player winds the
+   cat round it with a finger. "Done" goes back to Dress up, with that garment in the picture.
    - The game wraps a garment while it is being sung and when its twelfth step is done, as before. Only a finished
      garment can be wrapped again, and only where it belongs: the hat on the head, the scarf round the neck, the top
      on the body (the dashed shape; the art's wrapArea).
@@ -15,7 +16,7 @@
      own wrap back at once.
    The wrap shows wherever the garment does: Home, the Wardrobe, the singing screen, and the postcards taken from
    then on (a postcard keeps the wrap it was taken with). */
-import { app, show, esc, $, $$, toast, closeSheet } from "./app.js";
+import { app, show, esc, $, $$, toast } from "./app.js";
 import * as St from "../state.js";
 import { sceneParts, wrapArea, wardrobeThumbSvg, YARN_COLORS } from "../art/index.js";
 import { garmentName, timeById } from "../content.js";
@@ -31,19 +32,19 @@ const total = (strokes) => (strokes || []).reduce((a, s) => a + lenOf(s), 0);
 function thin(P) { let Q = P; while (Q.length > St.WRAP_MAX.points) Q = Q.filter((_, i) => i % 2 === 0 || i === Q.length - 1); return Q.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]); }
 
 let cur = null; // { time, zone }: the garment on the table
+let onResize = null;
 
-export function canWrap(S = app.S) { return St.wrappable(S, S.here).length > 0; }
+/* can this garment be wrapped by hand (it is finished), and has it been */
+export const canWrap = (time, zone, S = app.S) => St.wrappable(S, S.here).some((g) => g.time === time && g.zone === zone);
+export const wrappedByHand = (time, zone, S = app.S) => !!St.wrapOf(S, S.here, time, zone);
+export const openWrap = (time, zone) => show("wrap", { time, zone });
 
-export function openWrap(want = null) {
-  const S = app.S, place = S.here, list = St.wrappable(S, place);
-  if (!list.length || app.screen !== "home") return;
+function render(root, props = {}) {
+  const S = app.S, place = S.here, list = St.wrappable(S, place), want = props.zone ? { time: props.time, zone: props.zone } : null;
+  if (!list.length) return show("wardrobe");
   const now = St.currentTime(S, place);
   const has = (g) => g && list.some((x) => x.time === g.time && x.zone === g.zone);
   cur = has(want) ? want : has(cur) ? cur : list.find((g) => g.time === now) || list[0];
-  const root = $("#screen");
-  closeSheet(true); // the garment picker may have opened by itself just before
-  root.classList.add("wrap-mode");
-  $("#dock").hidden = true;
   let strokes = null, W = null, liveLen = 0, dragging = false;
   let band = null, backD = "", painted = 0, later = 0; // the band being pulled, the way round the back, and when the picture was last drawn
 
@@ -188,7 +189,7 @@ export function openWrap(want = null) {
       <div class="wrap-meter" id="wrap-meter" role="img"><span>Cat left</span><i><u id="wrap-left"></u></i></div>
       <div class="row tight"><button class="btn" data-a="undo">Undo a turn</button><button class="btn" data-a="auto">Wrap it for me</button></div>
     </section>`;
-  $("[data-a=done]", root).onclick = () => show("home", { noAutoPick: true });
+  $("[data-a=done]", root).onclick = () => { const g = cur; show("wardrobe", { tab: "dress" }); app.screens.wardrobe.openPiece(g.zone, g.time); };
   $("[data-a=undo]", root).onclick = () => {
     if (!strokes || !strokes.length) return;
     strokes.pop();
@@ -206,10 +207,10 @@ export function openWrap(want = null) {
   };
   paintPicks();
   pick(cur);
-  /* the phone turned, or the window changed: the picture is fitted again (not in the middle of a line) */
-  const onResize = () => {
-    if (!root.classList.contains("wrap-mode") || !$(".wrap-stage", root)) return window.removeEventListener("resize", onResize);
-    if (!dragging) { paintPicture(); paintOver(); }
-  };
+  /* the phone turned, or the window changed: the picture is fitted again (not in the middle of a turn) */
+  leave();
+  onResize = () => { if (app.screen === "wrap" && $(".wrap-stage", root) && !dragging) { paintPicture(); paintOver(); } };
   window.addEventListener("resize", onResize);
 }
+function leave() { if (onResize) window.removeEventListener("resize", onResize); onResize = null; }
+app.screens.wrap = { render, fullscreen: true, leave };

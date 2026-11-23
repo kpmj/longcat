@@ -12,6 +12,7 @@
 import { app, show, esc, $, $$, sheet, closeSheet, toast, wireTaps } from "./app.js";
 import * as St from "../state.js";
 import { catKindSvg, guestSvg, nappingSvg, yarnSwatchSvg, wardrobeThumbSvg } from "../art/index.js";
+import { canWrap, wrappedByHand, openWrap } from "./wrap.js";
 import { ZONES, ZONE_IDS, TIMES, STEPS, TREATS, YARN_PATTERNS, YARN_COLOR_NAMES, isAnimal, priceOf, catCoat, singerWords, singerNote, timeById, yarnName, garmentName } from "../content.js";
 
 /* the coin: a gold disc with a small fish. Drawn here until the art session draws one in the print's style */
@@ -147,7 +148,9 @@ function openBring(id) {
    - in a sheet (openDress), from the Garment sheet on Home: who sings it and its yarn only. */
 /* what the last pick did, said once under the title when the choices are drawn again */
 let lastSaid = null;
-export function paintDress(body, zone, t, { which = null, changed = () => {} } = {}) {
+/* three turns of a wrap. Drawn here until the art session draws one in the print's style */
+const WRAP_ICO = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5q8 -5 16 0"/><path d="M4 13.5q8 -5 16 0"/><path d="M5.5 18.5q6.5 -4.5 13 0"/></svg>`;
+export function paintDress(body, zone, t, { which = null, changed = () => {}, wrap = false } = {}) {
   const S = app.S, place = S.here, z = ZONES.find((x) => x.id === zone) || ZONES[0];
   const n = St.progress(S, place, t, z.id), reached = St.reachedTimes(S, place);
   const cell = (x) => {
@@ -174,10 +177,15 @@ export function paintDress(body, zone, t, { which = null, changed = () => {} } =
     <h4>Who sings the ${esc(gname)}</h4>
     <p class="dress-say${said ? " said" : ""}" aria-live="polite">${said ? esc(said) : "Tap a cat. One on another garment swaps with this one."}</p>
     <div class="cat-grid four dress-cats">${ids.map((id) => card(S, id, { on: id === cur, check: id === cur, note: noteOf(id), say: id === cur ? `sings the ${gname}` : "" })).join("")}<button class="cat-card more" data-a="more"><b aria-hidden="true">+</b>More cats</button></div>
+    ${wrap && canWrap(t, z.id) ? `<h4>How it is wrapped</h4>
+    <div class="dress-wrap"><button class="btn" data-a="wrap">${WRAP_ICO}Wrap it yourself</button>${wrappedByHand(t, z.id) ? `<button class="dress-link" data-a="unwrap">Wrap it for me</button>` : `<span>The game wrapped this one.</span>`}</div>` : ""}
     <h4>Its yarn</h4>
     <div class="dress-yarns">${yarns.map((c) => `<button class="coat${worn === c.key ? " on" : ""}" data-yarn="${c.key}" aria-pressed="${worn === c.key}" aria-label="${c.yarn ? esc(yarnName(c.yarn)) : "no yarn, just the cat"}${c.key === own ? ", its own yarn" : ""}">${yarnSwatch(c.yarn, t)}<span>${esc(c.label)}</span></button>`).join("")}</div>${which && n ? `
     <button class="dress-link" data-a="steps">Sing a step of the ${esc(garmentName(t, z.id).toLowerCase())} again ›</button>` : ""}`;
   $$(".wcell[data-time]", body).forEach((b) => (b.onclick = () => { if (b.dataset.time !== t) which(b.dataset.time); }));
+  const wb = $("[data-a=wrap]", body), ub = $("[data-a=unwrap]", body);
+  if (wb) wb.onclick = () => openWrap(t, z.id);
+  if (ub) ub.onclick = () => { St.setWrap(S, place, t, z.id, null); app.save(); toast(`The ${gname} is wrapped the way it was.`); changed(); };
   const sb = $("[data-a=steps]", body);
   if (sb) sb.onclick = () => { closeSheet(true); app.screens.home.openGarment(z.id, t); };
   $$(".cat-card[data-cat]", body).forEach((b) => (b.onclick = () => {

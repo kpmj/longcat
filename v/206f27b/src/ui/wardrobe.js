@@ -4,7 +4,8 @@
      choices of the row picked in the list (the designer, 2026-11-15: "turn [the four buttons] to a list … and have [the
      garment's sheet] straight in the page, so the user can easily see the changes they make"). For a garment
      (ui/cats.js paintDress): which one it is (the morning's, golden hour's or the night's), who sings it, its
-     yarn, and the way to sing one of its steps again. For the sky: which one. The top stays put while the choices
+     yarn, how it is wrapped (a finished one can be wrapped by hand, ui/wrap.js) and the way to sing one of its
+     steps again. For the sky: which one. The top stays put while the choices
      scroll under it. The postcard takes what the picture shows, and needs three finished garments. Which one and
      the sky are only this picture's: Home wears the garments of the time of day being knitted. A cat or a yarn
      changed here is changed everywhere.
@@ -72,7 +73,7 @@ function dressUp(root) {
       <div class="dress-which">${TIMES.map((t) => { const ok = reached.includes(t.id); return `<button class="wcell sky${t.id === p.bg ? " on" : ""}${ok ? "" : " locked"}" data-time="${t.id}" aria-pressed="${t.id === p.bg}" ${ok ? "" : "disabled"} aria-label="${esc(t.name)}${ok ? "" : ", not yet"}"><i class="dress-sky">${placeThumbSvg(place, t.id)}</i><span>${ok ? esc(t.name) : "Not yet"}</span></button>`; }).join("")}</div>`;
     $$(".wcell[data-time]", panel).forEach((b) => (b.onclick = () => { if (b.dataset.time === p.bg) return; p.bg = b.dataset.time; again(); }));
   } else {
-    paintDress(panel, sel, p.set[sel], { which: (t) => { p.set[sel] = t; again(); }, changed: again });
+    paintDress(panel, sel, p.set[sel], { which: (t) => { p.set[sel] = t; again(); }, changed: again, wrap: true });
   }
   wireTaps($(".scene-wrap", root));
   wireSegs(root);

@@ -528,8 +528,8 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 /* ---------- wrap it yourself, on the Home page (ui/wrap.js; the designer, 2026-11-15) ----------
    The top row, the picture close up on one part of the judge (two layers the same size: the picture, and over it
    the shape to draw in and the line being drawn), and a sheet with the garments, the bar and the two buttons. */
-.home-ico.wrap svg { display: block; }
-.screen.screen-home.wrap-mode { display: flex; flex-direction: column; background: #e9d9c0; height: 100dvh; }
+:root .screen.screen-wrap { padding: 0; gap: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #e9d9c0; height: 100dvh; --hp: #f6efe0; --hp2: #fffdf6; --hi: #3e2a3c; --hm: #7a6470; --hind: #1d3150; --hred: #bf452d; color: var(--hi); }
+.screen-wrap button:focus-visible { outline: 3px solid var(--hind); outline-offset: 2px; }
 .wrap-top { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px)); }
 .wrap-top .wrap-done { min-height: 44px; border-radius: 22px; padding: 0 22px; }
 .wrap-stage { position: relative; flex: 1; min-height: 0; }
@@ -562,7 +562,7 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 /* on Home the row is the lower half of the paper sheet */
 body.is-home .dock { border-top-color: transparent; }
 /* no Dev button over the picture: the dev tools are at the bottom of Settings (the designer, 2026-11-14) */
-body.is-home .dev-fab { display: none; }
+body.is-home .dev-fab, body:has(.screen-wrap) .dev-fab { display: none; }
 
 /* ================= the paper look on every page (pages-restyle board, the designer approved 2026-11-14) =================
    A picture, and a sheet of the print's paper over it. One surface (paper, a dark key line, a flat shadow like a
@@ -783,6 +783,10 @@ body { background: var(--sky, var(--soft)); }
 .cat-card.on:has(.cat-check) { border: 2px solid var(--brand); }
 .cat-check { position: absolute; top: -7px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); font-style: normal; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid var(--paper); }
 .cat-note { font-size: 10px; font-weight: 700; color: var(--muted); line-height: 1.2; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.dress-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dress-wrap .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.dress-wrap span { font-size: 13px; color: var(--muted); }
+.dress-wrap .dress-link { align-self: auto; }
 .dress-link { align-self: center; min-height: 36px; font-size: 13.5px; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .mix-take::before { content: "◉"; font-size: 13px; color: #f0b9a6; margin-right: 7px; }
 
