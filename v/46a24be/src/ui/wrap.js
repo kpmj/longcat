@@ -24,7 +24,7 @@
    - There is only so much cat: a bar shows how much is left, and a band stops when it is used up.
    The wrap shows wherever the garment does: Home, the Wardrobe, the singing screen, and the postcards taken from
    then on (a postcard keeps the wrap it was taken with). */
-import { app, show, esc, $, $$, toast } from "./app.js";
+import { app, show, esc, $, toast } from "./app.js";
 import * as St from "../state.js";
 import { sceneParts, wrapArea, garmentLayers, YARN_COLORS } from "../art/index.js";
 import { garmentName } from "../content.js";
@@ -99,8 +99,6 @@ function render(root, props = {}) {
   function paintLayers() {
     const d = `M${A.poly.map((q) => q.join(" ")).join("L")}Z`;
     $("#wrap-mid", root).innerHTML = svg(`
-      <path class="wrap-b" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
-      <path class="wrap-b" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
       <g id="wrap-bhead" hidden></g>`);
     headShown = false;
     const face = catIconSvg(g0, cur.zone, cur.time).replace("<svg ", '<svg x="-20" y="-11" width="40" height="39.2" ');
@@ -164,9 +162,10 @@ function render(root, props = {}) {
   }
   /* A band long enough to be a turn is drawn by the picture itself, as the garment's last turn: the real cat in its
      sleeve, its head at the finger. A shorter one is a plain band with the cat's face on it, on top.
-     Round the back (the designer, 2026-11-22: "animate the cat head to the back of the capybara"): the cat is a band in the
-     layer under the judge, and its head goes with it there, from where it left the front to where the finger is,
-     so the judge hides it; a faint copy on top and a dotted line say where it is.
+     Round the back (the designer, 2026-11-22: "animate the cat head to the back of the capybara"): the cat's head is in the
+     layer under the judge, going from where it left the front to where the finger is, so the judge hides it; a
+     faint copy on top and a dotted line say where it is. Its body is not drawn there: as a plain band in the yarn's
+     colour it showed past the judge's sides as red loops (the designer: "Can we not show the red color when we wrap around?").
      Before the first turn the same head waits past the judge's side, and the finger's hint plays.
      `must`: the picture has changed. */
   function showLive(r, must = false) {
@@ -181,7 +180,6 @@ function render(root, props = {}) {
     $("#wrap-live", root)?.setAttribute("d", d);
     $("#wrap-live-key", root)?.setAttribute("d", d);
     $("#wrap-ghost", root)?.setAttribute("d", backD);
-    $$("#wrap-mid .wrap-b", root).forEach((el) => el.setAttribute("d", backD));
     const h = $("#wrap-head", root);
     if (h) {
       const on = !!L && !real && !!r.head;
