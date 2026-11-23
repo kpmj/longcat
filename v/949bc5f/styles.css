@@ -549,6 +549,10 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 /* the player's turn: the old wrap fades off, the shape to wrap pulses, a finger shows the way, the cat waits */
 #wrap-was { pointer-events: none; animation: wrap-was .7s ease-in .35s both; }
 @keyframes wrap-was { from { opacity: 1; } to { opacity: 0; } }
+#wrap-pop { pointer-events: none; opacity: 0; transform-box: fill-box; transform-origin: center; }
+#wrap-pop.go { animation: wrap-pop .45s ease-out; }
+@keyframes wrap-pop { from { opacity: .95; transform: scale(.45); } to { opacity: 0; transform: scale(1.8); } }
+@media (prefers-reduced-motion: reduce) { #wrap-pop.go { animation: none; } }
 #wrap-hint { pointer-events: none; display: none; }
 .wrap-stage.fresh #wrap-hint { display: inline; }
 .wrap-stage.fresh .wrap-dash { animation: wrap-pulse 1.5s ease-in-out infinite; }

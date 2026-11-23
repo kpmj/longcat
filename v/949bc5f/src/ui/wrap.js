@@ -8,6 +8,7 @@
      the shape to wrap is marked and a finger shows the way across. The tray says "Your turn" and, from there on,
      what is happening: across, round the back, across again, how many turns, no cat left.
    - Nothing is kept until "Done", which needs a wrap long enough to wear; "Cancel" leaves the garment as it was.
+     A turn laid gives a small tap (where a browser can) and a ring where it ended.
      "Undo a turn" takes the last one off, "Start again" all of them. (The game's own wrap comes back from Dress
      up: "Wrap it for me".) Both ways out go back to Dress up, with that garment in the picture.
    - Only a finished garment can be wrapped, and only where it belongs: the hat on the head, the scarf round the
@@ -27,6 +28,7 @@ import { sceneParts, wrapArea, garmentLayers, YARN_COLORS } from "../art/index.j
 import { garmentName } from "../content.js";
 import { winder, lenOf, span, taut } from "./wind.js";
 import { catIconSvg } from "./home-art.js";
+import { buzz } from "./haptic.js";
 
 const PART = { bottom: "head", scarf: "neck", top: "body" };
 /* how the game's own rows curve on each part (art/garments.js): the handle of a band right across, as a share of the
@@ -112,7 +114,8 @@ function render(root, props = {}) {
       <path id="wrap-live-key" fill="none" stroke="#262122" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path id="wrap-live" fill="none" stroke="${ink}" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
       <g id="wrap-head" hidden>${face}</g>
-      <g id="wrap-xhead" hidden></g>`, `role="img" aria-label="Pull the cat across the judge’s ${part} and round, to wrap the ${esc(name.toLowerCase())}"`);
+      <g id="wrap-xhead" hidden></g>
+      <circle id="wrap-pop" r="17" fill="none" stroke="#fffdf6" stroke-width="3.2"/>`, `role="img" aria-label="Pull the cat across the judge’s ${part} and round, to wrap the ${esc(name.toLowerCase())}"`);
     wirePointer($("#wrap-over svg", root));
   }
   /* what the tray says: whose turn it is, then what is happening */
@@ -185,9 +188,18 @@ function render(root, props = {}) {
     if (now !== phase || must) { phase = now; paintTray(); }
     else $("#wrap-left", root).style.width = `${Math.round((Math.max(0, leftOf() - liveLen) / A.max) * 100)}%`;
   }
+  /* a turn is laid (the designer, 2026-11-22: "add a slight vibration when one wrap is done"): a tap where the phone can
+     make one (ui/haptic.js), and a ring that opens where the turn ended, for the phones that cannot */
+  function laid(at) {
+    buzz(12);
+    const c = $("#wrap-pop", root);
+    if (!c) return;
+    c.setAttribute("cx", at[0].toFixed(1)); c.setAttribute("cy", at[1].toFixed(1));
+    c.classList.remove("go"); c.getBoundingClientRect(); c.classList.add("go");
+  }
   /* what the gesture answered: a band laid, or the cat run out */
   function apply(r) {
-    if (r.commit) { strokes.push(thin(r.commit)); band = null; }
+    if (r.commit) { strokes.push(thin(r.commit)); band = null; laid(r.commit[r.commit.length - 1]); }
     else if (r.spent) toast("That’s all of the cat. Undo a turn first.");
     showLive(r, !!r.commit);
   }
