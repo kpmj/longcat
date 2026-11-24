@@ -67,6 +67,8 @@ export function migrate(o, real = new Date()) {
   S.dev = { ...base.dev, ...(o.dev || {}) };
   /* 2026-11-24: places open by singing, not by the date. What the calendar had opened in this save stays open */
   S.opened = Array.isArray(o.opened) ? o.opened.filter((id) => PLACE_IDS.includes(id)) : PLACE_IDS.filter((id, i) => i > 0 && calendarKey(i) <= todayKey(S, real));
+  /* and a place the player has been to is never shut again, however it was opened (the dev panel's date, say) */
+  for (const id of PLACE_IDS.slice(1)) if (!S.opened.includes(id) && (S.here === id || S.letters.includes(id) || takesAt(S, id) > 0)) S.opened.push(id);
   keepVisit(S, real);
   /* 2026-11-14: the recorded voice became the demo voice. A save from before it existed holds whichever synthesised
      voice was picked last; it moves to the recorded one once, and the Dev panel can still choose another. */
