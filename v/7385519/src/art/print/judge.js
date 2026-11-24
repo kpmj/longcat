@@ -63,6 +63,12 @@ function yuzu(hop, lift = 0) {
   const ticks = hop ? ln("M-27 -4q-4 8 -1 16M27 -4q4 8 1 16", .7) : "";
   return `<g transform="translate(24 ${f(-103 - hop - lift)})">${sh(ell(0, 0, 19), J.yuzu, .9)}${fl("M-18 5A19 19 0 0 0 16.5 9.5A23 23 0 0 1 -18 5Z", J.yuzuDk, .55)}<g fill="${J.yuzuDk}"><circle cx="7" cy="3" r="1.1"/><circle cx="1.5" cy="9.5" r="1.1"/><circle cx="10.5" cy="-5" r="1.1"/></g>${sh("M2 -18q11 -15 25 -6q-12 11 -25 6z", J.leaf, .8)}<circle cx="0" cy="-18.5" r="2.2" fill="${J.key}"/>${ticks}</g>`;
 }
+/* the jungle's acorn (2026-11-23): it sits where the yuzu sits, cap up, and is as tall */
+function acorn(hop, lift = 0) {
+  const ticks = hop ? ln("M-25 -4q-4 8 -1 16M25 -4q4 8 1 16", .7) : "";
+  return `<g transform="translate(24 ${f(-103 - hop - lift)})">${sh("M-14 -6Q-14 13 0 19Q14 13 14 -6Z", "#c99a62", .9)}${fl("M-13 2Q-10 14 0 18Q10 14 13 2Q4 12 -13 2Z", "#a87a45", .6)}${sh("M-17.500 -6Q-18 -21 0 -22Q18 -21 17.500 -6Z", "#7a5a3a", .9)}${ln("M-10 -11h5M-2 -14h5M7 -11h5M-6 -8h5M3 -8h5M-3 -18h4", .42)}${ln("M0 -22q1 -7 6 -9", .85)}${ticks}</g>`;
+}
+const ITEMS = { yuzu, acorn };
 const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">${ln("M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6", .7 / s)}</g>`;
 
 /* The anchor on the head. Whatever is worn on the head (the hat cat, its guide) is drawn inside the head's own group,
@@ -111,7 +117,9 @@ export function judgeHead(face, o = {}) {
   const shade = fl("M60 -70C76 -58 80 -40 80 -28L86 30C88 52 78 68 58 76C74 58 74 10 60 -70Z", J.dk, .35);
   /* animated: the yuzu can be tapped on its own and hops. o.itemLift: how far the hat has raised it */
   const lift = num(o.itemLift);
-  const yz = o.animate && !p.hop ? `<g data-tap="yuzu"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${yuzu(0, lift)}</g>` : yuzu(0, lift)}</g></g>` : yuzu(p.hop, lift);
+  /* o.item: what is on the head, the yuzu unless a place says otherwise; its data-tap is its own name */
+  const itemId = ITEMS[o.item] ? o.item : "yuzu", item = ITEMS[itemId];
+  const yz = o.animate && !p.hop ? `<g data-tap="${itemId}"><g class="lc-hop">${o.react === "plop" ? `<g class="lc-plop">${item(0, lift)}</g>` : item(0, lift)}</g></g>` : item(p.hop, lift);
   const head0 = ear(-1, p.flick) + ear(1, false) + fl(HEAD, J.fur) + shade + ln(HEAD) + muzzle + face2 + brow + tear + onHeadOf(o, yz);
   /* idle: the head shakes now and then and tips back with the yawn. Animated: a pat makes it bob (lc-bobble) */
   const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
@@ -135,16 +143,36 @@ function pawsScene(p, cx, cy, w = 128) {
   return "";
 }
 
+/* A heart held up in one paw (the jungle, 2026-11-23: "capybara is holding a heart if the heart is clicked it toggles
+   between red and pink"). Two hearts lie on each other, red under pink; the pink one shows while
+   the page has lc-pink on its root (ART_CSS; the page turns it with data-toggle). The heart is beside the head, where
+   the 10 card is held: clear of the hat, the scarf, the top and the lap, so no garment is ever covered by it.
+   The other paw waves from the other side. The arms are drawn with the body, under the garments. */
+const HEART = "M0 17C-9 9 -22 2 -22 -8C-22 -17 -8 -20 0 -9C8 -20 22 -17 22 -8C22 2 9 9 0 17Z";
+const HOLD = { x: 313, y: 188, paw: [312, 217], wave: [84, 210] };
+const heartOne = (c, hi, cls = "") => `<g${cls ? ` class="${cls}"` : ""}>${sh(HEART, c)}<path d="M-14.500 -8q1 -6 7 -7" fill="none" stroke="${hi}" stroke-width="2.600" stroke-linecap="round"/></g>`;
+function heartHold(animate) {
+  const hearts = `<g transform="translate(${HOLD.x} ${HOLD.y})"><circle r="27" fill="${J.key}" fill-opacity="0"/><g class="lc-beat">${heartOne("#d23f2f", "#f0a79a")}${heartOne("#f4a3b8", "#fde3ea", "lc-held-b")}</g></g>`;
+  const wave = paw(HOLD.wave[0], HOLD.wave[1], -24);
+  return (animate ? `<g data-tap="heart" data-toggle="lc-pink">${hearts}</g><g class="lc-wave">${wave}</g>` : hearts + wave) + paw(HOLD.paw[0], HOLD.paw[1], 14);
+}
+/* an arm from inside the body out to a paw: the fur runs a little further into the body than the line does, so the
+   arm has no line across its root */
+const arm = (x0, y0, x1, y1) => { const L = Math.hypot(x1 - x0, y1 - y0) || 1, bx = x0 - (x1 - x0) / L * 12, by = y0 - (y1 - y0) / L * 12; return `<path d="M${x0} ${y0}L${x1} ${y1}" fill="none" stroke="${J.key}" stroke-width="30.500" stroke-linecap="round"/><path d="M${f(bx)} ${f(by)}L${x1} ${y1}" fill="none" stroke="${J.fur}" stroke-width="25" stroke-linecap="round"/>`; };
+const heartArms = () => arm(303, 258, HOLD.paw[0], HOLD.paw[1] + 6) + arm(97, 258, HOLD.wave[0], HOLD.wave[1] + 6);
+
 /* the seated judge in scene space (400 x 500): the same layers as ../judge.js judgeFigure */
 export function judgeFigure(face, o = {}) {
   const p = printPose(face);
   if (o.paws === "tummy") p.paws = "tummy";
   const BODY = "M104 250C68 262 40 302 40 372V420C40 450 62 464 96 464H304C338 464 360 450 360 420V372C360 302 332 262 296 250Z";
-  const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY);
+  /* o.hold = "heart": the judge holds a heart, unless this face needs the paws for something else */
+  const holding = o.hold === "heart" && !p.paws;
+  const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY) + (holding ? heartArms() : "");
   const lap = ln("M64 424Q128 404 194 414M206 414Q272 404 336 424", .6);
   const feet = [146, 254].map(x => `<g transform="translate(${x} 462)">${sh(ell(0, 0, 29, 11.5), J.dk)}${ln("M-9 -3.5v7M0 -4.5v8M9 -3.5v7", .6)}</g>`).join("");
   const head = `<g transform="translate(200 182) scale(2)">${judgeHead(p, { ...o, onHead: toHead(o.onHead) })}</g>`;
-  const paws = pawsScene(p, 200, 270);
+  const paws = holding ? heartHold(!!o.animate) : pawsScene(p, 200, 270);
   /* animated: head and body can be patted; they answer together through data-group */
   const tap = m => (o.animate ? `<g data-tap="judge" data-group="judge">${m}</g>` : m);
   return { body: tap(body), lap, feet, head: tap(head), paws };

@@ -11,7 +11,10 @@ import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
 import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
 import { onsen, onsenLandscape } from "./places/onsen.js";
-import { PLACES } from "./places/all.js";
+import { PLACES as YEAR } from "./places/all.js";
+import { jungle } from "./places/jungle.js";
+
+const PLACES = { jungle, ...YEAR };
 
 const DRAW = { onsen, ...Object.fromEntries(Object.entries(PLACES).map(([k, P]) => [k, P.scene])) };
 /* wood for shelves and baskets: [fill, line, light]; the line is the key line */
@@ -118,7 +121,9 @@ export function sceneParts(o = {}) {
   /* the fruit on the judge's head is seated on top of the hat, however far the hat has grown (hatOnHead) */
   const { onHead, itemLift } = hatOnHead(hat[0] || null, itemSeatOf(o.judge), { guide: guides.filter(z => drawZone(z) === "hat").map(guideOf).join(""), cushion: cushionOnHead ? cushion0 : "" });
   /* o.judge: which of the six judges sits here (print/judges.js); the capybara unless told otherwise */
-  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift });
+  /* a place may give the judge something else on its head and something to hold (the jungle: an acorn, a heart) */
+  const things = L.judge || {};
+  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: things.hold });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
   const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;

@@ -107,11 +107,60 @@ const TAP = {
     let at = t + 0.03;
     for (let i = 0; i < 5; i++) { hiss(bus, "bandpass", 1800 + Math.random() * 2200, 4, 0.03, 0.09, at); at += 0.04 + Math.random() * 0.09; }
   },
+  /* ----- the jungle (2026-11-23) ----- */
+  /* three birds, each with a very short tune of its own: do mi so do; so mi so re do; mi so mi so do */
+  "bird-1"(t) { whistle([84, 88, 91, 96], t, 0.12); },
+  "bird-2"(t) { whistle([91, 88, 91, 86, 84], t, 0.11); },
+  "bird-3"(t) { whistle([88, 91, 88, 91, 96], t, 0.1); },
+  /* a monkey: oo, oo, ah, ah (two round calls, then two open ones, each a little higher) */
+  monkey(t) {
+    [[420, 520, 800], [440, 560, 850], [520, 700, 1500], [540, 760, 1600]].forEach(([f0, f1, mouth], i) => {
+      const b = ac.createBiquadFilter(), at = t + i * 0.15;
+      b.type = "bandpass"; b.frequency.value = mouth; b.Q.value = 2.2; b.connect(bus);
+      voice(b, "sawtooth", f0, [[0.07, f1], [0.12, f0 * 0.95]], 0.13, 0.2, at, 0.012);
+      voice(bus, "sine", f0, [[0.07, f1]], 0.11, 0.04, at, 0.012);
+    });
+  },
+  /* the acorn on the judge's head: a wooden knock that bounces twice more, each smaller */
+  acorn(t) {
+    [0, 0.11, 0.19].forEach((d, i) => {
+      voice(bus, "sine", 980 - i * 60, [[0.04, 520]], 0.07, 0.16 / (i + 1), t + d, 0.002);
+      voice(bus, "triangle", 330, [[0.05, 250]], 0.06, 0.07 / (i + 1), t + d, 0.002);
+    });
+  },
+  /* the heart in its paw: two soft notes, like a beat */
+  heart(t) { bar(bus, 659, 0.25, 0.07, t); bar(bus, 880, 0.4, 0.07, t + 0.12); },
+  /* a cat in the jungle meows differently ("they meow differently than other location"): not the short "mrrp" and
+     purr of the other places but one long "mrrrow" that rolls at the start, rises and falls, like a very small wild
+     cat. A sound for one place is named kind@place. */
+  "cat@jungle"(t) {
+    const k = 2 ** ((Math.random() * 4 - 2) / 12), b = ac.createBiquadFilter(), g = ac.createGain();
+    const line = [[0.16, 640 * k], [0.34, 600 * k], [0.52, 300 * k]];
+    b.type = "bandpass"; b.Q.value = 1.4;
+    b.frequency.setValueAtTime(900 * k, t); b.frequency.exponentialRampToValueAtTime(2000 * k, t + 0.18); b.frequency.exponentialRampToValueAtTime(1100 * k, t + 0.5);
+    b.connect(g); g.connect(bus); g.gain.value = 0.8;
+    voice(b, "sawtooth", 330 * k, line, 0.56, 0.2, t, 0.03);
+    voice(bus, "sine", 330 * k, line, 0.5, 0.045, t, 0.03);
+    const lfo = ac.createOscillator(), depth = ac.createGain();
+    lfo.frequency.value = 28; depth.gain.setValueAtTime(0.45, t); depth.gain.linearRampToValueAtTime(0.0001, t + 0.2);
+    lfo.connect(depth); depth.connect(g.gain);
+    lfo.start(t); lfo.stop(t + 0.6);
+  },
 };
-/* play the sound of a tap; unknown kinds make no sound */
-export function tapSound(kind) {
-  if (!TAP[kind] || !ctx() || ac.state !== "running") return;
-  TAP[kind](ac.currentTime + 0.005);
+/* a bird's whistle: each note slides up into its pitch, with a faint octave above it */
+function whistle(notes, t, step) {
+  notes.forEach((m, i) => {
+    const f = hz(m), at = t + i * step;
+    voice(bus, "sine", f * 0.86, [[0.035, f], [step * 0.8, f * 1.02]], step * 1.15, 0.085, at, 0.006);
+    voice(bus, "sine", f * 2, [], step * 0.5, 0.012, at, 0.004);
+  });
+}
+/* play the sound of a tap; unknown kinds make no sound. `place`: where the picture is, for a thing that sounds
+   different at one place (kind@place above) */
+export function tapSound(kind, place = null) {
+  const play = (place && TAP[`${kind}@${place}`]) || TAP[kind];
+  if (!play || !ctx() || ac.state !== "running") return;
+  play(ac.currentTime + 0.005);
 }
 
 /* ---------- the home page's music ----------

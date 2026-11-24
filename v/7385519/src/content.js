@@ -70,6 +70,8 @@ export const CAT_KINDS = [
 export const CAT_CHARMS = [
   { id: "camellia", name: "a camellia" }, { id: "plum", name: "a plum blossom" }, { id: "leaf", name: "a leaf" },
   { id: "bow", name: "a bow" }, { id: "bell", name: "a bell" }, { id: "berry", name: "red berries" },
+  /* the jungle's cats wear these (2026-11-23); no other cat does */
+  { id: "hibiscus", name: "a hibiscus" }, { id: "feather", name: "a feather" }, { id: "banana", name: "a banana" },
 ];
 /* a cat in words: { shape: "Folded", charm: "a bow" | "" } */
 export function catWords(kind) {
@@ -256,6 +258,14 @@ export const PLACES = [
   { id: "onsen", name: "Hot spring", at: "at the hot spring", seat: "the stone rim, feet in the water", hit: "a water drop, plink", miss: "a plop",
     lines: { morning: "The mist hasn't lifted. It's already soaking.", golden: "It didn't say the water was too hot. It soaked.", night: "It didn't say the water was too hot. It fell asleep." },
     letter: ["The hot-spring monkeys invite the judge to soak its feet.", "They say the stone rim is warm."] },
+  /* The jungle (the designer, 2026-11-23: "create the next location as jungle"; where the idea came from is in docs/later.md).
+     It is the second place, so the others open a month later than they did. The brief: birds in a tree that sing a
+     short tune when pressed, cats that meow differently here, an acorn on the capybara's head that makes a sound,
+     trees and monkeys that can be pressed, and a capybara with hands that holds a heart, which turns from red to
+     pink and back. Every word below is DRAFT, written by the art session to go with it. */
+  { id: "jungle", name: "Jungle", at: "in the jungle", seat: "a mossy log", hit: "a bird's chirp", miss: "a monkey's hoot",
+    lines: { morning: "The birds were up first. It let them sing.", golden: "It's holding a heart. Nobody asked why.", night: "The jungle is loud at night. It is not." },
+    letter: ["The jungle birds invite the judge to sit on their log.", "They say there's an acorn in it for the judge."] },
   { id: "livingroom", name: "The judge's living room", at: "in its own living room", seat: "the armchair", hit: "a teacup touching its saucer", miss: "the cuckoo clock",
     lines: { morning: "It woke up in the armchair. It did not get up.", golden: "It went nowhere this month. This is home.", night: "Half the lights are off. The other half is cat." },
     letter: ["The armchair writes: “You haven't sat in me for ages.”", "This month the judge stays home."] },
@@ -291,6 +301,10 @@ export const PLACES = [
     letter: ["The snowman at the station invites the judge up the mountain.", "No bar across the cabin. Nothing in the way of the view."] },
 ];
 export const PLACE_IDS = PLACES.map((p) => p.id);
+/* The order the coats and the cats were dealt in: the first year's twelve, then places added later. A place added in
+   the middle of the calendar (the jungle) is dealt last, so it does not move the cats or the coats of the others. */
+const DEAL_ORDER = ["onsen", "livingroom", "nightmarket", "train", "beach", "library", "camping", "cinema", "bus", "museum", "rooftop", "skilift", "jungle"];
+const dealOf = (placeId) => Math.max(0, DEAL_ORDER.indexOf(placeId));
 export const placeById = (id) => PLACES.find((p) => p.id === id) || PLACES[0];
 export const timeById = (id) => TIMES.find((t) => t.id === id) || TIMES[0];
 export const zoneById = (id) => ZONES.find((z) => z.id === id) || ZONES[0];
@@ -314,14 +328,14 @@ export function garmentLook(placeId, timeId, zoneId) {
     const [pattern, palette] = ONSEN_LOOKS[timeId][zoneId];
     return { fur, pattern, palette };
   }
-  const p = Math.max(0, PLACE_IDS.indexOf(placeId));
+  const p = dealOf(placeId);
   const ti = TIME_IDS.indexOf(timeId), zi = ZONE_IDS.indexOf(zoneId);
   const pattern = PATTERN_IDS[(p * 5 + ti * 3 + zi * 4) % PATTERN_IDS.length];
   const palette = PALETTE_ROT[(p + ti + zi * 2) % 3];
   return { fur, pattern, palette };
 }
 
-/* Each month's three cats, in the order of PLACE_IDS: [scarf, top, hat]. Thirty-six different cats in a year: no cat
+/* Each place's three cats, in the order of DEAL_ORDER: [scarf, top, hat]. Thirty-six different cats in a year: no cat
    comes twice, the three of a month have three different shapes and never the same charm, and the shapes run on from
    month to month so each of the seven comes round about five times. The first month keeps the three shapes the game
    began with, one of them plain. */
@@ -338,9 +352,11 @@ const KIND_CAST = [
   ["round+bow", "point+bell", "big+leaf"],        // museum
   ["tuft+camellia", "small+berry", "fold+bow"],   // rooftop
   ["curl+plum", "round+leaf", "point+camellia"],  // skilift
+  /* the jungle (2026-11-23): every cat of the forty-nine was already somewhere, so its three wear charms of their own */
+  ["tuft+hibiscus", "point+feather", "round+banana"],
 ];
 export function kindFor(placeId, zoneId) {
-  const cast = KIND_CAST[Math.max(0, PLACE_IDS.indexOf(placeId)) % KIND_CAST.length];
+  const cast = KIND_CAST[dealOf(placeId) % KIND_CAST.length];
   return cast[Math.max(0, ["scarf", "top", "bottom"].indexOf(zoneId))];
 }
 
@@ -373,7 +389,7 @@ export function catCoat(kind) {
   if (own) return { pattern: own[0], palette: own[1] };
   for (let p = 0; p < KIND_CAST.length; p++) {
     const j = KIND_CAST[p].indexOf(kind);
-    if (j >= 0) { const l = garmentLook(PLACE_IDS[p % PLACE_IDS.length], "morning", ["scarf", "top", "bottom"][j]); return { pattern: l.pattern, palette: l.palette }; }
+    if (j >= 0) { const l = garmentLook(DEAL_ORDER[p % DEAL_ORDER.length], "morning", ["scarf", "top", "bottom"][j]); return { pattern: l.pattern, palette: l.palette }; }
   }
   return { pattern: "plain", palette: "ginger" };
 }
@@ -422,6 +438,7 @@ function yarnBox([g0, g1, g2], light, accent, soft, turn = 0) {
 }
 const YARN_BOX = {
   onsen: yarnBox(["vermilion", "indigo", "moss"], "milk", "yuzu", "sky", 0),
+  jungle: yarnBox(["coral", "navy", "plum"], "milk", "yuzu", "rose", 1), // no green: the leaves behind are green
   livingroom: yarnBox(["wine", "forest", "plum"], "milk", "rose", "lilac", 1),
   nightmarket: yarnBox(["vermilion", "navy", "teal"], "milk", "lantern", "sky", 2),
   train: yarnBox(["forest", "wine", "navy"], "milk", "yuzu", "mint", 0),

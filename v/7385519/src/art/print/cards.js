@@ -67,7 +67,7 @@ export function letterSvg(o = {}) {
 }
 
 /* the place and its empty seat (no paper edge or title) */
-const THUMB_Y = { onsen: 110, livingroom: 20, nightmarket: 30, train: 0, beach: 60, library: 10, camping: 120, cinema: 10, bus: 0, museum: 10, rooftop: 20, skilift: 0 };
+const THUMB_Y = { onsen: 110, jungle: 30, livingroom: 20, nightmarket: 30, train: 0, beach: 60, library: 10, camping: 120, cinema: 10, bus: 0, museum: 10, rooftop: 20, skilift: 0 };
 export function placeThumbSvg(place, time) {
   /* the G landscape where a place has one: a thumb has to read as a place, and the H scene is mostly flat ground */
   const p = placeId(place), L = placeLayers(p, time === "golden" || time === "night" ? time : "morning", 0, false, true);

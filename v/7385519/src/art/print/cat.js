@@ -75,6 +75,10 @@ const CHARM = {
   leaf: () => `<path transform="rotate(-28)" d="M-8 1Q-2 -8 9 -3Q3 7 -8 1Z" fill="${CH.green}" ${key(LWC * .6)}/><path transform="rotate(-28)" d="M-6.4 .8Q0 -1.6 7 -2.6" fill="none" ${key(LWC * .36)}/>`,
   bow: () => `<path d="M0 0L-7.4 -4.6Q-9.4 0 -7.4 4.6ZM0 0L7.4 -4.6Q9.4 0 7.4 4.6Z" fill="${CH.indigo}" ${key(LWC * .6)}/><rect x="-2.1" y="-2.3" width="4.2" height="4.6" rx="1.2" fill="${CH.indigo}" ${key(LWC * .6)}/>`,
   bell: () => `<path d="M-5 -5.4Q0 -8.6 5 -5.4" fill="none" stroke="${CH.red}" stroke-width="2.2" stroke-linecap="round"/><circle cy=".8" r="4.8" fill="${CH.gold}" ${key(LWC * .6)}/><path d="M-4.2 .2h8.4M0 1.2v3" fill="none" ${key(LWC * .42)}/>`,
+  /* the jungle's three (2026-11-23): a red flower with a long yellow middle, a parrot's feather, a small banana */
+  hibiscus: () => [0, 72, 144, 216, 288].map(a => `<path transform="rotate(${a})" d="M0 0Q-4.200 -4 0 -7.400Q4.200 -4 0 0Z" fill="${CH.red}" ${key(LWC * .45)}/>`).join("") + `<path d="M0 0L4.600 -5.200" fill="none" stroke="${CH.gold}" stroke-width="1.800" stroke-linecap="round"/><circle cx="4.900" cy="-5.600" r="1.300" fill="${CH.gold}" ${key(LWC * .3)}/>`,
+  feather: () => `<path transform="rotate(-36)" d="M-8.500 0Q-2 -5.400 9 -1.200Q2 5 -8.500 0Z" fill="${CH.indigo}" ${key(LWC * .6)}/><path transform="rotate(-36)" d="M1 -3.300Q5.500 -3.600 9 -1.200Q5 2 1.600 2.700Z" fill="${CH.gold}"/><path transform="rotate(-36)" d="M-8.500 0Q-2 -5.400 9 -1.200Q2 5 -8.500 0ZM-10.500 .400L6 -.900" fill="none" ${key(LWC * .4)}/>`,
+  banana: () => `<path transform="rotate(-20)" d="M-8 -3.600Q0 4.200 9 -3.400Q10 -1 8.400 1.400Q0 9 -9 -.800Z" fill="${CH.gold}" ${key(LWC * .6)}/><path transform="rotate(-20)" d="M9 -3.400l1.400 -2.200" fill="none" ${key(LWC * .6)}/>`,
   berry: () => leafShape(-160) + leafShape(-110) + [[-1.6, 1.8], [3.4, -.6], [1.8, 4.4]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.7" fill="${CH.red}" ${key(LWC * .45)}/>`).join(""),
 };
 /* the charm in head space; nothing for a kind without one */

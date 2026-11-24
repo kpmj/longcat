@@ -58,7 +58,7 @@ export const zoneId = z => (ZONE_IDS.includes(z) ? z : null);
    already takes: "fold", or "fold+bow". The first four shapes are the old KINDS; the woodblock art draws all seven
    and the charms (print/cat.js), the first art draws anything it does not know as "point". */
 export const CAT_SHAPES = ["point", "big", "tuft", "small", "fold", "curl", "round"];
-export const CAT_CHARMS = ["camellia", "plum", "leaf", "bow", "bell", "berry"];
+export const CAT_CHARMS = ["camellia", "plum", "leaf", "bow", "bell", "berry", "hibiscus", "feather", "banana"];
 export const kindParts = k => {
   const [shape, charm] = String(k == null ? "" : k).split("+");
   return { shape: CAT_SHAPES.includes(shape) ? shape : "point", charm: CAT_CHARMS.includes(charm) ? charm : null };

@@ -289,6 +289,7 @@ export function purr() { noise(0.5, 0.05, "lowpass", 180, 0.7); }
    shifts the colour: morning a little brighter, night lower and softer. */
 const SFX = {
   onsen: { hit: () => tone("sine", 620, 1500, 0.13, 0.16), miss: () => { tone("sine", 220, 90, 0.22, 0.2); noise(0.18, 0.05, "lowpass", 600); } },
+  jungle: { hit: () => { tone("sine", 2300, 3100, 0.07, 0.1); tone("sine", 2700, 3500, 0.07, 0.08, now() + 0.09); }, miss: () => { tone("triangle", 430, 560, 0.12, 0.09); tone("triangle", 430, 330, 0.16, 0.08, now() + 0.15); } },
   livingroom: { hit: () => { tone("triangle", 2600, 2550, 0.18, 0.08); tone("sine", 3900, 3900, 0.12, 0.04); }, miss: () => { tone("sine", 660, 660, 0.14, 0.1); tone("sine", 523, 523, 0.2, 0.1, now() + 0.17); } },
   nightmarket: { hit: () => { noise(0.08, 0.12, "bandpass", 3200, 4); tone("square", 900, 880, 0.05, 0.03); }, miss: () => noise(0.5, 0.06, "bandpass", 1800, 6, null, 500) },
   train: { hit: () => tone("sine", 1760, 1760, 0.35, 0.1), miss: () => { tone("sawtooth", 440, 430, 0.5, 0.04, null, { type: "lowpass", f: 1200 }); tone("sawtooth", 554, 545, 0.5, 0.03, null, { type: "lowpass", f: 1200 }); } },

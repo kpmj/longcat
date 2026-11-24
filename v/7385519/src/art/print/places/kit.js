@@ -70,7 +70,8 @@ const paperEdge = (m, line) => `<path d="M0 0H400V500H0ZM${m} ${m}V${500 - m}H${
 
 /* spec: { name, grounds: { morning, golden, night }, crop (square viewBox of the view for the window), bandY,
      view(V, q, time, animate), seat(c, q, time), band(c, y0, q, time, on), fx(c, q, time, on) -> { back, front } (optional),
-     tones: { a, b, l } (the seat's own colours, morning),
+     tones: { a, b, l } (the seat's own colours, morning), ownColours (optional: keep them on the landscape too),
+     judge: { item, hold } (optional: what the judge has on its head and in its paw here, see print/judge.js),
      floor: [fill, pattern colour] (the band's own colours, morning) } */
 export function makePlace(spec) {
   /* `on(name, style)` gives a class only when the picture is animated; a view uses it on its own moving things */
@@ -95,18 +96,20 @@ export function makePlace(spec) {
     const seat = spec.seat(c, q, time, animate) + `<ellipse cx="200" cy="${bandY - 6}" rx="178" ry="11" fill="${KEY}" opacity=".14"/>`;
     const front = spec.band({ fill: tint(spec.floor[0], time), mark: tint(spec.floor[1], time), k: KEY, paper: PAPER }, bandY, q, time, on) + (fx.front ? tap("fire", fx.front) : "");
     const title = titleH(time, spec.name, ink);
-    return { back, seat, front, frame: paperEdge(8, KEY) + title, title, up: ground, down: { fill: tint(spec.floor[0], time), line: KEY, water: !!spec.water }, wall: ground, ink };
+    return { back, seat, front, frame: paperEdge(8, KEY) + title, title, up: ground, down: { fill: tint(spec.floor[0], time), line: KEY, water: !!spec.water }, wall: ground, ink, judge: spec.judge || null };
   }
   /* the landscape is still on postcards and thumbs; on the home page and in the wardrobe it is drawn with `animate`:
      the view's own things move, the place's fx are added where the view has no such thing already (spec.fxOnView),
      and a tap anywhere on the landscape makes its hanging things swing and its sun or moon pop */
   function landscape(time, animate = false) {
     const V = VIEW[time], q = pen(V.line), on = onOf(animate);
-    const c = { a: V.d[3], b: V.d[2], l: V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
+    /* spec.ownColours: the seat and the floor band keep the place's own colours here too, not the landscape's ink */
+    const own = !!spec.ownColours, floor = own ? tint(spec.floor[0], time) : V.d[3];
+    const c = { a: own ? tint(spec.tones.a, time) : V.d[3], b: own ? tint(spec.tones.b, time) : V.d[2], l: own ? tint(spec.tones.l, time) : V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
     const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
     const view = full(time, animate) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
-    return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: V.d[3], mark: V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
-      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: V.d[3], line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY };
+    return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
+      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: floor, line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY, judge: spec.judge || null };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));
   return { scene, landscape, stamp, name: spec.name };

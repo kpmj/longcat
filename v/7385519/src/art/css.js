@@ -7,6 +7,10 @@
 export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] element for a moment (see docs/art-style.md). A petted cat or judge
    shows its other face; the hearts are hidden until then */
 .lc-face-pet, .lc-heart { opacity: 0; }
+/* the jungle: a bird's notes show only while they rise; the judge's heart is red, and pink while the page has lc-pink
+   on its root (the pink heart lies on the red one) */
+.lc-note, .lc-held-b { opacity: 0; }
+.lc-pink .lc-held-b { opacity: 1; }
 .lc-tapped .lc-face { opacity: 0; }
 .lc-tapped .lc-face-pet { opacity: 1; }
 [data-tap] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -28,6 +32,12 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-tapped .lc-bobble { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-bobble .5s ease-out; }
   .lc-tapped .lc-hop { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-hop .7s ease-out; }
   .lc-tapped .lc-dunk { animation: lc-dunk .8s ease-out; }
+  /* the jungle's birds and its sitting monkey hop when they themselves are pressed (not when the picture behind
+     them is), a bird's two notes rise, and the heart beats once */
+  [data-tap|="bird"].lc-tapped .lc-peep, [data-tap="monkey"].lc-tapped .lc-peep { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-hop .7s ease-out; }
+  [data-tap|="bird"].lc-tapped .lc-note { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-heart 1.2s ease-out both; }
+  [data-tap="heart"].lc-tapped .lc-beat { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-beat .5s ease-out; }
+  .lc-wave { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-wave 6s ease-in-out infinite; }
   .lc-tapped .lc-sway { animation: lc-swing 1.3s ease-out 0s 1 !important; }
   .lc-tapped .lc-sun { animation: lc-sunpop .8s ease-out 0s 1 !important; }
   .lc-tapped .lc-flame { animation: lc-flare .7s ease-out 0s 1 !important; }
@@ -130,6 +140,8 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-2px) rotate(4deg); } }
 @keyframes lc-flicker { 0%, 100% { opacity: 1; } 22% { opacity: .78; } 40% { opacity: .95; } 63% { opacity: .7; } 81% { opacity: .92; } }
 @keyframes lc-drift { from { transform: translateX(0); } to { transform: translateX(-24px); } }
+@keyframes lc-beat { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.22); } 65% { transform: scale(.95); } }
+@keyframes lc-wave { 0%, 68%, 100% { transform: rotate(0deg); } 74% { transform: rotate(-14deg); } 80% { transform: rotate(10deg); } 86% { transform: rotate(-10deg); } 92% { transform: rotate(6deg); } }
 @keyframes lc-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 @keyframes lc-rain { from { transform: translate(0, 0); } to { transform: translate(-15px, 40px); } }
 @keyframes lc-snow { from { transform: translate(0, 0); } to { transform: translate(-40px, 120px); } }
@@ -139,7 +151,8 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-ride { from { transform: translate(0, 0); } to { transform: translate(var(--lc-x, 200px), var(--lc-y, 34px)); } }
 @keyframes lc-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--lc-x, 6px), var(--lc-y, -3px)); } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin { animation: none !important; }
+  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave { animation: none !important; }
+  [data-tap|="bird"].lc-tapped .lc-note { opacity: 1; }
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }
   .lc-leave { opacity: 0; }

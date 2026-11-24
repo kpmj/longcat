@@ -217,7 +217,10 @@ export function wireTaps(el) {
     const t = e.target.closest ? e.target.closest("[data-tap]") : null;
     if (!t || !el.contains(t)) return;
     const group = t.dataset.group, els = group ? [...el.querySelectorAll(`[data-group="${group}"]`)] : [t];
-    if (app.S.settings.sound !== false) tapSound(t.dataset.tap);
+    if (app.S.settings.sound !== false) tapSound(t.dataset.tap, app.S.here);
+    /* a thing that stays changed when pressed (the jungle's heart, red or pink): the art names a class with
+       data-toggle, and it goes on the page's root, so it holds while the picture is drawn again; it is not saved */
+    if (t.dataset.toggle) document.documentElement.classList.toggle(t.dataset.toggle);
     for (const x of els) {
       x.classList.remove("lc-tapped");
       x.getBoundingClientRect(); // restart the animation when tapped again
