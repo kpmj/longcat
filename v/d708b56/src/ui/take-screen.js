@@ -125,11 +125,17 @@ function playCues() {
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
 
-function render(root, { ctx, retake = false, outcome = null }) {
+/* The demo plays by itself the first time a drill is met (the designer, 2026-11-24). After that the take gives the first
+   note only, a beat of it at most, and goes to the count: the same demo phase, one note long, so it is heard at
+   full volume before the microphone opens, as the demo is. "Hear it" in the header plays the whole demo. */
+const cueOf = (plan) => ({ ...plan, demoCount: 1, demoTotal: Math.min(plan.notes[0].e - plan.notes[0].s, plan.beat), cue: true });
+
+function render(root, { ctx, retake = false, outcome = null, hear = false }) {
   const S = app.S;
   if (!ctx) return show("home");
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
-  const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
+  const whole = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
+  const plan = !hear && St.heardDrill(S, whole.drill.id) ? cueOf(whole) : whole;
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
   R.wearing = ["scarf", "top", "bottom"].map((z) => St.garmentSpec(S, ctx.place, ctx.time, z));
@@ -138,7 +144,7 @@ function render(root, { ctx, retake = false, outcome = null }) {
     <header class="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
       <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
-      <button class="btn ghost skip" data-act="skip">Skip demo</button>
+      ${plan.cue ? `<button class="btn ghost skip" data-act="hear">▶ Hear it</button>` : `<button class="btn ghost skip" data-act="skip">Skip demo</button>`}
     </header>
     <div class="lane-wrap" id="lane-wrap"></div>
     <div class="judge-wrap" id="judge-wrap">
@@ -166,9 +172,12 @@ function render(root, { ctx, retake = false, outcome = null }) {
       </svg>
       <div class="countdown" id="countdown" aria-live="polite"></div>
       <div class="say" id="say" hidden></div>
-      <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>`;
+      <div class="hint"><b id="hint-big">${plan.cue ? "The first note" : "Listen first"}</b><span id="hint-small"></span></div>`;
   $("[data-act=close]", root).onclick = () => { stop(); show("home"); };
-  $("[data-act=skip]", root).onclick = () => { if (R.started && R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
+  const skip = $("[data-act=skip]", root), again = $("[data-act=hear]", root);
+  if (skip) skip.onclick = () => { if (R.started && R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
+  /* the whole demo, asked for: the take starts over with it (before the singing only; the button goes then) */
+  if (again) again.onclick = () => { if (!R || R.T.phase === "sing" || R.T.phase === "done") return; const props = { ...app.props, hear: true }; stop(); show("take", props); };
   wireTouch(root);
   R.tier = comboTier(app.combo || 0);
   paintJudge();
@@ -200,7 +209,7 @@ async function start() {
     closeMic();
     await audioSettled(); // letting the microphone go switches the phone's sound back: wait until it runs again
     if (!R) return;
-    hint("Listen first", "");
+    hint(LISTEN(), "");
   } else if (!mic) await prepareVoice();
   if (!R) return;
   /* the phone may have paused the sound (synth.js): wake it, and if it will not wake, ask for one tap */
@@ -208,18 +217,19 @@ async function start() {
   if (!R) return;
   /* the recorded voice: fetch this take's notes (and the cues between rounds) before anything is sung; if they do
      not all arrive, the whole take uses the synthesised voice instead */
-  const fetching = setTimeout(() => R && !R.started && hint("Listen first", "getting the voice…"), 700);
+  const fetching = setTimeout(() => R && !R.started && hint(LISTEN(), "getting the voice…"), 700);
   R.demoKind = await prepareDemo(app.S.dev.demoVoice, R.plan.syl, [...R.plan.notes.map((n) => n.midi), ...(R.plan.cues || []).map((c) => c.midi)]);
   clearTimeout(fetching);
   if (!R) return;
-  hint("Listen first", "");
+  hint(LISTEN(), "");
   await sayOnce();
   if (!R) return;
   holdAudio(true); // from here to the end of the take nothing may swap the context under the microphone
   R.started = true;
   const t0 = clock() + DEMO_LEAD;
-  /* the demo is the cat singing the phrase on its own sound; of a climbing drill, the first round only */
-  R.plan.notes.slice(0, R.plan.demoCount).forEach((n) => R.nodes.push(demoNote(R.demoKind, t0 + n.s, n.midi, n.e - n.s, R.plan.syl)));
+  /* the demo is the cat singing the phrase on its own sound; of a climbing drill, the first round only; of a
+     drill met before, the first note only, cut to the cue's length */
+  R.plan.notes.slice(0, R.plan.demoCount).forEach((n) => R.nodes.push(demoNote(R.demoKind, t0 + n.s, n.midi, R.plan.cue ? R.plan.demoTotal : n.e - n.s, R.plan.syl)));
   R.last = clock(); R.lastW = wall(); R.stall = 0;
   loop();
   setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
@@ -244,7 +254,7 @@ function soundAsleep() {
       let ok = await wakeAudio(500);
       if (!ok) { rebuildAudio(); ok = await wakeAudio(500); }
       b.remove();
-      if (R) hint("Listen first", ok ? "" : "No sound right now");
+      if (R) hint(LISTEN(), ok ? "" : "No sound right now");
       done();
     };
   });
@@ -258,7 +268,7 @@ async function sayOnce() {
   if (S.said.includes(syl)) return;
   S.said.push(syl);
   app.save();
-  const el = document.getElementById("say"), skip = document.querySelector("[data-act=skip]");
+  const el = document.getElementById("say"), skip = document.querySelector(".take-head .skip");
   if (skip) skip.hidden = true;
   const cat = !!demoVoice(R.demoKind).words; // a voice with no words cannot say it: the word is shown, the note is played
   if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>${cat ? "the cat says it once" : "the sound to sing"}</span>`; el.hidden = false; }
@@ -271,8 +281,9 @@ async function sayOnce() {
   R.saying = false;
   if (el) el.hidden = true;
   if (skip) skip.hidden = false;
-  hint("Listen first", "");
+  hint(LISTEN(), "");
 }
+const LISTEN = () => (R && R.plan.cue ? "The first note" : "Listen first");
 
 function micProblem() {
   const props = app.props;
@@ -298,9 +309,15 @@ function onCount() {
      beat, showing Ready, until the microphone is open and the sound's clock is moving again (loop); only then
      does the count go Ready, 3, 2, 1. However long the phone takes, nothing is counted during it. */
   R.clicked = 0;
+  /* the demo has played, or was skipped: from now on this drill gives its first note only */
+  if (!R.plan.cue && !St.heardDrill(app.S, R.plan.drill.id)) { St.hearDrill(app.S, R.plan.drill.id); app.save(); }
   if (app.S.dev.voice === "mic" && !micReady()) {
     R.hold = { since: wall(), ready: false, a0: 0, w0: 0, told: false };
+    const mine = R;
     openMic().then((ok) => {
+      /* the take it was opened for is gone (left, or started over by "Hear it"): a demo must not play under an
+         open microphone, which makes a phone play everything quietly */
+      if (R !== mine) { if (ok && (!R || R.T.phase === "demo")) closeMic(); return; }
       if (!R) return;
       if (!ok) { stop(); micProblem(); return; }
       if (R.hold) { R.hold.ready = true; R.hold.a0 = clock(); R.hold.w0 = wall(); }
@@ -521,10 +538,11 @@ export function frame(dt) {
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
   for (const e of evs) {
-    if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
+    if (e.type === "demo-note" && P.cue) hint("The first note", noteName(P.notes[0].midi));
+    else if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { countdown(["Ready", "3", "2", "1", ""][e.k - (P.countBeats - 5)] || ""); hint("", "sing as the notes reach the line"); }
-    else if (e.type === "phase" && e.phase === "sing") { hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); }
+    else if (e.type === "phase" && e.phase === "sing") { hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); const h = document.querySelector("[data-act=hear]"); if (h) h.hidden = true; }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
   }
@@ -636,7 +654,7 @@ function finish(grade) {
   const learnedAll = St.tutorialDone(S);
   cancelAnimationFrame(R.raf);
   hideTip();
-  const props = { ...app.props };
+  const props = { ...app.props, hear: false }; // singing it again does not replay a demo that was asked for
   const before = retake ? St.stepsOf(S, ctx.place, ctx.time, ctx.zone)[ctx.step - 1] : null;
   const out = retake ? St.retakeStep(S, ctx, grade, real) : St.recordTake(S, ctx, grade, real);
   app.save();
@@ -669,6 +687,11 @@ function finish(grade) {
   /* the legend only for the first three results; the key buttons when half the notes or more got away
      (game-flow board, decision C: they move the same Lower / Higher as Settings) */
   const legend = S.takes.filter((t) => t.counted).length <= 3;
+  /* the designer, 2026-11-24 (Vocalista review, "一口氣唱下去"): the main button sings the next step of the same garment
+     without going Home. Not when the garment or the time of day has just been finished (Home shows it going on),
+     and not for a step sung again from the Wardrobe. */
+  const nt = !outcome?.garmentDone && !outcome?.timeDone && ctx.back !== "wardrobe" ? St.nextTake(S, ctx.place) : null;
+  const onward = nt && nt.time === ctx.time && nt.zone === ctx.zone && nt.step > ctx.step ? nt : null;
   const keyfix = grade.counts.off * 2 >= grade.notes.length;
   const el = sheet(`
     <div class="rhead">${faceIconSvg(takeFace(mood, learnedAll, !retake && out.learned), { size: 56 })}<div><p class="eyebrow">${retake ? "Sung again" : "Done"} · ${esc(name)} ${ctx.step} / ${STEPS}</p><h3>${esc(line)}</h3></div></div>
@@ -676,9 +699,14 @@ function finish(grade) {
     <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
     ${treatLine(out.treats)}
-    <div class="row"><button class="btn" data-a="retake">Sing this step again</button><button class="btn primary" data-a="ok">Keep it</button></div>
+    ${onward
+      ? `<div class="row onward"><button class="btn again" data-a="retake" aria-label="Sing this step again" title="Sing this step again">↻</button><button class="btn primary" data-a="next">Next step · ${onward.step} of ${STEPS}</button></div>
+    <button class="linkish stop-here" data-a="ok">Stop here</button>`
+      : `<div class="row"><button class="btn" data-a="retake">Sing this step again</button><button class="btn primary" data-a="ok">Keep it</button></div>`}
     ${keyfix ? `<p class="keyfix" id="keyfix">Felt out of reach? <button data-a="lower" ${S.settings.nudge <= -5 ? "disabled" : ""}>Lower the key</button> · <button data-a="higher" ${S.settings.nudge >= 5 ? "disabled" : ""}>Raise the key</button></p>` : ""}`, { dismissable: false });
   el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); accept(ctx, outcome); };
+  const on = el.querySelector("[data-a=next]");
+  if (on) on.onclick = () => { closeSheet(true); show("take", { ctx: { ...onward, ...(ctx.back ? { back: ctx.back } : {}) } }); };
   el.querySelector("[data-a=retake]").onclick = () => { closeSheet(true); show("take", { ctx, retake: true, outcome }); };
   const key = (d) => {
     S.settings.nudge = Math.max(-5, Math.min(5, S.settings.nudge + d));

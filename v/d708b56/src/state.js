@@ -49,6 +49,7 @@ export function freshSave(real = new Date()) {
     visit: visitId(dateKey(real)),   // who is visiting now ("newyear-2027"), or null; see keepVisit
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
+    heard: [],                       // drills whose demo has played by itself once (ids); see heardDrill
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
     cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
     catNames: {},                    // the names the player gave them
@@ -80,6 +81,13 @@ export function migrate(o, real = new Date()) {
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
   if (!Array.isArray(S.tips)) S.tips = [];
   if (!Array.isArray(S.said)) S.said = [];
+  /* 2026-11-24: a drill's demo plays by itself only the first time. A save from before has heard the demo of every
+     step it has sung */
+  if (!Array.isArray(o.heard)) {
+    S.heard = [];
+    for (const place of Object.keys(S.months)) for (const t of TIME_IDS) for (const z of ZONE_IDS)
+      for (let k = 1; k <= Math.min(STEPS, progress(S, place, t, z)); k++) hearDrill(S, drillForStep(k, t).id);
+  } else S.heard = o.heard.filter((id) => typeof id === "string");
   /* 2026-11-15: treats and cats of one's own. A save from before starts with the four free cats and no treats */
   S.cats = [...new Set([...FREE_CATS, ...(Array.isArray(o.cats) ? o.cats.filter((id) => typeof id === "string") : [])])];
   S.catNames = o.catNames && typeof o.catNames === "object" ? { ...o.catNames } : {};
@@ -190,6 +198,15 @@ export function nextTake(S, place = S.here) {
   if (!time || !zone) return null;
   const step = progress(S, place, time, zone) + 1;
   return { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}` };
+}
+
+/* ---------- the demo: by itself only the first time a drill is met ----------
+   the designer, 2026-11-24, after the Vocalista review ("示範只聽第一次"): from the second time on, the take gives the first
+   note and goes to the count; "Hear it" plays the whole demo again. */
+export const heardDrill = (S, id) => Array.isArray(S.heard) && S.heard.includes(id);
+export function hearDrill(S, id) {
+  if (!Array.isArray(S.heard)) S.heard = [];
+  if (id && !S.heard.includes(id)) S.heard.push(id);
 }
 
 /* ---------- recording ---------- */

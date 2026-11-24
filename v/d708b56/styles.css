@@ -689,6 +689,12 @@ body { background: var(--sky, var(--soft)); }
 /* Skip the demo sits in the header, clear of the notes and of the judge's face (it was over the face) */
 :root .take-head > div { flex: 1 1 auto; min-width: 0; }
 :root .take-head .skip { flex: none; min-height: 40px; padding: 0 14px; white-space: nowrap; }
+/* the result: on to the next step (the designer, 2026-11-24). Singing it again is a round arrow beside the main button;
+   stopping is a quiet line under them */
+.row.onward { flex-wrap: nowrap; }
+.row.onward .btn.again { flex: 0 0 58px; padding: 0; font-size: 22px; line-height: 1; }
+.row.onward .btn.primary { flex: 1 1 auto; min-width: 0; }
+.stop-here { display: block; margin: 10px auto 0; font-weight: 700; }
 :root .wake b { background: var(--brand); color: var(--brand-ink); }
 
 /* ---------- cats of one's own, and treats (ui/cats.js; the designer, 2026-11-15, shop screens board, layout 甲) ----------
