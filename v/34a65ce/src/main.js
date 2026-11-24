@@ -43,4 +43,5 @@ window.LC = {
   lane: (m) => { app.S.dev.shortBody = m; app.save(); },
   click: (sel) => { const el = $(sel); if (el) el.click(); return !!el; },
   combo: (n) => { if (n != null) app.combo = n; return app.combo || 0; },
+  resetPlace: (place = app.S.here) => { const ok = St.devResetPlace(app.S, place); if (ok) { app.save(); show("home"); } return ok; },
 };

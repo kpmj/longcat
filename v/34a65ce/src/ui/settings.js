@@ -5,7 +5,7 @@
 import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODES } from "./app.js";
 import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
-import { ZONES, timeById, garmentName, sylFor, drillEditCount } from "../content.js";
+import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState } from "../audio/synth.js";
@@ -138,6 +138,8 @@ export function openDev() {
       <button class="btn small" data-a="garment" ${nt ? "" : "disabled"}>Finish this garment</button>
       <button class="btn small" data-a="time" ${time ? "" : "disabled"}>Finish this time of day</button>
     </div>
+    <p class="muted small">Start again empties ${esc(placeById(place).name)} only: its garments, yarns, wraps and postcards. Your cats, treats and the other places stay. It cannot be undone.</p>
+    <button class="btn small" data-a="reset-place">Start this place again</button>
     <h4>Date</h4>
     <div class="grid2">
       <button class="btn small" data-a="day">+1 day</button>
@@ -184,6 +186,13 @@ export function openDev() {
     let out = null;
     for (const z of ZONES) if (!St.garmentDone(S, place, time, z.id)) { St.chooseZone(S, place, z.id); out = St.devFillGarment(S, place, real, { tufts: true }); }
     done(out);
+  });
+  /* asks once more on the button itself before anything goes */
+  let sure = false;
+  act("reset-place", () => {
+    if (!sure) { sure = true; el.querySelector("[data-a=reset-place]").textContent = `Tap again to empty ${placeById(place).name}`; return; }
+    St.devResetPlace(S, place);
+    done(null);
   });
   act("drills", () => { closeSheet(true); show("drills", { time: time || "morning" }); });
   act("day", () => { S.dev.dayOffset++; done(null); });

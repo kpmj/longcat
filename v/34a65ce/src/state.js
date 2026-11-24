@@ -548,5 +548,19 @@ export function devAdvanceToNextMonth(S, real = new Date()) {
   const days = Math.round((next - new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12)) / 86400000);
   S.dev.dayOffset += Math.max(1, days);
 }
+/* Start a place again (the designer, 2026-11-24: "a cheat to reset all progress in the current location"). Everything the
+   place holds goes: its garments, the garment chosen, who sings, the yarns, the wraps, the beats seen and its
+   postcards. Everything else stays: the other places, the cats, the treats, the faces learned, the days sung and
+   the log of takes. Every place open now stays open, also one that this place's morning had opened. */
+export function devResetPlace(S, place = S.here) {
+  if (!PLACE_IDS.includes(place)) return false;
+  const open = openedPlaces(S);
+  delete S.months[place];
+  S.opened = PLACE_IDS.filter((id, i) => i > 0 && open.includes(id));
+  /* the dock's dots count what the album and wardrobe hold: bring the marks down with them */
+  const c = drawerCounts(S);
+  S.marks = { ...(S.marks || {}), album: Math.min(S.marks?.album || 0, c.album), wardrobe: Math.min(S.marks?.wardrobe || 0, c.wardrobe) };
+  return true;
+}
 
 export { TIMES, PLACES };
