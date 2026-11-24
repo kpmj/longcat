@@ -143,23 +143,32 @@ function pawsScene(p, cx, cy, w = 128) {
   return "";
 }
 
-/* A heart held up in one paw (the jungle, 2026-11-23: "capybara is holding a heart if the heart is clicked it toggles
-   between red and pink"). Two hearts lie on each other, red under pink; the pink one shows while
-   the page has lc-pink on its root (ART_CSS; the page turns it with data-toggle). The heart is beside the head, where
-   the 10 card is held: clear of the hat, the scarf, the top and the lap, so no garment is ever covered by it.
-   The other paw waves from the other side. The arms are drawn with the body, under the garments. */
+/* A heart held in both paws at the chest (the jungle, 2026-11-23: "capybara is holding a heart if the heart is
+   clicked it toggles between red and pink"; at the chest since 2026-11-24, the designer's choice over beside the head). Two
+   hearts lie on each other, red under pink; the pink one shows while the page has lc-pink on its root (ART_CSS; the
+   page turns it with data-toggle). The paws are part of what can be pressed. The arms are drawn with the body, under
+   the garments; the heart and the paws lie on the garments and under the cats' heads (print/scene.js), so the heart
+   never hides a cat's face.
+   o.holdUp: the picture ends at the chest (judgeBustSvg), where that heart would be cut in half. There one paw
+   lifts the heart beside the head, where the 10 card is held, and the other waves. */
 const HEART = "M0 17C-9 9 -22 2 -22 -8C-22 -17 -8 -20 0 -9C8 -20 22 -17 22 -8C22 2 9 9 0 17Z";
-const HOLD = { x: 313, y: 188, paw: [312, 217], wave: [84, 210] };
+const HOLD = { x: 200, y: 338, s: 1.2, paw: [28, 20, 34], arm: [92, 306] };
+const HOLD_UP = { x: 313, y: 188, paw: [312, 217], wave: [84, 210] };
 const heartOne = (c, hi, cls = "") => `<g${cls ? ` class="${cls}"` : ""}>${sh(HEART, c)}<path d="M-14.500 -8q1 -6 7 -7" fill="none" stroke="${hi}" stroke-width="2.600" stroke-linecap="round"/></g>`;
+const heartAt = (x, y, s = 1) => `<g transform="translate(${x} ${y})${s === 1 ? "" : ` scale(${s})`}"><circle r="27" fill="${J.key}" fill-opacity="0"/><g class="lc-beat">${heartOne("#d23f2f", "#f0a79a")}${heartOne("#f4a3b8", "#fde3ea", "lc-held-b")}</g></g>`;
+const pressable = (m, animate) => (animate ? `<g data-tap="heart" data-toggle="lc-pink">${m}</g>` : m);
 function heartHold(animate) {
-  const hearts = `<g transform="translate(${HOLD.x} ${HOLD.y})"><circle r="27" fill="${J.key}" fill-opacity="0"/><g class="lc-beat">${heartOne("#d23f2f", "#f0a79a")}${heartOne("#f4a3b8", "#fde3ea", "lc-held-b")}</g></g>`;
-  const wave = paw(HOLD.wave[0], HOLD.wave[1], -24);
-  return (animate ? `<g data-tap="heart" data-toggle="lc-pink">${hearts}</g><g class="lc-wave">${wave}</g>` : hearts + wave) + paw(HOLD.paw[0], HOLD.paw[1], 14);
+  const [dx, dy, rot] = HOLD.paw;
+  return pressable(heartAt(HOLD.x, HOLD.y, HOLD.s) + paw(HOLD.x - dx, HOLD.y + dy, rot) + paw(HOLD.x + dx, HOLD.y + dy, -rot), animate);
+}
+function heartUp(animate) {
+  const wave = paw(HOLD_UP.wave[0], HOLD_UP.wave[1], -24);
+  return pressable(heartAt(HOLD_UP.x, HOLD_UP.y), animate) + (animate ? `<g class="lc-wave">${wave}</g>` : wave) + paw(HOLD_UP.paw[0], HOLD_UP.paw[1], 14);
 }
 /* an arm from inside the body out to a paw: the fur runs a little further into the body than the line does, so the
    arm has no line across its root */
 const arm = (x0, y0, x1, y1) => { const L = Math.hypot(x1 - x0, y1 - y0) || 1, bx = x0 - (x1 - x0) / L * 12, by = y0 - (y1 - y0) / L * 12; return `<path d="M${x0} ${y0}L${x1} ${y1}" fill="none" stroke="${J.key}" stroke-width="30.500" stroke-linecap="round"/><path d="M${f(bx)} ${f(by)}L${x1} ${y1}" fill="none" stroke="${J.fur}" stroke-width="25" stroke-linecap="round"/>`; };
-const heartArms = () => arm(303, 258, HOLD.paw[0], HOLD.paw[1] + 6) + arm(97, 258, HOLD.wave[0], HOLD.wave[1] + 6);
+const heartArms = up => { if (up) return arm(303, 258, HOLD_UP.paw[0], HOLD_UP.paw[1] + 6) + arm(97, 258, HOLD_UP.wave[0], HOLD_UP.wave[1] + 6); const [ax, ay] = HOLD.arm, [dx, dy] = HOLD.paw; return arm(ax, ay, HOLD.x - dx, HOLD.y + dy) + arm(400 - ax, ay, HOLD.x + dx, HOLD.y + dy); };
 
 /* the seated judge in scene space (400 x 500): the same layers as ../judge.js judgeFigure */
 export function judgeFigure(face, o = {}) {
@@ -167,15 +176,16 @@ export function judgeFigure(face, o = {}) {
   if (o.paws === "tummy") p.paws = "tummy";
   const BODY = "M104 250C68 262 40 302 40 372V420C40 450 62 464 96 464H304C338 464 360 450 360 420V372C360 302 332 262 296 250Z";
   /* o.hold = "heart": the judge holds a heart, unless this face needs the paws for something else */
-  const holding = o.hold === "heart" && !p.paws;
-  const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY) + (holding ? heartArms() : "");
+  const holding = o.hold === "heart" && !p.paws, up = holding && !!o.holdUp;
+  const body = fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY) + (holding ? heartArms(up) : "");
   const lap = ln("M64 424Q128 404 194 414M206 414Q272 404 336 424", .6);
   const feet = [146, 254].map(x => `<g transform="translate(${x} 462)">${sh(ell(0, 0, 29, 11.5), J.dk)}${ln("M-9 -3.5v7M0 -4.5v8M9 -3.5v7", .6)}</g>`).join("");
   const head = `<g transform="translate(200 182) scale(2)">${judgeHead(p, { ...o, onHead: toHead(o.onHead) })}</g>`;
-  const paws = holding ? heartHold(!!o.animate) : pawsScene(p, 200, 270);
+  /* held: in front of the garments and behind the cats' heads; paws: in front of everything */
+  const paws = up ? heartUp(!!o.animate) : holding ? "" : pawsScene(p, 200, 270), held = holding && !up ? heartHold(!!o.animate) : "";
   /* animated: head and body can be patted; they answer together through data-group */
   const tap = m => (o.animate ? `<g data-tap="judge" data-group="judge">${m}</g>` : m);
-  return { body: tap(body), lap, feet, head: tap(head), paws };
+  return { body: tap(body), lap, feet, head: tap(head), paws, held };
 }
 
 /* the head making one face, like ../portrait.js faceIconSvg */

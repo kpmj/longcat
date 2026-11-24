@@ -77,7 +77,7 @@ function render(root, props = {}) {
     const tall = Math.min(500, r.width > 0 && r.height > 0 ? (w * r.height) / r.width : h);
     return `${x} ${Math.round(Math.max(0, Math.min(500 - tall, y + h / 2 - tall / 2)))} ${w} ${Math.round(tall)}`;
   }
-  const scene = (garments) => sceneParts({ place, time: cur.time, face: "neutral", garments, baskets: [], cushion: null, special: St.specialFor(place), animate: false, seed: 3, landscape: true });
+  const scene = (garments) => sceneParts({ place, time: cur.time, face: "neutral", garments, baskets: [], cushion: null, special: St.specialFor(place), animate: false, seed: 3, landscape: true, hold: false });
   const svg = (inner, more = 'aria-hidden="true"') => `<svg viewBox="${viewBox()}" preserveAspectRatio="xMidYMid meet" ${more}>${inner}</svg>`;
 
   /* The picture: the judge with the turns laid so far, close up, in two layers (what is behind the judge, and the

@@ -121,11 +121,13 @@ export function sceneParts(o = {}) {
   /* the fruit on the judge's head is seated on top of the hat, however far the hat has grown (hatOnHead) */
   const { onHead, itemLift } = hatOnHead(hat[0] || null, itemSeatOf(o.judge), { guide: guides.filter(z => drawZone(z) === "hat").map(guideOf).join(""), cushion: cushionOnHead ? cushion0 : "" });
   /* o.judge: which of the six judges sits here (print/judges.js); the capybara unless told otherwise */
-  /* a place may give the judge something else on its head and something to hold (the jungle: an acorn, a heart) */
+  /* a place may give the judge something else on its head and something to hold (the jungle: an acorn, a heart).
+     o.hold === false: the paws are down and empty (wrapping by hand: the heart would lie on the turns being laid).
+     o.holdUp: the heart is lifted beside the head (the bust, which ends at the chest) */
   const things = L.judge || {};
-  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: things.hold });
+  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: o.hold === false ? null : things.hold, holdUp: !!o.holdUp });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
-  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${heads}${leaveArt}${waitingArt}${J.paws}`;
+  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${J.held || ""}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
   return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, onHead, itemLift, cushion: cushion0 };
 }
@@ -142,7 +144,7 @@ const rainbowMarkup = () => `<g fill="none" stroke-width="9.5">${RAINBOW.map((c,
   + `<g fill="none" stroke="${KEY}" stroke-width="1.6"><path d="M-33 330A233 233 0 0 1 433 330"/><path d="M30.500 330A169.500 169.500 0 0 1 369.500 330"/></g>`;
 /* the judge from the chest up (300 x 220), for the singing screen: the same framing as ../portrait.js, no paper edge */
 export function judgeBustSvg(o = {}) {
-  const p = sceneParts({ place: o.place, time: o.time, face: o.face || "neutral", garments: o.garments, animate: o.animate !== false });
+  const p = sceneParts({ place: o.place, time: o.time, face: o.face || "neutral", garments: o.garments, animate: o.animate !== false, holdUp: true });
   /* a tall hat lifts the fruit out of the frame's top: the picture slides down by as much as it needs */
   const down = p.itemLift * .8;
   return svgDoc("0 0 300 220", `<g transform="translate(-10 ${f(-33.6 + down)}) scale(.8)">${p.L.back}${o.rainbow ? rainbowMarkup() : ""}${p.special}${p.L.seat}${p.character}</g>`);
