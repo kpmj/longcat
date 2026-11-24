@@ -49,7 +49,7 @@ export function freshSave(real = new Date()) {
     visit: visitId(dateKey(real)),   // who is visiting now ("newyear-2027"), or null; see keepVisit
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
-    heard: [],                       // drills whose demo has played by itself once (ids); see heardDrill
+    heard: [],                       // drills the player has met (ids): their card does not come up by itself again; see heardDrill
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
     cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
     catNames: {},                    // the names the player gave them
@@ -81,8 +81,7 @@ export function migrate(o, real = new Date()) {
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
   if (!Array.isArray(S.tips)) S.tips = [];
   if (!Array.isArray(S.said)) S.said = [];
-  /* 2026-11-24: a drill's demo plays by itself only the first time. A save from before has heard the demo of every
-     step it has sung */
+  /* 2026-11-24: the drills the player has met. A save from before has met the drill of every step it has sung */
   if (!Array.isArray(o.heard)) {
     S.heard = [];
     for (const place of Object.keys(S.months)) for (const t of TIME_IDS) for (const z of ZONE_IDS)
@@ -200,9 +199,11 @@ export function nextTake(S, place = S.here) {
   return { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}` };
 }
 
-/* ---------- the demo: by itself only the first time a drill is met ----------
-   the designer, 2026-11-24, after the Vocalista review ("示範只聽第一次"): from the second time on, the take gives the first
-   note and goes to the count; "Hear it" plays the whole demo again. */
+/* ---------- the drills the player has met ----------
+   A drill is met once a take of it reaches the count. A drill not met yet shows its card first (take-screen.js).
+   It was made on 2026-11-24 so that the demo would play by itself only the first time, the take giving the first
+   note alone after that; the designer played it and asked for the whole phrase back on every take the same day ("the player
+   doesn't know what notes to sing next"), so the list now decides the card and nothing about the demo. */
 export const heardDrill = (S, id) => Array.isArray(S.heard) && S.heard.includes(id);
 export function hearDrill(S, id) {
   if (!Array.isArray(S.heard)) S.heard = [];
