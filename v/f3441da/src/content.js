@@ -86,7 +86,10 @@ export const GUESTS = {
   dragon: { name: "Long dragon", mark: "only at New Year" },
 };
 
-/* The drills (drill-ladder board, proposal 丙, the designer 2026-11-14). rel = semitones above the drill's root (the
+/* The drills (drill-ladder board, proposal 丙, the designer 2026-11-14). The names say what the singer does, in plain
+   words (2026-11-24): a step, a skip (a third), a wide skip (a fourth), a leap (a fifth), a big leap (an octave).
+   The notes further down about how the ladders were dealt use the names of that day ("Arpeggio down", "Five-note
+   scale"). rel = semitones above the drill's root (the
    lowest note is placed in the singer's range, so a rel may be negative); dur = seconds per note at golden hour.
    What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
    climb (the designer, 2026-11-14: more reps on the harder steps, the 10th and 11th): the drill is sung in rounds, each
@@ -94,47 +97,90 @@ export const GUESTS = {
    Steps 10 to 12 of every ladder climb; drills.js climbRounds places the rounds. `most` is set so a take stays
    under about 40 seconds for a wide range: long rounds climb fewer times. */
 export const DRILL = {
-  long: { name: "Long note", rel: [0], dur: 2.4 },
-  long2: { name: "Same note twice", rel: [0, 0], dur: 1.6 },
-  hold4: { name: "Long hold", rel: [0], dur: 4.0 },
-  hold5: { name: "Longer hold", rel: [0], dur: 5.0 },
-  two: { name: "Two notes", rel: [0, 2], dur: 1.0 },
-  twodown: { name: "Two down", rel: [2, 0], dur: 1.4 },
-  nbup: { name: "Neighbour up", rel: [0, 2, 0], dur: 1.0 },
-  nbdown: { name: "Neighbour down", rel: [0, -2, 0], dur: 1.0 },
-  doremi: { name: "Do–Re–Mi", rel: [0, 2, 4], dur: 1.0 },
-  down3: { name: "Three down", rel: [4, 2, 0], dur: 1.0 },
-  arc: { name: "Up and back", rel: [0, 2, 4, 2, 0], dur: 0.9 },
-  fiveup: { name: "Five up", rel: [0, 2, 4, 5, 7], dur: 0.85, climb: { by: 2, most: 2, back: true } },
-  fivedown: { name: "Five down", rel: [7, 5, 4, 2, 0], dur: 0.85 },
-  five: { name: "Five-note scale", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
-  fast5: { name: "Fast five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
-  scaleup: { name: "Scale", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
-  scaledown: { name: "Scale down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7, climb: { by: 2, most: 1, back: true } },
-  third: { name: "Third", rel: [0, 4], dur: 1.0 },
-  thirdback: { name: "Third and back", rel: [0, 4, 0], dur: 1.0, climb: { by: 2, most: 3, back: true } },
-  arp: { name: "Arpeggio", rel: [0, 4, 7], dur: 0.9 },
-  arpdown: { name: "Arpeggio down", rel: [7, 4, 0], dur: 0.9 },
-  arpud: { name: "Arpeggio and back", rel: [0, 4, 7, 4, 0], dur: 0.85 },
-  fifth: { name: "Fifth", rel: [0, 7], dur: 1.1 },
-  skips: { name: "Skips", rel: [0, 4, 2, 5, 4], dur: 0.9 },
-  octave: { name: "Octave", rel: [0, 12], dur: 1.2, climb: { by: 2, most: 3, back: true } },
-  octdown: { name: "Octave down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
-  arp8: { name: "Arpeggio + octave", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
-  penta: { name: "Pentatonic arc", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
+  long: { name: "One long note", rel: [0], dur: 2.4 },
+  long2: { name: "The same note twice", rel: [0, 0], dur: 1.6 },
+  hold4: { name: "A longer note", rel: [0], dur: 4.0 },
+  hold5: { name: "The longest note", rel: [0], dur: 5.0 },
+  two: { name: "One step up", rel: [0, 2], dur: 1.0 },
+  twodown: { name: "One step down", rel: [2, 0], dur: 1.4 },
+  nbup: { name: "Step up and back", rel: [0, 2, 0], dur: 1.0 },
+  nbdown: { name: "Step down and back", rel: [0, -2, 0], dur: 1.0 },
+  doremi: { name: "Three steps up", rel: [0, 2, 4], dur: 1.0 },
+  down3: { name: "Three steps down", rel: [4, 2, 0], dur: 1.0 },
+  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.9 },
+  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.85, climb: { by: 2, most: 2, back: true } },
+  fivedown: { name: "Five steps down", rel: [7, 5, 4, 2, 0], dur: 0.85 },
+  five: { name: "Up five and back", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
+  fast5: { name: "Quick five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
+  scaleup: { name: "Eight steps up", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
+  scaledown: { name: "Eight steps down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7, climb: { by: 2, most: 1, back: true } },
+  third: { name: "Skip up", rel: [0, 4], dur: 1.0 },
+  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.0, climb: { by: 2, most: 3, back: true } },
+  arp: { name: "Two skips up", rel: [0, 4, 7], dur: 0.9 },
+  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 0.9 },
+  arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.85 },
+  fifth: { name: "Leap up", rel: [0, 7], dur: 1.1 },
+  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.9 },
+  octave: { name: "Big leap up", rel: [0, 12], dur: 1.2, climb: { by: 2, most: 3, back: true } },
+  octdown: { name: "Big leap down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
+  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
+  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
   /* added when the ladders were dealt again (2026-11-15), so that no two ladders share a drill */
-  fourthback: { name: "Fourth and back", rel: [0, 5, 0], dur: 1.0 },
-  fifthoct: { name: "Fifth, then octave", rel: [0, 7, 12], dur: 1.0 },
-  fourdown: { name: "Four down", rel: [5, 4, 2, 0], dur: 1.0 },
-  nbboth: { name: "Both neighbours", rel: [0, 2, 0, -2, 0], dur: 0.9 },
-  fifthdown: { name: "Fifth down", rel: [7, 0], dur: 1.8 },
-  minor5: { name: "Minor five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.75 },
+  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.0 },
+  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.0 },
+  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.0 },
+  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.9 },
+  fifthdown: { name: "Leap down", rel: [7, 0], dur: 1.8 },
+  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.75 },
   /* the last step of every garment (the designer, 2026-11-14: "把 free drill 完全拿掉，換成剛剛討論的進階 drill"): the designer's own
      example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Five rounds at the most
      (two up, the top, two back): about 45 to 60 seconds. the designer, the same day: "最後一關算是最難的 所以 30-40 秒沒
      問題", and of the five-round version, "50-60 seconds is good". */
   climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75, climb: { by: 2, most: 2, back: true } },
 };
+/* What the card of a drill says (the designer, 2026-11-24, after Vocalista's intro card): a goal in a few words and one line
+   of how, about the body and the breath as much as the notes. Kept apart from DRILL so a drill edited in the dev
+   tools keeps its card; a drill made there has none. DRAFT: written by the agent, to be read by the designer or by someone
+   who teaches singing before the web test (docs/later.md). The names above say what the singer does ("Step down
+   and back"), not what a musician calls it ("Neighbour down"); the sound is the cat's, so it is not in the name. */
+export const DRILL_CARD = {
+  long: ["Find the note and stay.", "Breathe in low, start gently, and let the sound run to the end without pushing."],
+  long2: ["Land on it twice.", "Take a small breath in between, and start the second note exactly where the first one was."],
+  two: ["Move without sliding.", "Hear the second note in your head before you go, then step onto it."],
+  nbup: ["Come home to the same note.", "Go up one step and return. The last note should match the first."],
+  nbdown: ["Dip and come home.", "Let the lower note sit lightly, then return to where you began."],
+  doremi: ["Even steps.", "Give every note the same length and the same loudness. No rush to the top."],
+  down3: ["Come down without sagging.", "Keep the breath moving as you go down, so the last note doesn’t sink."],
+  arc: ["One smooth curve.", "Sing it on one breath, up and back, like drawing a small hill."],
+  third: ["Jump over a note.", "Think of the note in between, then leave it out and land cleanly."],
+  thirdback: ["Jump and return, a little higher each round.", "Keep your jaw and shoulders loose as it climbs. Breathe in every rest."],
+  fiveup: ["Climb five without pushing.", "Stay as light on the fifth note as on the first. Breathe in every rest."],
+  climb5: ["Keep it easy all the way up.", "The same hill each round, one step higher. If it gets tight, sing softer, not harder."],
+  arp: ["Skip, skip, land.", "Three notes far apart: keep your mouth the same shape and let the pitch do the moving."],
+  arpdown: ["Come down in two skips.", "Start a little softer than you think, and keep the low note from dropping away."],
+  arpud: ["Up and back on one breath.", "Don’t stop at the top. Turn round and come home the way you came."],
+  fourthback: ["A wider jump, the same ease.", "Hear the top note first. Go there, come back, and match the note you left."],
+  skips: ["Keep your place while it turns.", "It goes up, back a little, and up again. Go through it in your head before you sing."],
+  fifth: ["A clean leap.", "Don’t reach up with your chin. Look straight ahead and let the breath carry it."],
+  fast5: ["Light and quick.", "A small sound and small movements. Quick notes need less air, not more."],
+  fifthoct: ["Leap, then leap again.", "Save room for the top note: start softly, so the last one needs no push."],
+  scaleup: ["All eight on one breath.", "Breathe in low before you start and spend the air evenly, a little for every note."],
+  octave: ["The same note, high up.", "The top is the bottom note’s twin. Go lighter as you go up, never louder."],
+  arp8: ["The whole height in one go.", "Four notes up and the same way down. Let the top one be the lightest."],
+  twodown: ["Settle onto the lower note.", "Slow and soft. Let the second note rest; don’t press it down."],
+  hold4: ["A long note, steady.", "Breathe in through your nose, start quietly, and keep the sound the same from start to end."],
+  fourdown: ["Walk down calmly.", "Each note a little lower, none of them heavier. Keep the air flowing to the last one."],
+  nbboth: ["Stay centred.", "Up a step, home, down a step, home. Home should sound the same all three times."],
+  fivedown: ["A long way down, smoothly.", "Begin gently at the top, so there is air left for the bottom."],
+  hold5: ["Longer still, without shaking.", "Use less air than you think. A quiet steady note beats a loud wobbly one."],
+  fifthdown: ["Drop and land softly.", "Don’t let the low note fall back into your throat. Keep it as light as the high one."],
+  penta: ["A wide curve on one breath.", "Two steps, one skip to the top, and home the same way. No hurry at the top."],
+  minor5: ["Hear the third note sit lower.", "It is the five-note hill with a sadder third step. Listen for it before you sing."],
+  octdown: ["From the top to its twin below.", "Start light. Let the low note be quiet rather than pushed."],
+  scaledown: ["Eight even steps home.", "Spend the air slowly. The last three notes are where it likes to sag."],
+  five: ["A steady hill.", "Up five steps and down again on one breath, every note the same length."],
+};
+export const drillCard = (id) => { const c = DRILL_CARD[id]; return c ? { goal: c[0], how: c[1] } : null; };
 /* drills that no longer exist, for saves and drill-editor edits made before they went: the made-up melodies of
    step 12 became the climbing five */
 const DRILL_ALIAS = { free: "climb5", free5: "climb5" };

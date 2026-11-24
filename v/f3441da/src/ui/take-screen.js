@@ -12,6 +12,7 @@ import { treatLine } from "./cats.js";
 import { planTake } from "../drill/drills.js";
 import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from "../drill/take.js";
 import { takeMood } from "../drill/grade.js";
+import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
 import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled } from "../audio/synth.js";
@@ -20,7 +21,7 @@ import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
 import { demoVoice } from "../audio/demo-voices.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
-import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS } from "../content.js";
+import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS, drillCard, timeById } from "../content.js";
 import { noteName } from "../audio/pitch.js";
 import { tip, hideTip } from "./tips.js";
 import { micBlocked } from "./onboarding.js";
@@ -120,7 +121,6 @@ function playCues() {
   while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
     const c = P.cues[R.cue++];
     if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl));
-    laneTip("climb", 3200, H - 70); // low on the lane, clear of the notes coming in
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
@@ -130,21 +130,34 @@ const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
    full volume before the microphone opens, as the demo is. "Hear it" in the header plays the whole demo. */
 const cueOf = (plan) => ({ ...plan, demoCount: 1, demoTotal: Math.min(plan.notes[0].e - plan.notes[0].s, plan.beat), cue: true });
 
-function render(root, { ctx, retake = false, outcome = null, hear = false }) {
+function render(root, { ctx, retake = false, outcome = null, hear = false, card = false, carded = false }) {
   const S = app.S;
   if (!ctx) return show("home");
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const whole = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
-  const plan = !hear && St.heardDrill(S, whole.drill.id) ? cueOf(whole) : whole;
+  const met = St.heardDrill(S, whole.drill.id);
+  const plan = !hear && met ? cueOf(whole) : whole;
+  /* a drill met for the first time shows its card before anything sounds; the title opens it again (`card`) */
+  const withCard = card || (!met && !carded && !hear && !retake);
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
+  R = { ctx, retake, outcome, plan, whole, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
   R.wearing = ["scarf", "top", "bottom"].map((z) => St.garmentSpec(S, ctx.place, ctx.time, z));
   const name = garmentName(ctx.time, ctx.zone);
+  /* Twelve segments under the garment's name: the steps sung, and the one being sung (the designer, 2026-11-24, after
+     Vocalista's ten: where this garment stands, at a glance, instead of "step 5" in words). The line under them
+     (the drill, the sound, the first note) is there until the singing starts, then it is put away. */
+  const sung = St.progress(S, ctx.place, ctx.time, ctx.zone);
+  const segs = Array.from({ length: STEPS }, (_, k) => `<i${k + 1 === ctx.step ? ' class="now"' : k < sung ? ' class="done"' : ""}></i>`).join("");
   root.innerHTML = `
-    <header class="take-head">
+    <header class="take-head" id="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
-      <div><b>${esc(name)} · step ${ctx.step}${retake ? " · again" : ""}</b><span>${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span></div>
+      <button class="take-title" data-act="card" aria-label="${esc(name)}, step ${ctx.step} of ${STEPS}${retake ? ", again" : ""}. ${esc(plan.drill.name)}: about this drill.">
+        <b>${esc(name)}${retake ? " · again" : ""}</b>
+        <span class="psegs" aria-hidden="true">${segs}</span>
+        <span class="sub">${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span>
+      </button>
       ${plan.cue ? `<button class="btn ghost skip" data-act="hear">▶ Hear it</button>` : `<button class="btn ghost skip" data-act="skip">Skip demo</button>`}
+      ${plan.reps.length > 1 ? `<button class="icon-btn pause" data-act="pause" aria-label="Pause" hidden><i></i><i></i></button>` : ""}
     </header>
     <div class="lane-wrap" id="lane-wrap"></div>
     <div class="judge-wrap" id="judge-wrap">
@@ -178,12 +191,78 @@ function render(root, { ctx, retake = false, outcome = null, hear = false }) {
   if (skip) skip.onclick = () => { if (R.started && R.T.phase === "demo") { stopNodes(); skipDemo(R.T); onCount(); } };
   /* the whole demo, asked for: the take starts over with it (before the singing only; the button goes then) */
   if (again) again.onclick = () => { if (!R || R.T.phase === "sing" || R.T.phase === "done") return; const props = { ...app.props, hear: true }; stop(); show("take", props); };
+  /* the drill's card, asked for: the take starts over behind it (before the singing only) */
+  $("[data-act=card]", root).onclick = () => { if (!R || R.T.phase === "sing" || R.T.phase === "done") return; const props = { ...app.props, card: true }; stop(); show("take", props); };
+  const pz = $("[data-act=pause]", root);
+  if (pz) pz.onclick = () => pause();
   wireTouch(root);
   R.tier = comboTier(app.combo || 0);
   paintJudge();
   showCombo(app.combo || 0, false);
   focusRound(0);
-  start();
+  if (withCard) { hint("", ""); openCard(); } else start();
+}
+
+/* ---------- the drill's card ----------
+   the designer, 2026-11-24, after Vocalista's intro card: the first time a drill comes up, a card says what it is before
+   anything sounds: its plain name, its shape, the sound, a goal in a few words and one line of how (content.js
+   DRILL_CARD). "Hear it" plays the phrase on the card, as often as wanted; having heard it there, the take gives the
+   first note only, like any drill met before. "Start" begins the take. A tap outside the card leaves, as the
+   header's ✕ does. The same card opens from the title while the take has not reached the singing. */
+let PV = null; // the card's preview: its sounds and its timers
+function stopPreview() {
+  if (!PV) return;
+  PV.nodes.forEach((n) => n && n.stop && n.stop());
+  PV.timers.forEach(clearTimeout);
+  PV = null;
+}
+function cardFigure(P) {
+  const first = P.notes.slice(0, P.demoCount), ms = first.map((n) => n.midi);
+  const lo = Math.min(...ms), hi = Math.max(...ms), FW = 300, FH = 84, pad = 22;
+  const dy = hi > lo ? Math.min(9, (FH - 34) / (hi - lo)) : 0, mid = (lo + hi) / 2;
+  const span = Math.max(0.1, P.demoTotal), k = (FW - pad * 2) / span;
+  const bars = first.map((n) => ({ x: pad + n.s * k, w: Math.min(120, Math.max(10, (n.e - n.s) * k - 5)), y: FH / 2 - (n.midi - mid) * dy }));
+  const shift = (FW - (bars[bars.length - 1].x + bars[bars.length - 1].w) - bars[0].x) / 2; // a capped bar leaves room: centre the phrase
+  return `<svg viewBox="0 0 ${FW} ${FH}" aria-hidden="true">${bars.map((r) => `<rect class="dc-pill" x="${(r.x + shift).toFixed(1)}" y="${(r.y - 6).toFixed(1)}" width="${r.w.toFixed(1)}" height="12" rx="6"/>`).join("")}</svg>`;
+}
+function openCard() {
+  const S = app.S, P = R.whole, d = P.drill, T = timeById(R.ctx.time), words = drillCard(d.id);
+  const fresh = !St.heardDrill(S, d.id), props = app.props;
+  const rounds = P.reps.length > 1 ? ` · ${P.reps.length} rounds, a step higher each time${d.climb?.back === false ? "" : ", then back down"}` : "";
+  const el = sheet(`
+    <p class="eyebrow">${fresh ? "New · " : ""}${esc(T.name)} · ${esc(T.flavour)}</p>
+    <h3>${esc(d.name)}</h3>
+    <div class="dc-fig">${cardFigure(P)}<b>“${esc(P.syl)}”</b><span>starts on ${noteName(P.notes[0].midi)}${rounds}</span></div>
+    ${words ? `<div class="dc-words"><p class="eyebrow">GOAL</p><p class="dc-goal">${esc(words.goal)}</p><p class="eyebrow">HOW</p><p>${esc(words.how)}</p></div>` : ""}
+    <div class="row onward"><button class="btn dc-hear" data-a="hear">▶ Hear it</button><button class="btn primary" data-a="start">Start</button></div>`,
+    { onClose: () => { stopPreview(); stop(); show("home"); } });
+  el.querySelector("[data-a=hear]").onclick = () => previewDrill(el, P);
+  el.querySelector("[data-a=start]").onclick = () => { stopPreview(); closeSheet(true); show("take", { ...props, card: false, carded: true }); };
+}
+async function previewDrill(el, P) {
+  if (PV || !R) return;
+  const mine = (PV = { nodes: [], timers: [] }), btn = el.querySelector("[data-a=hear]");
+  btn.disabled = true;
+  audioContext();
+  await musicQuiet();
+  /* a microphone left open would make a phone play this quietly (audio/mic.js) */
+  if (app.S.dev.voice === "mic" && micReady()) { closeMic(); await audioSettled(); }
+  if (PV === mine) await wakeAudio();
+  const first = P.notes.slice(0, P.demoCount);
+  const kind = PV === mine ? await prepareDemo(app.S.dev.demoVoice, P.syl, first.map((n) => n.midi)) : null;
+  if (PV !== mine) return;
+  const lead = 0.2, t0 = clock() + lead, pills = [...el.querySelectorAll(".dc-pill")];
+  first.forEach((n, i) => {
+    mine.nodes.push(demoNote(kind, t0 + n.s, n.midi, n.e - n.s, P.syl));
+    mine.timers.push(setTimeout(() => pills[i]?.classList.add("on"), (lead + n.s) * 1000), setTimeout(() => pills[i]?.classList.remove("on"), (lead + n.e) * 1000));
+  });
+  /* heard to the end: this drill's demo has played (state.js hearDrill), so the take will give the first note only */
+  mine.timers.push(setTimeout(() => {
+    if (PV !== mine) return;
+    PV = null;
+    btn.disabled = false;
+    if (!St.heardDrill(app.S, P.drill.id)) { St.hearDrill(app.S, P.drill.id); app.save(); }
+  }, (lead + P.demoTotal + 0.15) * 1000));
 }
 
 /* LATER (decision 5, fix 4 of the list): the judge humming along under the singer is not built; the
@@ -232,7 +311,7 @@ async function start() {
   R.plan.notes.slice(0, R.plan.demoCount).forEach((n) => R.nodes.push(demoNote(R.demoKind, t0 + n.s, n.midi, R.plan.cue ? R.plan.demoTotal : n.e - n.s, R.plan.syl)));
   R.last = clock(); R.lastW = wall(); R.stall = 0;
   loop();
-  setTimeout(() => R && R.T.phase === "demo" && laneTip("listen", 5000), 250);
+  setTimeout(() => R && R.T.phase === "demo" && !R.plan.cue && laneTip("listen", 5000), 250);
 }
 
 /* The sound did not wake on its own: a button over the lane, because a tap is the one thing a phone always
@@ -292,9 +371,11 @@ function micProblem() {
 
 function stopNodes() { R.nodes.forEach((n) => n && n.stop && n.stop()); R.nodes = []; }
 function stop() {
+  stopPreview();
   if (!R) return;
   holdAudio(false); markAudioStale(); // the next touch makes a fresh sound context (synth.js, "Healing")
   cancelAnimationFrame(R.raf);
+  if (R.paused) R.paused.timers.forEach(clearTimeout);
   stopNodes();
   closeMic();
   R = null;
@@ -326,15 +407,57 @@ function onCount() {
   const skip = document.querySelector("[data-act=skip]");
   if (skip) skip.hidden = true;
   hideTip();
-  laneTip("line", 3500, H - 40);
+  /* The one-time bubbles come here, before the singing, one to a take; none comes up while the player sings
+     (the designer, 2026-11-24: a quieter singing screen). A climbing drill explains itself first, then the line, then the
+     voice, which used to pop up on the first sung note. */
+  (R.plan.reps.length > 1 && laneTip("climb", 5000, H - 70)) || laneTip("line", 3500, H - 40) || laneTip("voice", 4000, H - 40);
 }
 
 /* a lane tip hangs under the cat's head (or under a given lane height), its arrow pointing up at the line */
 function laneTip(id, ms, laneY = null) {
   const lane = document.getElementById("lane");
-  if (!lane || !R) return;
+  if (!lane || !R) return false;
   const k = lane.getBoundingClientRect().height / H;
-  tip(id, lane, { at: "below", x: PLAY_X / W, y: (laneY ?? R.headY + 18) * k + 12, ms });
+  return tip(id, lane, { at: "below", x: PLAY_X / W, y: (laneY ?? R.headY + 18) * k + 12, ms });
+}
+
+/* ---------- pause (a climbing drill) ----------
+   Steps 10 to 12 run for up to a minute, and leaving used to throw the take away. The pause button is in the
+   header while such a drill is sung. Paused, the take's clock stands still and no frame is read; "Go on" counts
+   3, 2, 1 at the drill's own beat and the take runs on from where it stood, so a note cut in two is finished, not
+   started again. The microphone stays open through it (it is still read only while the take runs). */
+function pause() {
+  if (!R || R.paused || R.T.phase !== "sing") return;
+  R.paused = { timers: [] };
+  stopNodes();
+  /* a first-note cue cut off by the pause is given again */
+  const C = R.plan.cues;
+  while (R.cue > 0 && C[R.cue - 1].t + C[R.cue - 1].dur > R.T.t) R.cue--;
+  hint("", "");
+  const wrap = document.getElementById("lane-wrap");
+  if (!wrap) return;
+  const el = document.createElement("div");
+  el.className = "paused"; el.id = "paused";
+  el.innerHTML = `<b>Paused</b><span>${esc(roundWord(R.plan, roundAt(R.plan, R.T.t)))} · it goes on from here</span><div class="row"><button class="btn" data-a="leave">Leave</button><button class="btn primary" data-a="go">Go on</button></div>`;
+  wrap.appendChild(el);
+  el.querySelector("[data-a=leave]").onclick = () => { stop(); show("home"); };
+  el.querySelector("[data-a=go]").onclick = () => resume();
+}
+function resume() {
+  if (!R || !R.paused || R.paused.going) return;
+  R.paused.going = true;
+  document.getElementById("paused")?.remove();
+  const beat = Math.max(0.5, R.plan.beat), at = clock() + 0.05, mine = R;
+  ["3", "2", "1"].forEach((w, k) => {
+    click(at + k * beat, k === 2);
+    R.paused.timers.push(setTimeout(() => R === mine && countdown(w), k * beat * 1000));
+  });
+  R.paused.timers.push(setTimeout(() => {
+    if (R !== mine) return;
+    R.paused = null;
+    countdown("");
+    R.last = clock(); R.lastW = wall(); R.stall = 0;
+  }, 3 * beat * 1000));
 }
 
 /* Ready, 3, 2, 1 and then one beat that shows nothing; the first note is the beat after that, with nothing popping
@@ -521,13 +644,13 @@ function loop() {
       dt = 0;
     }
   }
-  frame(dt);
+  if (!R.paused) frame(dt);
   if (R && R.T.phase !== "done") R.raf = requestAnimationFrame(loop);
 }
 
 /* One frame: read the voice, advance the take, draw. Also used by window.LC.run() with a fixed dt. */
 export function frame(dt) {
-  if (!R || !R.started) return;
+  if (!R || !R.started || R.paused) return;
   const T = R.T, P = R.plan;
   const i = currentIndex(T);
   let v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
@@ -542,19 +665,27 @@ export function frame(dt) {
     else if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { countdown(["Ready", "3", "2", "1", ""][e.k - (P.countBeats - 5)] || ""); hint("", "sing as the notes reach the line"); }
-    else if (e.type === "phase" && e.phase === "sing") { hint("Sing", `“${P.syl}”`); hideTip(); laneTip("voice", 4000); const h = document.querySelector("[data-act=hear]"); if (h) h.hidden = true; }
+    else if (e.type === "phase" && e.phase === "sing") {
+      hint("Sing", `“${P.syl}”`); hideTip();
+      const h = document.querySelector("[data-act=hear]"), pz = document.querySelector("[data-act=pause]");
+      if (h) h.hidden = true;
+      if (pz) pz.hidden = false;
+      document.getElementById("take-head")?.classList.add("singing");
+    }
     else if (e.type === "note-end") onNoteEnd(e.i, e.result);
     else if (e.type === "done") { draw(v, 0); return finish(e.grade); }
   }
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
     const many = P.reps.length > 1, k = roundAt(P, T.t), rep = P.reps[k], resting = many && T.t < rep.s && k > 0;
-    const small = many ? `“${P.syl}” · ${roundWord(P, k)}` : `“${P.syl}”`;
     if (many) { focusRound(k); playCues(); }
-    if (R.flash && T.t < R.flash.until) hint(R.flash.text, small, R.flash.level);
+    /* one thing at a time: a note's verdict, or where the next round starts, or that nothing is heard. "Sing" is
+       said as the singing begins and then goes; it used to sit there for the whole take */
+    if (R.flash && T.t < R.flash.until) hint(R.flash.text, "", R.flash.level);
     else if (resting) hint(rep.dir === "up" ? "A step higher" : "Back down", `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
     else if (R.silentFor > 1.4 && T.t < P.total) hint("Sing out", "the judge can’t hear you yet");
-    else hint("Sing", small);
+    else if (T.t < 1.2 && !R.marks.length) hint("Sing", `“${P.syl}”`);
+    else hint("", "");
   }
   if (R.face !== "neutral" && T.t > R.faceUntil) { setFace("neutral", 0); setLevel(""); }
   draw(v, dt);
@@ -650,6 +781,9 @@ function finish(grade) {
   holdAudio(false); markAudioStale();
   try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
+  /* did the held notes hold still? read beside the grade, which it does not touch (drill/steady.js) */
+  let steady = "";
+  try { steady = steadyLine(steadiness(R.T.frames, plan, R.T.matcher.latency)); } catch { /* the result does without it */ }
   const S = app.S, real = app.real();
   const learnedAll = St.tutorialDone(S);
   cancelAnimationFrame(R.raf);
@@ -698,6 +832,7 @@ function finish(grade) {
     <div class="seg">${segmentSvg({ shape: grade.shape, folds: grade.folds, look: g.look, yarn: g.yarn, kind: g.kind, animal: g.animal })}</div>
     <div class="note-dots${plan.reps.length > 1 ? " rounds" : ""}" role="img" aria-label="${grade.counts.good} on the note, ${grade.counts.mid} close, ${grade.counts.off} off the note">${plan.reps.map((rep) => `<span>${grade.notes.slice(rep.i0, rep.i0 + rep.n).map((r) => `<i class="nd ${r.verdict}">${NOTE_GLYPH[r.verdict]}</i>`).join("")}</span>`).join("")}</div>
     ${legend ? `<p class="note-key"><i class="nd good">✓</i> on the note <i class="nd mid">~</i> close <i class="nd off">?</i> off the note</p>` : ""}
+    ${steady ? `<p class="steady-line">${esc(steady)}</p>` : ""}
     ${treatLine(out.treats)}
     ${onward
       ? `<div class="row onward"><button class="btn again" data-a="retake" aria-label="Sing this step again" title="Sing this step again">↻</button><button class="btn primary" data-a="next">Next step · ${onward.step} of ${STEPS}</button></div>
