@@ -73,10 +73,12 @@ export function climbRounds(range, span, base, climb, nudge = 0) {
 /* The full plan of one take: notes with start/end in seconds from the first downbeat. A climbing drill has
    several rounds (plan.reps), a rest between them, and a cue of each next first note (plan.cues); the demo
    is the first round only (plan.demoCount notes, plan.demoTotal seconds). */
-/* The count-in: Ready, 3, 2, 1, and one beat that shows nothing. Five beats, not four (2026-11-14): the microphone
-   opens on the first, which is silent, so the phone has a beat to settle before the clicks; and the last is
-   empty, a beat to breathe, so nobody has to start on a starting gun (take-screen.js). */
-export const COUNT_BEATS = 5;
+/* The count-in: 3, 2, 1, Go, four beats on the demo's own beat, and the first note is the beat after Go (the designer,
+   2026-11-24: "Let's do 3,2,1 go", and the metronome is to run on from the demo into the singing without a gap).
+   It was five from 2026-11-14: Ready, 3, 2, 1 and a beat that showed nothing. Ready was the silent beat on which
+   the microphone opened; the microphone now opens before the demo (take-screen.js). The empty beat was the designer's, so
+   that nobody starts on a starting gun; Go stands on that beat now, still a whole beat before the note. */
+export const COUNT_BEATS = 4;
 export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null }) {
   const drill = given || drillForStep(step, time); // `drill` is for the dev drill editor: hear a drill before it is saved
   const fl = FLAVOURS[time] || FLAVOURS.golden;

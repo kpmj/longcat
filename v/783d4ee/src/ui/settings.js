@@ -11,7 +11,7 @@ import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState } from "../audio/synth.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
 import { MUSIC, setTune, startMusic, stopMusic } from "../audio/ambient.js";
-import { openMic, closeMic, readMic, micReady } from "../audio/mic.js";
+import { openMic, closeMic, readMic, micReady, MIC_MODES, setMicMode, micMode } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
 /* the first note of the next step, in the current key */
@@ -123,6 +123,9 @@ export function openDev() {
     <button class="btn small" data-a="drills">Open the drill editor</button>
     <h4>Voice source</h4>
     <div class="radio">${VOICE_MODES.map((v) => `<label><input type="radio" name="voice" value="${v.id}" ${S.dev.voice === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Microphone</h4>
+    <p class="muted small">How the phone plays while it listens. If the cat stops following your voice, or the sound crackles, try the other one.</p>
+    <div class="radio">${MIC_MODES.map((v) => `<label><input type="radio" name="micmode" value="${v.id}" ${micMode() === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Cat body on short notes</h4>
     <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.shortBody || "snap") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Demo voice</h4>
@@ -160,6 +163,7 @@ export function openDev() {
     try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into the chat."); }
     catch { ta.hidden = false; ta.value = text; ta.focus(); ta.select(); toast("Select all and copy."); }
   };
+  $$("input[name=micmode]", el).forEach((i) => (i.onchange = () => { S.dev.micMode = i.value; setMicMode(i.value); closeMic(); app.save(); toast(`Microphone: ${MIC_MODES.find((v) => v.id === i.value).name}`); }));
   $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
   const hearDemo = async () => { audioContext(); const m = firstNote(S).midi, hs = sylFor("bottom", St.currentTime(S, place) || "morning"), kind = await prepareDemo(S.dev.demoVoice, hs, [0, 2, 4].map((d) => m + d)); [0, 2, 4, 2, 0].forEach((d, k) => demoNote(kind, now() + 0.08 + k * 0.6, m + d, 0.52, hs)); };
   el.querySelector("[data-a=hear-demo]").onclick = hearDemo;

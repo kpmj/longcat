@@ -6,7 +6,7 @@
    Notes that land in a row build a combo; the judge gets happier and the sky around it fills up (stars, music,
    a rainbow, confetti). An off note ends the run quietly; nothing is lost. */
 import { app, show, sheet, closeSheet, esc, $, readVoice, prepareVoice, touchVoice } from "./app.js";
-import { openMic, closeMic, micReady, micGranted } from "../audio/mic.js";
+import { openMic, closeMic, micReady, micMode, micInfo } from "../audio/mic.js";
 import * as St from "../state.js";
 import { treatLine } from "./cats.js";
 import { planTake } from "../drill/drills.js";
@@ -15,7 +15,7 @@ import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled } from "../audio/synth.js";
+import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
@@ -40,15 +40,16 @@ const LAND = 0.08; // seconds: moving to another note. 0.045, then 0.065 ("still
 // probably move a bit slower ... it's very slight though", 2026-11-14). The head now takes about a quarter slower to
 // cross to the next note; within a semitone of it, it follows the voice at FOLLOW again.
 let R = null;
-/* While the microphone is open a phone plays everything quietly, as on a call (audio/mic.js), and that is exactly
-   while the player sings. the designer, 2026-11-24: "When player starts singing the sound becomes too quiet so players can't
-   hear the notes and the tempo." So what sounds under an open microphone is booked louder: the metronome, the
-   count-in and the first note given before each round. Not the bell at the end of a note, which rings while the
-   next note is being heard. Only with the real microphone: the automatic singers leave the phone at full volume.
-   DRAFT numbers, not heard on a phone by the agent: louder ticks also reach the microphone, and if notes start
-   being missed on the beat these are the numbers to turn down. */
-const MIC_TICK = 2.5, MIC_CLICK = 2.5, MIC_CUE = 2.2;
-const underMic = () => app.S.dev.voice === "mic" && micReady();
+/* One level for the whole take. the designer, 2026-11-24: first "When player starts singing the sound becomes too quiet so
+   players can't hear the notes and the tempo", then, with the beat and the cues booked louder under the
+   microphone, "The total volume of the singing part is still too low. Please make it the same as the demo", and
+   "keep the 節拍器 going even in between the demo and the singing. Cutting out the tempo cue throws the player off".
+   A phone changes how it plays the moment a page opens the microphone, and its sound stops for an instant while it
+   does. So the microphone is now opened before the demo and stays open to the end of the take: the demo, the count
+   and the singing are played the same way, and the metronome runs through all three on one beat. How loud that is
+   depends on how the microphone was asked for (audio/mic.js MIC_MODES); everything the take plays is lifted by
+   MIC_BOOST for that mode. DRAFT numbers, not heard on a phone by the agent. */
+const MIC_BOOST = { speaker: 1.3, plain: 2.2 };
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
 const wall = () => performance.now() / 1000;
@@ -129,7 +130,7 @@ function playCues() {
   const P = R.plan, T = R.T;
   while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
     const c = P.cues[R.cue++];
-    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl, underMic() ? { vol: MIC_CUE } : {}));
+    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl));
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
@@ -270,32 +271,36 @@ async function previewDrill(el, P) {
 /* LATER (decision 5, fix 4 of the list): the judge humming along under the singer is not built; the
    take stays "hear it once, then sing with only the metronome". See docs/later.md. */
 async function start() {
-  /* The microphone is open only from the count-in to the end of singing: while it is open an iPhone plays
-     everything quietly (see audio/mic.js). The first time in a visit it is opened here, so the permission
-     question comes before the demo, then closed again so the demo is heard at full volume. */
+  /* The microphone is opened here, before the demo, and closed when the take ends (see MIC_BOOST above for why).
+     Until 2026-11-24 it was opened at the count, so that the demo played at full volume; the price was the phone
+     changing its sound, and the beat stopping, between the demo and the singing. */
   const mic = app.S.dev.voice === "mic";
   /* Home's music is fading out (ambient.js, about a third of a second). Nothing of the take may start over it:
      opening or closing the microphone makes a phone drop to call volume, and the music is not in the log of
      sounds the game made itself. */
   await musicQuiet();
   if (!R) return;
-  if (mic && micReady()) closeMic(); // left open by the range finder or the microphone test
-  if (mic && !micGranted()) {
+  /* one left open by the range finder or the microphone test is wired to a sound context that may be gone */
+  if (mic && micReady()) closeMic();
+  const listen = async () => {
     /* if the browser's question is slow to come, say what the game is waiting for */
     const wait = setTimeout(() => R && !R.started && hint("Allow the microphone", "The demo starts right after"), 1200);
     const ok = await prepareVoice();
     clearTimeout(wait);
-    if (!R) return;
-    if (!ok) return micProblem();
-    closeMic();
-    await audioSettled(); // letting the microphone go switches the phone's sound back: wait until it runs again
-    if (!R) return;
-    hint(LISTEN(), "");
-  } else if (!mic) await prepareVoice();
+    if (!R) return false;
+    if (!ok) { micProblem(); return false; }
+    await audioSettled(); // opening the microphone switches the phone's sound: wait until it runs again
+    return !!R;
+  };
+  if (mic && !(await listen())) return;
   if (!R) return;
   /* the phone may have paused the sound (synth.js): wake it, and if it will not wake, ask for one tap */
+  const before = audioContext();
   if (!(await wakeAudio()) && R) await soundAsleep();
   if (!R) return;
+  /* that tap may have made a new sound context: the microphone has to be wired to it */
+  if (mic && audioContext() !== before) { closeMic(); if (!(await listen())) return; }
+  if (mic) { holdAudio(true); setBoost(MIC_BOOST[micMode()] || 1); hint(LISTEN(), ""); }
   /* the recorded voice: fetch this take's notes (and the cues between rounds) before anything is sung; if they do
      not all arrive, the whole take uses the synthesised voice instead */
   const fetching = setTimeout(() => R && !R.started && hint(LISTEN(), "getting the voice…"), 700);
@@ -374,6 +379,7 @@ function stopNodes() { R.nodes.forEach((n) => n && n.stop && n.stop()); R.nodes 
 function stop() {
   stopPreview();
   if (!R) return;
+  setBoost(1);
   holdAudio(false); markAudioStale(); // the next touch makes a fresh sound context (synth.js, "Healing")
   cancelAnimationFrame(R.raf);
   if (R.paused) R.paused.timers.forEach(clearTimeout);
@@ -390,16 +396,17 @@ function onCount() {
      all of that, so afterwards sound and picture could be apart. Now the take's clock stands at the first count
      beat, showing Ready, until the microphone is open and the sound's clock is moving again (loop); only then
      does the count go Ready, 3, 2, 1. However long the phone takes, nothing is counted during it. */
-  R.clicked = 0;
+  R.clicked = -1;
   /* the demo has played, or was skipped: this drill has been met, and its card will not come up by itself again */
   if (!St.heardDrill(app.S, R.plan.drill.id)) { St.hearDrill(app.S, R.plan.drill.id); app.save(); }
+  /* the microphone is open since before the demo; this is only for one that is not, whatever the reason */
   if (app.S.dev.voice === "mic" && !micReady()) {
     R.hold = { since: wall(), ready: false, a0: 0, w0: 0, told: false };
     const mine = R;
     openMic().then((ok) => {
-      /* the take it was opened for is gone (left, or started over behind its card): a demo must not play under an
-         open microphone, which makes a phone play everything quietly */
-      if (R !== mine) { if (ok && (!R || R.T.phase === "demo")) closeMic(); return; }
+      /* the take it was opened for is gone: with no take running, the microphone is let go again (another take
+         keeps it, its own or this one) */
+      if (R !== mine) { if (ok && !R) closeMic(); return; }
       if (!R) return;
       if (!ok) { stop(); micProblem(); return; }
       if (R.hold) { R.hold.ready = true; R.hold.a0 = clock(); R.hold.w0 = wall(); }
@@ -450,7 +457,7 @@ function resume() {
   document.getElementById("paused")?.remove();
   const beat = Math.max(0.5, R.plan.beat), at = clock() + 0.05, mine = R;
   ["3", "2", "1"].forEach((w, k) => {
-    click(at + k * beat, k === 2, underMic() ? MIC_CLICK : 1);
+    click(at + k * beat, k === 2);
     R.paused.timers.push(setTimeout(() => R === mine && countdown(w), k * beat * 1000));
   });
   R.paused.timers.push(setTimeout(() => {
@@ -598,25 +605,29 @@ function onNoteEnd(i, r) {
 const TICK_AHEAD = 0.12;
 function bookTicks() {
   const T = R.T, at = clock();
-  /* The count-in: di, di, Di on 3, 2, 1 and a soft tick on the empty beat before the first note. the designer, 2026-11-14: "the di di Di with
+  /* The count-in (until 2026-11-24: di, di, Di on 3, 2, 1 and a soft tick on an empty beat). the designer, 2026-11-14: "the di di Di with
      3, 2, 1 is not synced". All four clicks used to be booked at once when the count began, at fixed moments of
      the audio clock; the microphone opens at that same moment, and when the phone's sound stumbled then, the
      clicks slid away from the numbers and stayed away. Now each click is booked just before its own beat, from
      where the take's clock is, like the metronome: a stumble can no longer shift the ones after it. */
   if (T.phase === "count") {
+    /* 3, 2, 1, Go: the metronome's light tap goes on through the count, on the demo's beat, and each count beat
+       has its own click over it, a higher one on Go (the designer, 2026-11-24). The first note is the beat after Go and
+       gets the metronome's knock. */
     const P = R.plan, n = P.countBeats;
-    for (let k = (R.clicked || 0) + 1; k < n; k++) {
+    for (let k = (R.clicked ?? -1) + 1; k < n; k++) {
       const tk = -P.beat * (n - k);
       if (tk >= T.t + TICK_AHEAD) break;
       const when = Math.max(at, at + (tk - T.t));
-      if (k === n - 1) tick(when, false, underMic() ? MIC_TICK : 1); else click(when, k === n - 2, underMic() ? MIC_CLICK : 1);
+      tick(when, false);
+      click(when, k === n - 1);
       R.clicked = k;
     }
   }
   for (const k of ticksIn(T, T.t, T.t + TICK_AHEAD)) {
     const when = at + (k.t - T.t);
     if (when <= R.ticked + 0.02) continue;
-    tick(when, k.accent, T.phase !== "demo" && underMic() ? MIC_TICK : 1);
+    tick(when, k.accent);
     R.ticked = when;
   }
 }
@@ -664,9 +675,10 @@ export function frame(dt) {
   for (const e of evs) {
     if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
-    else if (e.type === "beat") { countdown(["Ready", "3", "2", "1", ""][e.k - (P.countBeats - 5)] || ""); hint("", "sing as the notes reach the line"); }
+    else if (e.type === "beat") { const w = ["3", "2", "1", "Go"][e.k - (P.countBeats - 4)] || ""; countdown(w, w === "Go"); hint("", "sing as the notes reach the line"); }
     else if (e.type === "phase" && e.phase === "sing") {
       hint("Sing", `“${P.syl}”`); hideTip();
+      countdown(""); // Go has had its beat (with reduced motion it would not fade by itself)
       const pz = document.querySelector("[data-act=pause]");
       if (pz) pz.hidden = false;
       document.getElementById("take-head")?.classList.add("singing");
@@ -776,9 +788,11 @@ function resultLine(grade, mood) {
 }
 
 function finish(grade) {
+  const heardBy = micInfo();
+  setBoost(1);
   closeMic(); // the singing is over: the result sounds play at full volume
   holdAudio(false); markAudioStale();
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, mic: heardBy, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   /* did the held notes hold still? read beside the grade, which it does not touch (drill/steady.js) */
   let steady = "";

@@ -16,6 +16,14 @@ export function heardItself(midi, keep) {
 }
 
 let ac = null, master = null, fx = null, fxTone = null, muted = false;
+/* Everything a take plays is lifted by the same amount while its microphone is open, so the demo, the beat and
+   the notes given between rounds stay one level (take-screen.js). The limiter below catches what goes over. */
+const MASTER = 1.8;
+let boost = 1;
+export function setBoost(k = 1) {
+  boost = k > 0 ? k : 1;
+  if (ac && master) { try { master.gain.setTargetAtTime(MASTER * boost, ac.currentTime, 0.02); } catch { master.gain.value = MASTER * boost; } }
+}
 
 export function audioContext() {
   if (!ac) {
@@ -26,7 +34,7 @@ export function audioContext() {
     /* Play-test, 2026-11-14: "really low even with the volume at max". A default compressor squashed
        everything above -24 dBFS with no make-up gain (the designer's recording peaked near -10 dBFS). Now a limiter
        like the old app's: idle at normal levels, it only catches peaks. */
-    master.gain.value = 1.8;
+    master.gain.value = MASTER * boost;
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -3; comp.knee.value = 2; comp.ratio.value = 20;
     comp.attack.value = 0.002; comp.release.value = 0.12;
@@ -226,19 +234,21 @@ function noise(dur, vol, type, f, q = 1, t = null, f1 = null) {
 /* The metronome under the demo and the singing. A short burst of high noise, not a tone: the microphone hears
    the phone's own speaker, and a tone would be taken for a sung pitch. Noise has no pitch, and it is over in
    a fraction of the tracker's window. Quiet on purpose. */
-/* `loud` > 1 while the microphone is open: a phone then plays everything as quietly as a call, and the beat could
-   not be heard under one's own singing (the designer, 2026-11-24). Louder and a little longer, still noise with no pitch. */
-export function tick(t = null, accent = false, loud = 1) {
+/* accent = a note starts on this beat. the designer, 2026-11-24: "let's have the starting beat for each note stronger so
+   the player knows that's the beat they are singing". The two used to differ a little (0.55 against 0.32, a
+   slightly higher band). Now the note's beat is a full knock, lower, about three times as strong and twice as
+   long, and the beats in between are a light tap. */
+export function tick(t = null, accent = false) {
   if (muted || !audioContext()) return;
   const t0 = Math.max(ac.currentTime, t ?? 0);
   if (!noiseBuf) noise(0.001, 0, "lowpass", 100); // makes the shared noise buffer
   const s = ac.createBufferSource(), b = ac.createBiquadFilter(), g = ac.createGain();
-  s.buffer = noiseBuf; b.type = "bandpass"; b.frequency.value = accent ? 4200 : 3200; b.Q.value = 3;
-  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime((accent ? 0.55 : 0.32) * loud, t0 + 0.001); g.gain.exponentialRampToValueAtTime(0.001, t0 + (loud > 1 ? 0.034 : 0.024));
+  s.buffer = noiseBuf; b.type = "bandpass"; b.frequency.value = accent ? 2600 : 3800; b.Q.value = accent ? 2 : 3;
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(accent ? 0.95 : 0.3, t0 + 0.001); g.gain.exponentialRampToValueAtTime(0.001, t0 + (accent ? 0.05 : 0.024));
   s.connect(b); b.connect(g); g.connect(fx);
-  s.start(t0); s.stop(t0 + 0.06);
+  s.start(t0); s.stop(t0 + 0.08);
 }
-export function click(t, accent = false, loud = 1) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, 0.07, 0.2 * loud, t); }
+export function click(t, accent = false) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, accent ? 0.1 : 0.07, accent ? 0.3 : 0.2, t); }
 export function chime(notes = [523, 659, 784]) {
   if (!audioContext()) return;
   notes.forEach((f, i) => tone("sine", f, f, 0.32, 0.12, ac.currentTime + i * 0.11));

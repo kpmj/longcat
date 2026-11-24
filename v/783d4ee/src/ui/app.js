@@ -5,7 +5,7 @@ import { sceneParts } from "../art/index.js";
 import { tapSound, stopMusic } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
-import { readMic, openMic, micReady } from "../audio/mic.js";
+import { readMic, openMic, micReady, setMicMode } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
 import { VOICES } from "../drill/take.js";
 import { applyDrillEdits, drillEditCount } from "../content.js";
@@ -35,6 +35,7 @@ export function boot() {
   if (new URLSearchParams(location.search).has("dev")) app.S.dev.panel = true;
   app.S.dev.drillEdits = drillEditCount(app.S.dev.drillEdits) ? applyDrillEdits(app.S.dev.drillEdits) : null;
   setMuted(!app.S.settings.sound);
+  setMicMode(app.S.dev.micMode);
 }
 
 /* ---------- router ----------
