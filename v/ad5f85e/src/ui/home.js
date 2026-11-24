@@ -76,13 +76,16 @@ export function renderHome(root) {
   const time = St.currentTime(S, place);
   const shownTime = time || "night";
   const nt = St.nextTake(S, place);
-  const unread = St.unreadLetters(S, real).filter((x) => x !== "onsen" || !S.onboarded);
-  const special = St.specialFor(place);
+  /* who is visiting follows the date; Home is where a day that has turned is first noticed */
+  St.keepVisit(S, real);
+  const unread = St.unreadLetters(S).filter((x) => x !== "onsen" || !S.onboarded);
+  const special = St.visiting(S);
   /* all nine on: the row says so; the middle button of the bottom row turns into Mix outfits */
   let note = "";
   if (!time) {
-    const nx = St.nextOpening(S, real);
-    note = nx ? `All nine are on. The next letter comes on ${St.monthLabel(nx.date)}.` : "All nine are on. Every place is open.";
+    /* the next place opened long ago, when the morning here was finished */
+    const more = St.placeWaiting(S, place);
+    note = more ? `All nine are on. ${placeById(more).name} is waiting.` : "All nine are on, in every place.";
   }
   const T = timeById(shownTime);
   root.innerHTML = `
@@ -91,7 +94,7 @@ export function renderHome(root) {
       <button class="home-pill paper" data-act="places" aria-label="${esc(p.name)}, ${esc(T.name)}. Open the places"><b>${esc(p.name)}</b><span>${esc(T.name)}</span><i aria-hidden="true">▾</i></button>
       <div class="home-tools">${unread.length ? `<button class="home-ico paper letter" data-act="letter" aria-label="A letter">✉<i></i></button>` : ""}<button class="home-ico paper music${musicOn(S) ? "" : " off"}" data-act="music" aria-pressed="${musicOn(S)}" aria-label="Music">♪</button></div>
     </header>
-    ${special ? '<span class="home-special paper">New Year month</span>' : ""}
+    ${special ? '<span class="home-special paper">New Year visit</span>' : ""}
     <section class="home-tray paper" aria-label="The three garments">
       ${note ? `<p class="home-note">${esc(note)}</p>` : ""}
       <div class="home-cells">${garmentCells(S, place, shownTime)}</div>

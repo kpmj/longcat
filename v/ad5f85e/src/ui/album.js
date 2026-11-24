@@ -17,7 +17,7 @@ function cardSvg(card) {
 
 export function renderAlbum(root, topbar, segs, wireSegs) {
   const S = app.S, real = app.real(), n = S.journal.length;
-  const opened = St.openedPlaces(S, real);
+  const opened = St.openedPlaces(S);
   const cells = opened.map((place) => {
     const p = placeById(place), m = S.months[place];
     const done = St.garmentsDone(S, place), cards = m?.cards || [];

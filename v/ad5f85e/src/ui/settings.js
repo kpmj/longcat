@@ -50,8 +50,8 @@ function render(root) {
       <div class="card"><h4>Sound and letters</h4>
         <label class="toggle"><input type="checkbox" data-a="sound" ${S.settings.sound ? "checked" : ""}><span>Game sound (the hum, the bells, taps on the home page)</span></label>
         <label class="toggle"><input type="checkbox" data-a="music" ${S.settings.music !== false ? "checked" : ""}><span>Music on the home page</span></label>
-        <label class="toggle"><input type="checkbox" data-a="letters" ${S.settings.letterNotify ? "checked" : ""}><span>Tell me when the monthly letter arrives</span></label>
-        <p class="muted small">Only the monthly letter, never a daily reminder. Phone notifications aren’t built yet; for now the letter shows up in the game.</p>
+        <label class="toggle"><input type="checkbox" data-a="letters" ${S.settings.letterNotify ? "checked" : ""}><span>Tell me when a letter arrives</span></label>
+        <p class="muted small">Only a letter, never a daily reminder. Phone notifications aren’t built yet; for now the letter shows up in the game.</p>
       </div>
       <div class="card"><h4>Help</h4>
         <div class="set"><span><b>Show the tips again</b></span><button class="btn small" data-a="tips">Reset</button></div>

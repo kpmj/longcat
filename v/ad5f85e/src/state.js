@@ -3,7 +3,7 @@
    judge's learned faces, the singing days, each month's postcards, the treats earned and spent and the cats
    brought home. Nothing in it ever goes down (treats are earned minus spent, and both only grow). */
 import {
-  STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, LAUNCH, SPECIAL_MONTHS, GUEST_BY_ZONE, NEWYEAR_NIGHT_SCARF,
+  STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, OPEN_AFTER, CALENDAR_LAUNCH, VISIT_MONTHS, VISITORS,
   TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName, kindFor, yarnFor,
   TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat, knitOf, knitGarment,
 } from "./content.js";
@@ -45,6 +45,8 @@ export function freshSave(real = new Date()) {
     takes: [],
     months: {},
     letters: [],
+    opened: [],                      // places the calendar had opened before 2026-11-24: they stay open
+    visit: visitId(dateKey(real)),   // who is visiting now ("newyear-2027"), or null; see keepVisit
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
@@ -63,6 +65,9 @@ export function migrate(o, real = new Date()) {
   /* 2026-11-14: cat kinds are cast per month (content.js kindFor), no longer a setting; an old choice is dropped */
   delete S.settings.kinds;
   S.dev = { ...base.dev, ...(o.dev || {}) };
+  /* 2026-11-24: places open by singing, not by the date. What the calendar had opened in this save stays open */
+  S.opened = Array.isArray(o.opened) ? o.opened.filter((id) => PLACE_IDS.includes(id)) : PLACE_IDS.filter((id, i) => i > 0 && calendarKey(i) <= todayKey(S, real));
+  keepVisit(S, real);
   /* 2026-11-14: the recorded voice became the demo voice. A save from before it existed holds whichever synthesised
      voice was picked last; it moves to the recorded one once, and the Dev panel can still choose another. */
   if (!o.dev || !o.dev.recVoice) { S.dev.demoVoice = "rec"; S.dev.recVoice = true; }
@@ -97,31 +102,37 @@ export function writeSave(storage, S) {
   try { storage?.setItem(SAVE_KEY, JSON.stringify(S)); return true; } catch { return false; }
 }
 
-/* ---------- calendar: a new place on the 1st of each month ---------- */
-export function placeOpenKey(index) {
-  const m0 = LAUNCH.month - 1 + index;
-  return `${LAUNCH.year + Math.floor(m0 / 12)}-${pad((m0 % 12) + 1)}-01`;
+/* ---------- places: the next one opens when the morning before it is finished ---------- */
+/* the old rule, a new place on the 1st of each month: read by migrate only */
+function calendarKey(index) {
+  const m0 = CALENDAR_LAUNCH.month - 1 + index;
+  return `${CALENDAR_LAUNCH.year + Math.floor(m0 / 12)}-${pad((m0 % 12) + 1)}-01`;
 }
-export function specialFor(placeId) {
-  const i = PLACE_IDS.indexOf(placeId);
-  if (i < 0) return false;
-  const month = Number(placeOpenKey(i).slice(5, 7));
-  return SPECIAL_MONTHS[month] || false;
+export function openedPlaces(S) {
+  const kept = Array.isArray(S.opened) ? S.opened : [];
+  return PLACE_IDS.filter((id, i) => i === 0 || kept.includes(id) || timeDone(S, PLACE_IDS[i - 1], OPEN_AFTER));
 }
-export function openedPlaces(S, real) {
-  const today = todayKey(S, real);
-  return PLACE_IDS.filter((id, i) => i === 0 || placeOpenKey(i) <= today);
+/* the next place to open, the place whose morning opens it, and how many steps of that morning are left */
+export function nextOpening(S) {
+  const open = openedPlaces(S), i = PLACE_IDS.findIndex((id) => !open.includes(id));
+  if (i < 0) return null;
+  const after = PLACE_IDS[i - 1];
+  return { place: PLACE_IDS[i], after, left: ZONE_IDS.reduce((n, z) => n + STEPS - Math.min(STEPS, progress(S, after, OPEN_AFTER, z)), 0) };
 }
-export function nextOpening(S, real) {
-  const today = todayKey(S, real);
-  const i = PLACE_IDS.findIndex((id, k) => k > 0 && placeOpenKey(k) > today);
-  return i < 0 ? null : { place: PLACE_IDS[i], date: placeOpenKey(i) };
-}
-export function animalFor(placeId, time, zone) {
-  if (specialFor(placeId) !== "newyear") return "cat";
-  if (time === "night" && zone === "scarf") return NEWYEAR_NIGHT_SCARF;
-  return GUEST_BY_ZONE[zone];
-}
+/* an open place with something left to sing, other than `but` */
+export const placeWaiting = (S, but = null) => openedPlaces(S).find((p) => p !== but && !monthDone(S, p)) || null;
+
+/* ---------- a visit: the one thing the calendar still does ----------
+   The save says who is visiting ("newyear-2027": which visit, and the year, so that its letter comes again the next
+   year). It is set from the date when the game is opened and whenever Home is drawn (keepVisit), so that everything
+   that draws a singer can ask the save and not the clock. */
+export const visitOn = (key) => VISIT_MONTHS[Number(String(key || "").slice(5, 7))] || false;
+function visitId(key) { const v = visitOn(key); return v ? `${v}-${key.slice(0, 4)}` : null; }
+export function keepVisit(S, real) { S.visit = visitId(todayKey(S, real)); return S.visit; }
+export const visiting = (S) => (S.visit ? String(S.visit).split("-")[0] : false);
+/* the guests who may sing any garment anywhere while they are here */
+export const visitors = (S) => VISITORS[visiting(S)] || [];
+export const isVisitLetter = (id) => !PLACE_IDS.includes(id);
 
 /* ---------- one month (one place) ---------- */
 export function monthOf(S, place) {
@@ -164,8 +175,8 @@ export const tutorialDone = (S) => S.faces >= STEPS;
 export const latestFace = (S) => (S.faces > 0 ? TUTORIAL_FACES[Math.min(S.faces, STEPS) - 1].id : "neutral");
 export const canTravel = (S) => tutorialDone(S);
 
-export function goTo(S, place, real) {
-  if (!openedPlaces(S, real).includes(place)) return false;
+export function goTo(S, place) {
+  if (!openedPlaces(S).includes(place)) return false;
   if (place !== "onsen" && !canTravel(S)) return false;
   S.here = place;
   return true;
@@ -246,8 +257,8 @@ export function earnTreats(S, real = new Date()) {
   return { got: TREATS.take, left: TREATS.perDay - t.n, total, first: total >= TREATS.cat && total - TREATS.take < TREATS.cat };
 }
 export const ownsCat = (S, id) => (S.cats || []).includes(id);
-/* the cats that live at a place: its cast of three, by zone. In a special month the guests sing instead (animalFor) */
-export const catsHere = (place) => (specialFor(place) ? [] : ZONE_IDS.map((z) => kindFor(place, z)));
+/* the cats that live at a place: its cast of three, by zone */
+export const catsHere = (place) => ZONE_IDS.map((z) => kindFor(place, z));
 /* what can be brought home from here: the place's own cats and the shelf, without the ones already at home */
 export function shelfAt(S, place) {
   const free = (id) => !ownsCat(S, id);
@@ -272,13 +283,13 @@ export function nameCat(S, id, name) {
   return true;
 }
 /* Who sings a garment. A place has three singers, one per zone, the same at every time of day: its own three cats
-   until the player puts one of theirs in ("玩家選，每月有貓來玩"). Stored per place as cast[zone] = id, only for
-   the zones the player changed. A singer who may no longer sing here falls back to the place's own. */
-const homeSinger = (place, time, zone) => { const a = animalFor(place, time, zone); return a === "cat" ? kindFor(place, zone) : a; };
-/* the place's own three at a time of day, by zone: its cats, or a special month's guests */
+   until the player puts in one of theirs ("玩家選，每月有貓來玩") or a guest who is visiting. Stored per place as
+   cast[zone] = id, only for the zones the player changed. A singer who may no longer sing here (a guest who has
+   gone home) falls back to the place's own. */
+const homeSinger = (place, time, zone) => kindFor(place, zone);
+/* the place's own three, by zone */
 export const homeCast = (place, time) => Object.fromEntries(ZONE_IDS.map((z) => [z, homeSinger(place, time, z)]));
-const guestsHere = (place) => (specialFor(place) === "newyear" ? [...Object.values(GUEST_BY_ZONE), NEWYEAR_NIGHT_SCARF] : []);
-const maySing = (S, place, id) => ownsCat(S, id) || catsHere(place).includes(id) || guestsHere(place).includes(id);
+const maySing = (S, place, id) => ownsCat(S, id) || catsHere(place).includes(id) || visitors(S).includes(id);
 export function castAt(S, place, time) {
   const stored = peek(S, place).cast || {}, out = {}, used = new Set();
   for (const z of ZONE_IDS) { const id = stored[z]; if (id && maySing(S, place, id) && !used.has(id)) { out[z] = id; used.add(id); } }
@@ -413,7 +424,7 @@ export function homeScene(S, place = S.here, real, extra = {}) {
     place, time: cur, face: extra.face || "neutral", garments, baskets: [],
     /* no daily cushion on the next step any more: a red block with a number on the judge read as a puzzle, and the
        bottom row already says which step is next (the designer, 2026-11-14: "把它完全拿掉"). The art can still draw one. */
-    cushion: null, special: specialFor(place), animate: true, seed: takesAt(S, place),
+    cushion: null, special: visiting(S), animate: true, seed: takesAt(S, place),
     landscape: true, // the place's full landscape, as on the postcards (the designer, 2026-11-14)
     ...extra,
   };
@@ -482,13 +493,13 @@ export function cardScene(S, card, extra = {}) {
        it wore at that time of day, as it did then; an older card still has no yarns and shows each garment's own */
     const who = card.cats?.[z]
       ? singerLook(card.place, card.set[z], z, card.cats[z])
-      : { animal: animalFor(card.place, card.set[z], z), kind: card.kinds?.[z] || kindFor(card.place, z), look: garmentLook(card.place, card.set[z], z) };
+      : { animal: "cat", kind: card.kinds?.[z] || kindFor(card.place, z), look: garmentLook(card.place, card.set[z], z) };
     const bare = card.yarns?.[z] === NO_YARN;
     if (bare) who.look = { ...who.look, fur: "short" };
     /* a card from before garments could be wrapped by hand has no `wraps`: it shows the game's wrap, as it did */
     return { ...g, ...who, yarn: bare ? null : yarnAt(card.place, card.yarns?.[z]) || yarnFor(card.place, card.set[z], z), wrap: card.wraps ? cleanWrap(card.wraps[z]) : null };
   });
-  return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: specialFor(card.place), animate: false, seed: 7, ...extra };
+  return { place: card.place, time: card.bg, face: "neutral", garments, baskets: [], cushion: null, special: visitOn(card.date), animate: false, seed: 7, ...extra };
 }
 /* What the album and the wardrobe hold, for the dock's "something new" dots. The album is its postcards: the
    judge's faces are no longer kept there (the designer, 2026-11-15: an Easter egg, not a list). */
@@ -512,7 +523,8 @@ export const beatPending = (S, place) => TIME_IDS.find((t) => timeDone(S, place,
 export function markBeatSeen(S, place, time) { monthOf(S, place).seen[time] = true; }
 
 /* ---------- letters ---------- */
-export const unreadLetters = (S, real) => openedPlaces(S, real).filter((p) => !S.letters.includes(p));
+/* a letter per open place, and one for the visit while it lasts */
+export const unreadLetters = (S) => [...openedPlaces(S), ...(S.visit ? [S.visit] : [])].filter((p) => !S.letters.includes(p));
 export function readLetter(S, place) { if (!S.letters.includes(place)) S.letters.push(place); }
 
 /* ---------- dev cheats (the dev panel only) ---------- */

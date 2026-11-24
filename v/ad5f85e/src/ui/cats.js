@@ -163,8 +163,10 @@ export function paintDress(body, zone, t, { which = null, changed = () => {}, pa
      the two, and the line under the title says so. */
   const cast = St.castAt(S, place, t), cur = cast[z.id];
   const home = [...new Set(Object.values(St.homeCast(place, t)))].filter((id) => !St.ownsCat(S, id));
-  const ids = [...S.cats, ...home, ...Object.values(cast).filter((id) => !S.cats.includes(id) && !home.includes(id))];
-  const noteOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id && x.id !== z.id); return at ? onThe(at.id) : St.ownsCat(S, id) ? "" : "lives here"; };
+  /* while guests visit (state.js visitors) they come after the ones who live here */
+  const guests = St.visitors(S).filter((id) => !St.ownsCat(S, id));
+  const ids = [...S.cats, ...home, ...guests, ...Object.values(cast).filter((id) => !S.cats.includes(id) && !home.includes(id) && !guests.includes(id))];
+  const noteOf = (id) => { const at = ZONES.find((x) => cast[x.id] === id && x.id !== z.id); return at ? onThe(at.id) : St.ownsCat(S, id) ? "" : guests.includes(id) ? "visiting" : "lives here"; };
   const gname = garmentName(t, z.id).toLowerCase();
   const said = lastSaid && lastSaid.zone === z.id ? lastSaid.text : "";
   lastSaid = null;

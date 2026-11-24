@@ -93,7 +93,7 @@ function dressUp(root) {
   const S = app.S, place = S.here, p = picked(S, place), reached = St.reachedTimes(S, place);
   const garments = ZONES.map((z) => St.garmentSpec(S, place, p.set[z.id], z.id));
   const ready = ZONES.every((z) => St.garmentDone(S, place, p.set[z.id], z.id));
-  const sc = sceneParts({ place, time: p.bg, garments, baskets: [], cushion: null, special: St.specialFor(place), animate: true, seed: 3, landscape: true });
+  const sc = sceneParts({ place, time: p.bg, garments, baskets: [], cushion: null, special: St.visiting(S), animate: true, seed: 3, landscape: true });
   const picture = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 ${FRAME[sel] ?? FRAME.scarf} 400 ${FRAME_H}" preserveAspectRatio="xMidYMin slice" role="img" aria-label="The judge ${esc(placeById(place).at)}, ${esc(timeById(p.bg).name.toLowerCase())}">${sc.L.back}${sc.special}${sc.L.seat}${sc.shelves}${sc.character}${sc.L.front}</svg>`;
   const tab = (z, i) => {
     const t = p.set[z.id], n = St.progress(S, place, t, z.id), name = St.garmentTitle(S, place, t, z.id), on = sel === z.id;

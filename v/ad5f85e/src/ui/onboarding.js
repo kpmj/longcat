@@ -60,7 +60,7 @@ function letterStep(root) {
       <div class="letter">${letterSvg({ place: "onsen", special: false })}</div>
       <p class="eyebrow">A letter</p>
       ${p.letter.map((l) => `<p class="letter-line">${esc(l)}</p>`).join("")}
-      <p class="muted">On the 1st of every month a letter invites the judge to sit somewhere new.</p>
+      <p class="muted">When the morning’s three garments are on, a letter invites the judge to sit somewhere new.</p>
       <button class="btn primary big" data-a="go">Go and sit there</button>
     </section>`;
   $("[data-a=go]", root).onclick = () => {

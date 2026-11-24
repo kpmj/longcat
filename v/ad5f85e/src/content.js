@@ -245,15 +245,22 @@ export const NOTE_FACE = { good: "pleased", mid: "hmm", off: "oops" };
 export const NOTE_WORD = { good: "On the note", mid: "Close", off: "Off the note" };
 export const NOTE_GLYPH = { good: "✓", mid: "~", off: "?" };
 
-/* Months. Places open on the 1st of each calendar month from LAUNCH; new players always start at place 1.
-   January is the New Year special month: guests instead of cats (design doc section 7). */
-export const LAUNCH = { year: 2026, month: 11 };
-export const SPECIAL_MONTHS = { 1: "newyear" };
-export const GUEST_BY_ZONE = { scarf: "ferret", top: "otter", bottom: "dachshund" };
-export const NEWYEAR_NIGHT_SCARF = "dragon";
+/* Places open one after another, never by the calendar (the designer, 2026-11-23: "remove the time based mechanics for good.
+   And just change the location to be unlocked once the user finishes"; of the board's ways the designer chose "when the
+   morning is finished", 2026-11-24): the next place opens when the three garments of OPEN_AFTER are on at the place
+   before it. New players always start at place 1. Until then a place opened on the 1st of each month from
+   CALENDAR_LAUNCH, which state.js reads once more, to keep open what a save already had open.
+   The calendar keeps one thing, and it is never in the way: a visit. In January the New Year's guests come to see
+   the judge (it used to be a whole place, the one that opened in January, where guests wrapped instead of cats).
+   While they are here any of them may sing any garment at any place, and the pictures are dressed for the New
+   Year; a player who does nothing about it loses nothing. How a visit works is DRAFT (docs/later.md). */
+export const OPEN_AFTER = "morning";
+export const CALENDAR_LAUNCH = { year: 2026, month: 11 };
+export const VISIT_MONTHS = { 1: "newyear" };
+export const VISITORS = { newyear: ["dachshund", "otter", "ferret", "dragon"] };
 
 /* lines: one postcard sentence per time. The design doc gave one line per place; the other two are DRAFT.
-   letter: the two-line invitation that arrives on the 1st (DRAFT except the doc's example format). */
+   letter: the two-line invitation that arrives when the place opens (DRAFT except the doc's example format). */
 export const PLACES = [
   { id: "onsen", name: "Hot spring", at: "at the hot spring", seat: "the stone rim, feet in the water", hit: "a water drop, plink", miss: "a plop",
     lines: { morning: "The mist hasn't lifted. It's already soaking.", golden: "It didn't say the water was too hot. It soaked.", night: "It didn't say the water was too hot. It fell asleep." },
@@ -309,7 +316,8 @@ export const placeById = (id) => PLACES.find((p) => p.id === id) || PLACES[0];
 export const timeById = (id) => TIMES.find((t) => t.id === id) || TIMES[0];
 export const zoneById = (id) => ZONES.find((z) => z.id === id) || ZONES[0];
 
-export const NEWYEAR_LETTER = ["Happy New Year. A dachshund, an otter and a ferret are coming to visit the judge.", "This month the guests do the wrapping. At night, a long dragon too."];
+/* the visit's letter (DRAFT) */
+export const NEWYEAR_LETTER = ["Happy New Year. A dachshund, an otter, a ferret and a long dragon have come to see the judge.", "All January any of them will sing a garment for you. Ask them in Dress up."];
 export const MIX_LINE = "It says this doesn't match. It didn't take it off.";
 
 /* The nine looks of a place: fur follows the time; each pattern is used once; each colour once per time and
