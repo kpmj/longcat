@@ -158,6 +158,31 @@ const stopper = ({ out, srcs }) => ({
     } catch { /* already stopped */ }
   },
 });
+/* A chord, struck and left to ring, like the piano under a singing exercise: it gives the key of the round to come
+   (take-screen.js). Each note is a triangle with a quiet octave over it; it fades as it rings and is let go at the
+   end of `dur`. Written down for the self-hearing filter like every pitched sound. */
+export function chord(t0, midis, dur, vol = 1) {
+  if (muted || !audioContext() || !midis?.length) return { stop() {} };
+  const out = ac.createGain(), srcs = [], peak = (0.2 * vol) / Math.sqrt(midis.length / 3);
+  const t = Math.max(ac.currentTime, t0);
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(peak, t + 0.008);
+  out.gain.exponentialRampToValueAtTime(peak * 0.3, t + Math.max(0.1, dur));
+  out.gain.setTargetAtTime(0, t + dur, 0.04);
+  out.connect(master);
+  for (const m of midis) {
+    const f = midiToHz(m);
+    logSound(t, dur + 0.2, f, f, 0, [1, 2, 3]);
+    [["triangle", 1, 1], ["sine", 2, 0.28]].forEach(([type, k, g]) => {
+      const o = ac.createOscillator(), a = ac.createGain();
+      o.type = type; o.frequency.value = f * k; a.gain.value = g;
+      o.connect(a); a.connect(out);
+      o.start(t); o.stop(t + dur + 0.3);
+      srcs.push(o);
+    });
+  }
+  return stopper({ out, srcs });
+}
 /* A soft hummed note (the graph is humNodes in demo-voices.js). */
 export function hum(t0, midi, dur, vol = 1) {
   if (muted || !audioContext()) return { stop() {} };

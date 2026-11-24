@@ -15,7 +15,7 @@ import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
+import { demoNote, prepareDemo, chord, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
@@ -124,13 +124,14 @@ function focusRound(k) {
     document.getElementById(`gll-${m}`)?.classList.toggle("away", !mine.has(m));
   }
 }
-/* In the rest before a round, the cat gives its first note, in the demo's own voice (demoNote also writes the
-   sound down for the self-hearing filter, so the phone's own cue is never taken for the singer). */
+/* In the rest before a round, two chords, each on its beat: the one of the round just sung, then the one of the
+   round to come, which rings until the beat before the round (drills.js REST_BEATS; the designer, 2026-11-24, after
+   Vocalista). No voice: the cat says the sound before the drill starts, not in every rest. */
 function playCues() {
   const P = R.plan, T = R.T;
   while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
     const c = P.cues[R.cue++];
-    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl));
+    if (T.t < c.t + c.dur * 0.5) R.nodes.push(chord(clock() + Math.max(0, c.t - T.t), c.midis, c.dur));
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
@@ -301,10 +302,10 @@ async function start() {
   /* that tap may have made a new sound context: the microphone has to be wired to it */
   if (mic && audioContext() !== before) { closeMic(); if (!(await listen())) return; }
   if (mic) { holdAudio(true); setBoost(MIC_BOOST[micMode()] || 1); hint(LISTEN(), ""); }
-  /* the recorded voice: fetch this take's notes (and the cues between rounds) before anything is sung; if they do
-     not all arrive, the whole take uses the synthesised voice instead */
+  /* the recorded voice: fetch this take's notes before anything is sung; if they do not all arrive, the whole take
+     uses the synthesised voice instead */
   const fetching = setTimeout(() => R && !R.started && hint(LISTEN(), "getting the voice…"), 700);
-  R.demoKind = await prepareDemo(app.S.dev.demoVoice, R.plan.syl, [...R.plan.notes.map((n) => n.midi), ...(R.plan.cues || []).map((c) => c.midi)]);
+  R.demoKind = await prepareDemo(app.S.dev.demoVoice, R.plan.syl, R.plan.notes.map((n) => n.midi));
   clearTimeout(fetching);
   if (!R) return;
   hint(LISTEN(), "");
@@ -345,23 +346,24 @@ function soundAsleep() {
   });
 }
 
-/* The first time a sound comes up, the cat says it once on its own, with the word large on the lane, before the
-   demo sings it (drill-ladder board, section 8). The synthesised consonants are rough; this is where a player
-   learns which sound "noo" or "yah" is. */
+/* Before the drill starts, the cat says the sound once on its own, with the word large on the lane. Every take
+   (the designer, 2026-11-24, of Vocalista: it "does the pronunciation separately before the whole drill starts"; in the
+   recording a voice says the syllable once, about a second before the first note). It used to happen only the first
+   time a sound came up (drill-ladder board, section 8); that first time is still the long one, with the line that
+   says what it is. */
 async function sayOnce() {
   const S = app.S, syl = R.plan.syl;
-  if (S.said.includes(syl)) return;
-  S.said.push(syl);
-  app.save();
+  const first = !S.said.includes(syl);
+  if (first) { S.said.push(syl); app.save(); }
   const el = document.getElementById("say"), skip = document.querySelector(".take-head .skip");
   if (skip) skip.hidden = true;
   const cat = !!demoVoice(R.demoKind).words; // a voice with no words cannot say it: the word is shown, the note is played
-  if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>${cat ? "the cat says it once" : "the sound to sing"}</span>`; el.hidden = false; }
+  if (el) { el.innerHTML = `<b>${esc(syl)}</b><span>${!first ? "" : cat ? "the cat says it once" : "the sound to sing"}</span>`; el.hidden = false; }
   hint("", "");
   R.saying = true;
   try { draw(null, 0); } catch { /* the lane is not ready yet */ }
-  R.nodes.push(demoNote(R.demoKind, clock() + 0.12, R.plan.notes[0].midi, 0.7, syl, cat ? { fall: 3 } : {}));
-  await new Promise((r) => setTimeout(r, 1250));
+  R.nodes.push(demoNote(R.demoKind, clock() + 0.12, R.plan.notes[0].midi, first ? 0.7 : 0.5, syl, cat ? { fall: 3 } : {}));
+  await new Promise((r) => setTimeout(r, first ? 1250 : 850));
   if (!R) return;
   R.saying = false;
   if (el) el.hidden = true;
@@ -621,6 +623,8 @@ function bookTicks() {
       const when = Math.max(at, at + (tk - T.t));
       tick(when, false);
       click(when, k === n - 1);
+      /* the first round's chord on "1", ringing through Go, as before every later round: chord, a beat, sing */
+      if (k === n - 2) R.nodes.push(chord(when, P.reps[0].chord, 2 * P.beat * 0.95));
       R.clicked = k;
     }
   }

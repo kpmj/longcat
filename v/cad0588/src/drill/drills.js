@@ -45,16 +45,30 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
    range, then back down the same way. `most` caps the rounds going up; a capped climb still ends at the top, so
    it starts higher instead of stopping short. Returns the lowest note of round one and each round's shift. */
 export const CLIMB_DEFAULT = { by: 2, most: 3, back: true };
-/* Between rounds: a breath, then the next first note given ON a beat, then at least two beats with only the
-   metronome, and the round starts on the beat after them. the designer, 2026-11-24, after playing steps 10 to 12: "the voice
-   cue for the next sequence is too sudden ... it should be spaced out on the beat so the player have time to react".
-   Before, the cue sat wherever it fitted in a rest of about a second and a quarter, and ended 0.45 s before the
-   entry. Now the whole rest is counted in beats: the cue comes on the first beat that leaves CUE_REST after the
-   last note, and the entry is CUE_LEAD later or more, in whole beats. A take with rounds is a few seconds longer
-   for it. */
-export const CUE_REST = 0.5; // seconds between the end of a round's last note and the cue, at least: a breath
-export const CUE_LEAD = 1.4; // seconds from the cue to the entry, at least; never fewer than two beats
-const CUE_LONG = 0.8; // the cue lasts most of a beat, and this long at the most
+/* Between rounds, as Vocalista does it (the designer, 2026-11-24: "it plays the whole chord for the next set and it's on
+   beat so the player doesn't get confused when to start ... Please follow exactly how it's implemented"). Measured
+   from the sound of the designer's recording, round after round the same: the last note has its beat; on the next beat the
+   chord of the round just sung, for one beat; on the beat after that the chord of the round to come, which rings
+   for two beats; and the round starts on the beat after those. Three beats of rest, nothing off the beat, no voice.
+   Its chords are close triads about an octave above the sung notes: the home chord with its fifth underneath
+   (F♯3 B3 D♯4 F♯4 after a round in B), the next one from its root (C4 E4 G4 before a round in C).
+   Before this the game sang the next first note alone: first wherever it fitted in the rest, then on a beat with
+   1.4 s to react (the same day). */
+export const REST_BEATS = 3;
+const CHORD_LOW = 55, CHORD_HIGH = 66; // round one's chord has its root between G3 and F♯4, where a phone's speaker carries it
+/* How many octaves the chords of a take sit above (or below) what is sung: decided once, from round one, so the
+   chords climb with the rounds and never drop an octave between two of them. */
+export function chordLift(rootMidi) {
+  let lift = 0;
+  while (rootMidi + lift < CHORD_LOW) lift += 12;
+  while (rootMidi + lift > CHORD_HIGH) lift -= 12;
+  return lift;
+}
+/* The triad on `c`: major, or minor when the drill has a minor third and no major one. */
+export function chordOf(c, rel = [0, 4, 7]) {
+  const pcs = new Set(rel.map((r) => ((r % 12) + 12) % 12)), third = pcs.has(3) && !pcs.has(4) ? 3 : 4;
+  return { next: [c, c + third, c + 7], home: [c - 5, c, c + third, c + 7] };
+}
 export function climbRounds(range, span, base, climb, nudge = 0) {
   const { by, most, back } = { ...CLIMB_DEFAULT, ...climb };
   const { lo, hi } = bounds(range);
@@ -71,8 +85,9 @@ export function climbRounds(range, span, base, climb, nudge = 0) {
 }
 
 /* The full plan of one take: notes with start/end in seconds from the first downbeat. A climbing drill has
-   several rounds (plan.reps), a rest between them, and a cue of each next first note (plan.cues); the demo
-   is the first round only (plan.demoCount notes, plan.demoTotal seconds). */
+   several rounds (plan.reps), a rest between them, and two chords in each rest (plan.cues); the demo is the first
+   round only (plan.demoCount notes, plan.demoTotal seconds). Every round knows its chord (rep.chord): the first
+   one's is also played in the count. */
 /* The count-in: 3, 2, 1, Go, four beats on the demo's own beat, and the first note is the beat after Go (the designer,
    2026-11-24: "Let's do 3,2,1 go", and the metronome is to run on from the demo into the singing without a gap).
    It was five from 2026-11-14: Ready, 3, 2, 1 and a beat that showed nothing. Ready was the silent beat on which
@@ -96,17 +111,20 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
      drills get two or more beats to a note. The count-in runs at the same beat, so the tempo never changes
      within a take. A round and the rest after it are a whole number of beats, so the beat runs through the rest. */
   const every = slot + GAP, perNote = Math.max(1, Math.round(every / BEAT_AIM)), beat = every / perNote;
-  const cueBeat = Math.ceil(((rel.length - 1) * every + len + CUE_REST) / beat - 1e-9); // counted from a round's first note
-  const leadBeats = Math.max(2, Math.ceil(CUE_LEAD / beat - 1e-9));
-  const notes = [], reps = [], cues = [];
+  const roundBeats = rel.length * perNote + REST_BEATS; // every note's own beats, then the rest
+  const notes = [], reps = [], cues = [], lift = chordLift(root);
   climb.shifts.forEach((shift, k) => {
-    const first = k * (cueBeat + leadBeats) * beat;
+    const first = k * roundBeats * beat;
     const i0 = notes.length;
     rel.forEach((r, j) => notes.push({ midi: root + shift + r, s: first + j * every, e: first + j * every + len }));
     const before = reps[k - 1];
-    reps.push({ i0, n: rel.length, shift, s: first, e: notes[notes.length - 1].e, dir: !before ? "" : shift > before.shift ? "up" : "down" });
-    /* the next first note, sounded on its beat in the rest */
-    if (before) cues.push({ t: first - leadBeats * beat, dur: Math.min(CUE_LONG, beat * 0.9), midi: notes[i0].midi, rep: k });
+    const chord = chordOf(root + shift + lift, rel);
+    reps.push({ i0, n: rel.length, shift, s: first, e: notes[notes.length - 1].e, dir: !before ? "" : shift > before.shift ? "up" : "down", chord: chord.next });
+    /* the rest before this round: the chord of the round just sung, then this round's, each on its beat */
+    if (before) cues.push(
+      { t: first - REST_BEATS * beat, dur: beat * 0.95, midis: chordOf(root + before.shift + lift, rel).home, rep: k, home: true },
+      { t: first - (REST_BEATS - 1) * beat, dur: (REST_BEATS - 1) * beat * 0.95, midis: chord.next, rep: k },
+    );
   });
   const total = notes[notes.length - 1].e;
   const accents = new Set(notes.map((n) => Math.round(n.s / beat)));
