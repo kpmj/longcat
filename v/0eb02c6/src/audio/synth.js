@@ -226,17 +226,19 @@ function noise(dur, vol, type, f, q = 1, t = null, f1 = null) {
 /* The metronome under the demo and the singing. A short burst of high noise, not a tone: the microphone hears
    the phone's own speaker, and a tone would be taken for a sung pitch. Noise has no pitch, and it is over in
    a fraction of the tracker's window. Quiet on purpose. */
-export function tick(t = null, accent = false) {
+/* `loud` > 1 while the microphone is open: a phone then plays everything as quietly as a call, and the beat could
+   not be heard under one's own singing (the designer, 2026-11-24). Louder and a little longer, still noise with no pitch. */
+export function tick(t = null, accent = false, loud = 1) {
   if (muted || !audioContext()) return;
   const t0 = Math.max(ac.currentTime, t ?? 0);
   if (!noiseBuf) noise(0.001, 0, "lowpass", 100); // makes the shared noise buffer
   const s = ac.createBufferSource(), b = ac.createBiquadFilter(), g = ac.createGain();
   s.buffer = noiseBuf; b.type = "bandpass"; b.frequency.value = accent ? 4200 : 3200; b.Q.value = 3;
-  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(accent ? 0.55 : 0.32, t0 + 0.001); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.024);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime((accent ? 0.55 : 0.32) * loud, t0 + 0.001); g.gain.exponentialRampToValueAtTime(0.001, t0 + (loud > 1 ? 0.034 : 0.024));
   s.connect(b); b.connect(g); g.connect(fx);
-  s.start(t0); s.stop(t0 + 0.05);
+  s.start(t0); s.stop(t0 + 0.06);
 }
-export function click(t, accent = false) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, 0.07, 0.2, t); }
+export function click(t, accent = false, loud = 1) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, 0.07, 0.2 * loud, t); }
 export function chime(notes = [523, 659, 784]) {
   if (!audioContext()) return;
   notes.forEach((f, i) => tone("sine", f, f, 0.32, 0.12, ac.currentTime + i * 0.11));

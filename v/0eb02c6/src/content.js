@@ -196,7 +196,8 @@ for (const [id, d] of Object.entries(DRILL)) d.id = id;
      list above for the drill editor, in no ladder.
    - in each ladder the take of step 10 was longer than that of step 11. Now the three climbing steps grow: about
      24, 35, 51 seconds in the morning, 10, 22, 44 at golden hour, 14, 29, 58 at night (for a range of an octave and
-     a half; a narrow range climbs less).
+     a half; a narrow range climbs less). Since 2026-11-24 the rest between rounds is longer, the next first note
+     being given on a beat with two or three beats to react (drills.js): about 29, 35, 55; 13, 24, 47; 15, 29, 58.
    - golden hour put an easy step (Five down) after two harder ones and went from scales straight to the octave.
      Now: the arpeggio three ways, a fourth, skips, a fifth, the fast five, fifth then octave, the scale, and then
      the octave on its own before the arpeggio that has it inside.

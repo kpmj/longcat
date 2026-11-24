@@ -45,8 +45,16 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
    range, then back down the same way. `most` caps the rounds going up; a capped climb still ends at the top, so
    it starts higher instead of stopping short. Returns the lowest note of round one and each round's shift. */
 export const CLIMB_DEFAULT = { by: 2, most: 3, back: true };
-export const REST_MIN = 1.2; // seconds of rest between rounds, at least: a breath, and the next first note is given
-const CUE_AFTER = 0.25, CUE_BEFORE = 0.45, CUE_LONG = 0.5; // the cue leaves the last note alone and ends well before the next
+/* Between rounds: a breath, then the next first note given ON a beat, then at least two beats with only the
+   metronome, and the round starts on the beat after them. the designer, 2026-11-24, after playing steps 10 to 12: "the voice
+   cue for the next sequence is too sudden ... it should be spaced out on the beat so the player have time to react".
+   Before, the cue sat wherever it fitted in a rest of about a second and a quarter, and ended 0.45 s before the
+   entry. Now the whole rest is counted in beats: the cue comes on the first beat that leaves CUE_REST after the
+   last note, and the entry is CUE_LEAD later or more, in whole beats. A take with rounds is a few seconds longer
+   for it. */
+export const CUE_REST = 0.5; // seconds between the end of a round's last note and the cue, at least: a breath
+export const CUE_LEAD = 1.4; // seconds from the cue to the entry, at least; never fewer than two beats
+const CUE_LONG = 0.8; // the cue lasts most of a beat, and this long at the most
 export function climbRounds(range, span, base, climb, nudge = 0) {
   const { by, most, back } = { ...CLIMB_DEFAULT, ...climb };
   const { lo, hi } = bounds(range);
@@ -84,21 +92,19 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
   const len = slot * fl.noteFrac;
   /* The metronome: every note starts on a beat. Notes up to about a second apart get one beat each; slower
      drills get two or more beats to a note. The count-in runs at the same beat, so the tempo never changes
-     within a take. The rest between rounds is a whole number of note slots, so the beat runs through it. */
+     within a take. A round and the rest after it are a whole number of beats, so the beat runs through the rest. */
   const every = slot + GAP, perNote = Math.max(1, Math.round(every / BEAT_AIM)), beat = every / perNote;
-  const restSlots = Math.max(1, Math.ceil(REST_MIN / every - 1e-9));
+  const cueBeat = Math.ceil(((rel.length - 1) * every + len + CUE_REST) / beat - 1e-9); // counted from a round's first note
+  const leadBeats = Math.max(2, Math.ceil(CUE_LEAD / beat - 1e-9));
   const notes = [], reps = [], cues = [];
   climb.shifts.forEach((shift, k) => {
-    const first = k * (rel.length + restSlots) * every;
+    const first = k * (cueBeat + leadBeats) * beat;
     const i0 = notes.length;
     rel.forEach((r, j) => notes.push({ midi: root + shift + r, s: first + j * every, e: first + j * every + len }));
     const before = reps[k - 1];
     reps.push({ i0, n: rel.length, shift, s: first, e: notes[notes.length - 1].e, dir: !before ? "" : shift > before.shift ? "up" : "down" });
-    if (before) {
-      /* the next first note, sounded in the rest: after the last note has had its time, done well before the entry */
-      const dur = Math.min(CUE_LONG, first - CUE_BEFORE - (before.e + CUE_AFTER));
-      if (dur > 0.15) cues.push({ t: first - CUE_BEFORE - dur, dur, midi: notes[i0].midi, rep: k });
-    }
+    /* the next first note, sounded on its beat in the rest */
+    if (before) cues.push({ t: first - leadBeats * beat, dur: Math.min(CUE_LONG, beat * 0.9), midi: notes[i0].midi, rep: k });
   });
   const total = notes[notes.length - 1].e;
   const accents = new Set(notes.map((n) => Math.round(n.s / beat)));

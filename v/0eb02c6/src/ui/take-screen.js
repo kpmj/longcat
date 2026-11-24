@@ -40,6 +40,15 @@ const LAND = 0.08; // seconds: moving to another note. 0.045, then 0.065 ("still
 // probably move a bit slower ... it's very slight though", 2026-11-14). The head now takes about a quarter slower to
 // cross to the next note; within a semitone of it, it follows the voice at FOLLOW again.
 let R = null;
+/* While the microphone is open a phone plays everything quietly, as on a call (audio/mic.js), and that is exactly
+   while the player sings. the designer, 2026-11-24: "When player starts singing the sound becomes too quiet so players can't
+   hear the notes and the tempo." So what sounds under an open microphone is booked louder: the metronome, the
+   count-in and the first note given before each round. Not the bell at the end of a note, which rings while the
+   next note is being heard. Only with the real microphone: the automatic singers leave the phone at full volume.
+   DRAFT numbers, not heard on a phone by the agent: louder ticks also reach the microphone, and if notes start
+   being missed on the beat these are the numbers to turn down. */
+const MIC_TICK = 2.5, MIC_CLICK = 2.5, MIC_CUE = 2.2;
+const underMic = () => app.S.dev.voice === "mic" && micReady();
 
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
 const wall = () => performance.now() / 1000;
@@ -120,7 +129,7 @@ function playCues() {
   const P = R.plan, T = R.T;
   while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
     const c = P.cues[R.cue++];
-    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl));
+    if (T.t < c.t + c.dur * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.dur, P.syl, underMic() ? { vol: MIC_CUE } : {}));
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
@@ -441,7 +450,7 @@ function resume() {
   document.getElementById("paused")?.remove();
   const beat = Math.max(0.5, R.plan.beat), at = clock() + 0.05, mine = R;
   ["3", "2", "1"].forEach((w, k) => {
-    click(at + k * beat, k === 2);
+    click(at + k * beat, k === 2, underMic() ? MIC_CLICK : 1);
     R.paused.timers.push(setTimeout(() => R === mine && countdown(w), k * beat * 1000));
   });
   R.paused.timers.push(setTimeout(() => {
@@ -600,14 +609,14 @@ function bookTicks() {
       const tk = -P.beat * (n - k);
       if (tk >= T.t + TICK_AHEAD) break;
       const when = Math.max(at, at + (tk - T.t));
-      if (k === n - 1) tick(when, false); else click(when, k === n - 2);
+      if (k === n - 1) tick(when, false, underMic() ? MIC_TICK : 1); else click(when, k === n - 2, underMic() ? MIC_CLICK : 1);
       R.clicked = k;
     }
   }
   for (const k of ticksIn(T, T.t, T.t + TICK_AHEAD)) {
     const when = at + (k.t - T.t);
     if (when <= R.ticked + 0.02) continue;
-    tick(when, k.accent);
+    tick(when, k.accent, T.phase !== "demo" && underMic() ? MIC_TICK : 1);
     R.ticked = when;
   }
 }
