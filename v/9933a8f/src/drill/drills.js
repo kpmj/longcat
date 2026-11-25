@@ -11,11 +11,14 @@ export const BEAT_AIM = 0.66; // seconds: notes up to about a second apart get o
 /* Air between notes (the designer, 2026-11-25: "the cat-head indicator still feels too rush in between notes ... a bigger gap
    between notes so the user doesn't have to sing the next note right away. just like how vocalista space the
    notes"). Until then a note at golden hour and at night filled its whole place and the next began 0.08 s later; a
-   morning note left a fifth of its place free. Now every note leaves the last third or so of its place empty: the
+   morning note left a fifth of its place free. Now every note leaves the end of its place empty: the
    bar ends, the cat's head crosses the gap, and the next bar begins. A drill's `dur` is the whole place of a note,
    the gap included. In Vocalista's recording a note is a short piano tone on its beat and the pill on the screen
-   marks where it starts; nothing there has to be held to the next one. The share is the agent's, not measured. */
-export const GAP_SHARE = 0.35, GAP_MIN = 0.2, GAP_MAX = 0.6;
+   marks where it starts; nothing there has to be held to the next one.
+   The first numbers (35 % of the place, 0.2 to 0.6 s) were the agent's; the designer played them the same day: "gap between
+   notes are way too long". Now about half: 18 %, 0.12 to 0.25 s. On the recording's screen a pill covers about
+   86 % of the way to the next one, which is near this; still the agent's numbers, to be played. */
+export const GAP_SHARE = 0.18, GAP_MIN = 0.12, GAP_MAX = 0.25;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
 /* Where in the singer's range a time of day puts its drills: morning in the middle, the others a little under it. */
