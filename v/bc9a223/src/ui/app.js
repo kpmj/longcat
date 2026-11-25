@@ -1,6 +1,6 @@
 /* The app shell: the save, a tiny router, bottom sheets, toasts and the voice source.
    Screens register themselves in `screens`; nothing here knows what a screen draws. */
-import { loadSave, writeSave, freshSave, newIn, markSeen, currentTime, nextTake, beatPending, homeScene } from "../state.js";
+import { loadSave, writeSave, freshSave, newIn, markSeen, currentTime, reachedTimes, nextTake, beatPending, homeScene } from "../state.js";
 import { sceneParts } from "../art/index.js";
 import { tapSound, stopMusic } from "../audio/ambient.js";
 import { drawZone } from "../art/index.js";
@@ -20,6 +20,10 @@ const canSave = (() => { try { storage.setItem("longcat-probe", "1"); storage.re
 
 export const app = {
   S: null,
+  /* Going back to a time of day (the designer, 2026-11-25): { place, time } while Home shows a time of day other than the
+     one being sung, or null. It is where the player is looking, not progress: it is not saved, and it ends with a
+     tap on "Back to …", on Sing, or by going to another place. */
+  visit: null,
   screen: null,
   screens: {},
   props: {},
@@ -56,10 +60,10 @@ const SKY = { morning: ["#5d7ea3", "#c9553f"], golden: ["#d27a58", "#fdf3cf"], n
 const skyOf = {};
 const mixHex = (a, b, t) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - t) + parseInt(b.slice(i, i + 2), 16) * t).toString(16).padStart(2, "0")).join("");
 function paintSky() {
-  const S = app.S, place = S.here, time = currentTime(S, place) || "night", k = `${place}.${time}`;
+  const S = app.S, place = S.here, time = shownTime(S, place), k = `${place}.${time}`;
   if (!skyOf[k]) {
     let up = null;
-    try { up = sceneParts(homeScene(S, place, app.real(), { animate: false })).L.up; } catch { /* a place with no picture yet */ }
+    try { up = sceneParts(homeScene(S, place, app.real(), { animate: false, time })).L.up; } catch { /* a place with no picture yet */ }
     const sky = /^#[0-9a-fA-F]{6}$/.test(up || "") ? up : SKY[time][0];
     skyOf[k] = [sky, mixHex(sky, "#f6efe0", 0.32), SKY[time][1]];
   }
@@ -103,6 +107,15 @@ export function paintDock() {
 /* The bottom row: two tabs, Sing, two tabs (full-screen home board, 2026-11-14). Sing is the same button on every
    tab and starts the next step from wherever it is pressed. With no garment chosen yet it says Pick and goes to the
    picker on Home; with all nine on it says Mix and opens the Wardrobe's "Mix a postcard". */
+/* The time of day Home shows: the one being sung, or one the player has gone back to. Only a time already reached
+   can be gone back to; a visit that no longer fits (another place, a place started again) is dropped. */
+export function shownTime(S = app.S, place = S.here) {
+  const cur = currentTime(S, place), v = app.visit;
+  if (v && (v.place !== place || v.time === cur || !reachedTimes(S, place).includes(v.time))) app.visit = null;
+  return app.visit ? app.visit.time : cur || "night";
+}
+export const visiting = (S = app.S, place = S.here) => { shownTime(S, place); return !!app.visit; };
+
 function singButton() {
   const S = app.S, place = S.here;
   if (!currentTime(S, place)) return { big: "Mix", small: "a postcard", label: "Mix a postcard", go: () => show("wardrobe", { tab: "dress" }) };
@@ -116,7 +129,8 @@ function renderDock() {
   const sing = singButton();
   d.innerHTML = `${DOCK.slice(0, 2).map(tab).join("")}<button class="dock-sing" data-act="sing" aria-label="${esc(sing.label)}"><b>${sing.big}</b><span>${esc(sing.small)}</span></button>${DOCK.slice(2).map(tab).join("")}`;
   $$(".tab", d).forEach((b) => (b.onclick = () => show(b.dataset.tab)));
-  $(".dock-sing", d).onclick = () => sing.go();
+  /* Sing is always the next step of the time being sung: a visit to another time of day ends with it */
+  $(".dock-sing", d).onclick = () => { app.visit = null; sing.go(); };
 }
 
 /* ---------- sheets and toasts ---------- */

@@ -436,7 +436,8 @@ export function setYarn(S, place, time, zone, key) {
 export function basketsFor() { return []; }
 
 export function homeScene(S, place = S.here, real, extra = {}) {
-  const cur = currentTime(S, place) || "night";
+  /* `extra.time`: the picture of a time of day gone back to (ui/app.js shownTime) */
+  const cur = extra.time || currentTime(S, place) || "night";
   const garments = ZONE_IDS.map((z) => garmentSpec(S, place, cur, z));
   return {
     /* no baskets of sleeping cats here: with them the home page was too full (the designer, 2026-11-14). The cats still run to

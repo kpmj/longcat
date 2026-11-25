@@ -13,9 +13,9 @@ export const ZONE_IDS = ZONES.map((z) => z.id);
 
 /* Each time of day has its fur, its weather and its own ladder of drills (flavour = the ladder's name). */
 export const TIMES = [
-  { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Land", how: "short, slow notes close together: landing each one" },
-  { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Move", how: "scales and leaps, up to an octave" },
-  { id: "night", name: "Night", fur: "long", weather: "Cold, the steam hangs in the air", flavour: "Carry", how: "long notes and long, slow phrases; quiet is fine" },
+  { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Land", how: "short shapes, sung once: landing each note" },
+  { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Move", how: "phrases in three rounds, a step higher or lower each time" },
+  { id: "night", name: "Night", fur: "long", weather: "Cold, the steam hangs in the air", flavour: "Carry", how: "about a minute of rounds, up and back; quiet is fine" },
 ];
 export const TIME_IDS = TIMES.map((t) => t.id);
 
@@ -117,17 +117,17 @@ export const DRILL = {
   third: { name: "Skip up", rel: [0, 4], dur: 1.5 },
   thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.0 },
   arp: { name: "Two skips up", rel: [0, 4, 7], dur: 1.0 },
-  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 1.5 },
+  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 1.4 },
   arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.95 },
   fifth: { name: "Leap up", rel: [0, 7], dur: 1.5 },
   skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.95 },
   octave: { name: "Big leap up", rel: [0, 12], dur: 1.6 },
   octdown: { name: "Big leap down", rel: [12, 0], dur: 1.6 },
   arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
-  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.7 },
+  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.68 },
   /* added when the ladders were dealt again (2026-11-15), so that no two ladders share a drill */
-  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.5 },
-  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.5 },
+  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.4 },
+  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.4 },
   fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.15 },
   nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.95 },
   fifthdown: { name: "Leap down", rel: [7, 0], dur: 1.8 },

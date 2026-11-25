@@ -503,6 +503,18 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 .home-pill b { font: 600 17px var(--display); overflow: hidden; text-overflow: ellipsis; }
 .home-pill span { font-size: 13.5px; font-weight: 700; color: var(--hm); }
 .home-pill i { font-style: normal; font-size: 10px; color: var(--hm); }
+/* where and when: the place's chip and, beside it, the time of day's (it opens the times of day) */
+.home-where { display: flex; gap: 6px; min-width: 0; }
+.home-where .home-pill:first-child { min-width: 0; flex: 0 1 auto; }
+.home-pill.time { flex: none; padding: 0 12px; }
+.home-pill.time.away { outline: 2px solid var(--coral); outline-offset: -2px; }
+.home-note.away .linkish { color: inherit; font-weight: 800; }
+/* the times of day sheet: three cards with the place's picture at each time */
+.tod { width: 100%; font: inherit; color: inherit; cursor: pointer; }
+.tod:disabled { cursor: default; }
+.tod .tod-go { font-size: 13px; font-weight: 800; color: var(--muted); flex: none; }
+.tod .tod-now { font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--coral); margin-left: 4px; }
+.badge.quiet, :root .badge.quiet { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
 .home-tools { display: flex; gap: 8px; flex: none; }
 .home-ico { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; }
 .home-ico.music.off { color: var(--hm); }

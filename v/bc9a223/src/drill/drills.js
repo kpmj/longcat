@@ -97,7 +97,8 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
    a note of two beats it is one note left out, then the cue where the next note would start, a beat to think, and
    the round; for a note of one beat it is the recording's three beats as before. The cue is always two beats
    before the round. */
-export const REST_BEATS = 3; // the rest is this long at least, and a whole number of notes
+export const REST_BEATS = 3; // the rest is this long at least; it fills the bar (see planTake)
+export const BAR = 4; // beats: a round and its rest are whole bars
 export const CUE_BEATS = 2; // the cue's own beat and one to think: the round starts this many beats after the cue
 const CUE_LONG = 0.8; // the sung cue lasts most of a beat, and this long at the most
 const CHORD_LOW = 55, CHORD_HIGH = 66; // round one's chord has its root between G3 and F♯4, where a phone's speaker carries it
@@ -171,10 +172,15 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
      drills get two or more beats to a note. The count-in runs at the same beat, so the tempo never changes
      within a take. A round and the rest after it are a whole number of beats, so the beat runs through the rest. */
   const perNote = Math.max(1, Math.round(every / BEAT_AIM)), beat = every / perNote;
-  /* a whole number of notes, so the next round starts where a note would; after a long held note (four beats or
-     more) that would be a rest as long as the note, and four beats are enough */
-  const restBeats = perNote <= 3 ? Math.ceil(REST_BEATS / perNote) * perNote : 4;
-  const roundBeats = rel.length * perNote + restBeats; // every note's own beats, then the rest
+  /* A round and its rest are whole bars of four beats (the designer, 2026-11-25, of a night step 1: the cue "comes in off
+     beat. it's really not helping player to sing on the right beat. please make sure it's on the beat and gives it
+     a proper gap between two sets"). The cue was on a metronome beat already, but a round of nine, ten or eleven
+     beats has no bar to it: a held note of five beats and a rest of four brought the cue on beat 7 and the next
+     round on beat 9. The recording's round is twelve beats, three bars, with the cue on the third beat of the last
+     one. Now every round is 8, 12, 16 ... beats: the notes, then a rest of three beats or more that fills the bar;
+     the cue on the third beat of the last bar, a beat to think, and the round on the bar line. */
+  const noteBeats = rel.length * perNote;
+  const roundBeats = Math.ceil((noteBeats + REST_BEATS) / BAR - 1e-9) * BAR, restBeats = roundBeats - noteBeats;
   /* how many rounds: the time of day's (TIME_RULE). At night, as many as bring the whole take nearest to its aim */
   const rule = TIME_RULE[time] || TIME_RULE.golden, phrase = (rel.length - 1) * every + len;
   const whole = (n) => Math.ceil((phrase + DEMO_TAIL) / beat - 1e-6) * beat + COUNT_BEATS * beat + (n - 1) * roundBeats * beat + phrase;
