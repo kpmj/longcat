@@ -1,7 +1,7 @@
 /* Drill planning: which notes a take asks for, in which key, at which speed, how many times.
    Key (decision 1, 2026-11-12): the player sings their lowest and highest note once; every drill's root is
-   placed inside that range. Each garment has its own ladder of drills (content.js LADDERS); the step says how
-   many sets a take has (STEP_RULE below). */
+   placed inside that range. Each garment has a ladder of drills for each time of day (content.js LADDERS); the
+   step says how many sets a take has (STEP_RULE below). */
 import { drillAt, sylFor, MOUTH } from "../content.js";
 
 export const DEFAULT_RANGE = { low: 48, high: 67 }; // C3–G4: used until the range finder has run
@@ -22,7 +22,7 @@ export const GAP_SHARE = 0.18, GAP_MIN = 0.12, GAP_MAX = 0.25;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
 /* Where in the singer's range a time of day puts a drill sung once: morning in the middle, the others a little
-   under it. It is all the time of day changes about a drill. */
+   under it. Which drills a time of day has is in content.js LADDERS. */
 export const FLAVOURS = {
   morning: { centred: true },
   golden: { centred: false },
@@ -38,9 +38,10 @@ export const FLAVOURS = {
      steps 9 to 12   five sets: 40 to 50 seconds
    A take is counted as the player meets it: the demo, the count and the singing (`takeSeconds`), not the card or
    the result. What a drill is for belongs to the garment (content.js LADDERS: the scarf agility, the top breath,
-   the hat range), and the time of day changes nothing about the drills. For some hours of the same day the time
-   of day decided the length (morning once, golden hour three rounds, night a minute); the designer played it and took it
-   back. A ladder only has to choose `dur` so that its takes land in the band of their step (tests/engine.test.mjs
+   the hat range), and the time of day changes nothing about the length: it only says which twelve drills the
+   garment has (nine ladders, since later the same evening). For some hours of the same day the time of day
+   decided the length (morning once, golden hour three rounds, night a minute); the designer played it and took it back.
+   A ladder only has to choose `dur` so that its takes land in the band of their step (tests/engine.test.mjs
    checks the built-in ones). */
 export const STEP_RULE = [
   { to: 4, rounds: 1, take: [8, 10] },
@@ -50,9 +51,9 @@ export const STEP_RULE = [
 export const ruleOf = (step) => STEP_RULE.find((r) => step <= r.to) || STEP_RULE[STEP_RULE.length - 1];
 const DEMO_TAIL = 0.45; // as in take.js: the demo ends on the first beat this long after its last note
 
-/* The drill of a step: each garment (scarf, top, hat) has its own ladder (content.js). */
-export function drillForStep(step, zone = "scarf") {
-  return drillAt(zone, step);
+/* The drill of a step: each garment (scarf, top, hat) has a ladder for each time of day (content.js). */
+export function drillForStep(step, zone = "scarf", time = "golden") {
+  return drillAt(zone, time, step);
 }
 
 
@@ -168,7 +169,7 @@ export const takeSeconds = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAI
 export const COUNT_BEATS = 4;
 export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null, rounds = null }) {
   const zoneId = zone || String(seed).split(".")[2] || "scarf";
-  const drill = given || drillForStep(step, zoneId); // `drill` is for the dev drill editor: hear a drill before it is saved
+  const drill = given || drillForStep(step, zoneId, time); // `drill` is for the dev drill editor: hear a drill before it is saved
   const fl = FLAVOURS[time] || FLAVOURS.golden;
   const rel = drill.rel;
   const low = Math.min(...rel), span = Math.max(...rel) - low;

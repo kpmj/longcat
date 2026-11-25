@@ -85,7 +85,7 @@ export function migrate(o, real = new Date()) {
   if (!Array.isArray(o.heard)) {
     S.heard = [];
     for (const place of Object.keys(S.months)) for (const t of TIME_IDS) for (const z of ZONE_IDS)
-      for (let k = 1; k <= Math.min(STEPS, progress(S, place, t, z)); k++) hearDrill(S, drillForStep(k, z).id);
+      for (let k = 1; k <= Math.min(STEPS, progress(S, place, t, z)); k++) hearDrill(S, drillForStep(k, z, t).id);
   } else S.heard = o.heard.filter((id) => typeof id === "string");
   /* 2026-11-15: treats and cats of one's own. A save from before starts with the four free cats and no treats */
   S.cats = [...new Set([...FREE_CATS, ...(Array.isArray(o.cats) ? o.cats.filter((id) => typeof id === "string") : [])])];
@@ -196,7 +196,7 @@ export function nextTake(S, place = S.here) {
   const time = currentTime(S, place), zone = activeZone(S, place);
   if (!time || !zone) return null;
   const step = progress(S, place, time, zone) + 1;
-  return { place, time, zone, step, drill: drillForStep(step, zone), seed: `${place}.${time}.${zone}` };
+  return { place, time, zone, step, drill: drillForStep(step, zone, time), seed: `${place}.${time}.${zone}` };
 }
 
 /* ---------- the drills the player has met ----------
@@ -214,7 +214,7 @@ export function hearDrill(S, id) {
 function logTake(S, ctx, grade, retake, real) {
   S.takes.push({
     date: todayKey(S, real), at: nowFor(S, real).toISOString(), place: ctx.place, time: ctx.time, zone: ctx.zone,
-    step: ctx.step, drill: drillForStep(ctx.step, ctx.zone).id, retake, counted: !!grade.counted, voiced: grade.voicedRatio ?? null,
+    step: ctx.step, drill: drillForStep(ctx.step, ctx.zone, ctx.time).id, retake, counted: !!grade.counted, voiced: grade.voicedRatio ?? null,
   });
   if (S.takes.length > MAX_TAKES) S.takes.splice(0, S.takes.length - MAX_TAKES);
 }

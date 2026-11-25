@@ -1,9 +1,9 @@
-/* The drill editor (dev tools, the designer 2026-11-14): move the twelve steps of a time of day, put another drill in a
-   step, or change a drill's notes and speed, and hear it before saving. Everything is kept in this browser's save
+/* The drill editor (dev tools, the designer 2026-11-14): move the twelve steps of a ladder (a garment at a time of day),
+   put another drill in a step, or change a drill's notes and speed, and hear it before saving. Everything is kept in this browser's save
    (S.dev.drillEdits) and laid over the built-in tables by content.js applyDrillEdits. "Copy the changes" gives
    text to paste into the chat, so a change that plays well can be made the built-in one. */
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
-import { ZONES, ZONE_IDS, STEPS, DRILL, LADDERS, sylFor, builtInDrills, applyDrillEdits, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
+import { ZONES, TIMES, STEPS, DRILL, LADDERS, LADDER_KEYS, LADDER_HOW, ladderKey, sylFor, builtInDrills, applyDrillEdits, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
 import { planTake, takeSeconds } from "../drill/drills.js";
 import { audioContext, now, demoNote, prepareDemo } from "../audio/synth.js";
 import { noteName } from "../audio/pitch.js";
@@ -17,7 +17,7 @@ const secs = (x) => `${(Math.round(x * 10) / 10).toFixed(1)} s`;
 const edits = () => cleanDrillEdits(app.S.dev.drillEdits);
 /* Keep only what differs from the built-in tables, apply it and save. */
 function commit(e) {
-  for (const t of ZONE_IDS) if (e.ladders[t] && same(e.ladders[t], BUILT.ladders[t])) delete e.ladders[t];
+  for (const t of LADDER_KEYS) if (e.ladders[t] && same(e.ladders[t], BUILT.ladders[t])) delete e.ladders[t];
   for (const id of Object.keys(e.drills)) if (BUILT.drills[id] && same(core(e.drills[id]), core(BUILT.drills[id]))) delete e.drills[id];
   const applied = applyDrillEdits(e);
   app.S.dev.drillEdits = drillEditCount(applied) ? applied : null;
@@ -32,10 +32,15 @@ function tagOf(time, i) {
 }
 
 /* ---------- measuring and hearing ---------- */
-/* In this file `time` is the id of a ladder. Ladders belonged to the times of day until 2026-11-25; they are the
-   garments' now (scarf, top, bottom), and the step says how many sets a take has. */
-const ladderOf = (id) => { const z = ZONES.find((x) => x.id === id) || ZONES[0]; return { id: z.id, name: z.name, flavour: z.aim, how: z.how }; };
-const planOf = (drill, time, step = 1) => planTake({ step, time: "golden", zone: time, range: app.S.settings.range, nudge: app.S.settings.nudge, seed: `editor.golden.${time}`, drill: { id: "draft", ...drill } });
+/* In this file `time` is the key of a ladder, "time.zone" (content.js LADDERS). Ladders belonged to the times of
+   day until 2026-11-25, then for some hours to the garments; now each garment has one for each time of day, and
+   the step says how many sets a take has. */
+const partsOf = (key) => { const [t, z] = String(key).split("."); return { t, z }; };
+const ladderOf = (key) => {
+  const { t, z } = partsOf(key), zone = ZONES.find((x) => x.id === z) || ZONES[0], tm = TIMES.find((x) => x.id === t) || TIMES[0];
+  return { id: key, name: `${zone.name}, ${tm.name.toLowerCase()}`, flavour: zone.aim, how: `${zone.how}; ${tm.name.toLowerCase()}: ${LADDER_HOW[key] || ""}` };
+};
+const planOf = (drill, time, step = 1) => { const { t, z } = partsOf(time); return planTake({ step, time: t, zone: z, range: app.S.settings.range, nudge: app.S.settings.nudge, seed: `editor.${time}`, drill: { id: "draft", ...drill } }); };
 const relOf = (drill) => drill.rel;
 
 let sounding = [], soundT = 0, soundBtn = null;
@@ -51,7 +56,7 @@ async function hear(drill, time, btn, step = 1) {
   const was = soundBtn === btn;
   hush();
   if (was || !audioContext()) return;
-  const plan = planOf(drill, time, step), syl = sylFor(time, "golden");
+  const plan = planOf(drill, time, step), syl = sylFor(partsOf(time).z, partsOf(time).t);
   soundBtn = btn;
   btn.textContent = "■ Stop";
   /* the recorded voice is fetched note by note: wait for the whole phrase, so a preview is one voice, not two */
@@ -78,14 +83,16 @@ const roundsText = (p) => (p.reps.length > 1 ? ` · ${p.reps.length} rounds` : "
 /* ---------- the page ---------- */
 function render(root, props = {}) {
   const S = app.S;
-  const time = ZONE_IDS.includes(props.time) ? props.time : "scarf";
+  const time = LADDER_KEYS.includes(props.time) ? props.time : "morning.scarf";
+  const at = partsOf(time);
   const T = ladderOf(time), ladder = LADDERS[time].map((id) => DRILL[id]);
   const plans = ladder.map((d, i) => planOf(d, time, i + 1));
   const e = edits(), n = drillEditCount(e);
   root.innerHTML = `
     <header class="topbar"><div class="where"><button class="icon-btn" data-a="back" aria-label="Back to Settings">‹</button><span class="place">Drill editor</span></div></header>
     <section class="dedit">
-      <div class="segs three" role="tablist">${ZONES.map((t) => `<button role="tab" aria-selected="${t.id === time}" class="${t.id === time ? "on" : ""}" data-time="${t.id}">${esc(t.name)}${e.ladders[t.id] ? " •" : ""}</button>`).join("")}</div>
+      <div class="segs three" role="tablist" aria-label="Garment">${ZONES.map((z) => `<button role="tab" aria-selected="${z.id === at.z}" class="${z.id === at.z ? "on" : ""}" data-time="${ladderKey(z.id, at.t)}">${esc(z.name)}${TIMES.some((t) => e.ladders[ladderKey(z.id, t.id)]) ? " •" : ""}</button>`).join("")}</div>
+      <div class="segs three" role="tablist" aria-label="Time of day">${TIMES.map((t) => `<button role="tab" aria-selected="${t.id === at.t}" class="${t.id === at.t ? "on" : ""}" data-time="${ladderKey(at.z, t.id)}">${esc(t.name)}${e.ladders[ladderKey(at.z, t.id)] ? " •" : ""}</button>`).join("")}</div>
       <p class="muted small"><b>${esc(T.flavour)}</b>: ${esc(T.how)}. ▲ ▼ move a step; tap a step to change it. All twelve: ${secs(plans.reduce((a, p) => a + p.total, 0))} of notes.</p>
       <ol class="de-list">${ladder.map((d, i) => {
         const tag = tagOf(time, i);
@@ -124,7 +131,7 @@ function render(root, props = {}) {
 function openStep(time, i, again) {
   const T = ladderOf(time), id = LADDERS[time][i], d = DRILL[id];
   const builtIn = !!BUILT.drills[id], changed = builtIn && !same(core(d), core(BUILT.drills[id]));
-  const used = ZONE_IDS.flatMap((t) => LADDERS[t].map((x, k) => (x === id && !(t === time && k === i) ? `${ladderOf(t).name} step ${k + 1}` : null)).filter(Boolean));
+  const used = LADDER_KEYS.flatMap((t) => LADDERS[t].map((x, k) => (x === id && !(t === time && k === i) ? `${ladderOf(t).name} step ${k + 1}` : null)).filter(Boolean));
   const all = Object.values(DRILL).sort((a, b) => a.name.localeCompare(b.name));
   const el = sheet(`
     <h3>Step ${i + 1} · ${esc(T.name)}</h3>
@@ -204,7 +211,7 @@ function openStep(time, i, again) {
 
 /* ---------- all the changes at once ---------- */
 function confirmUndo(again) {
-  const el = sheet(`<h3>Undo every change?</h3><p class="muted">All three times of day go back to the built-in drills, and drills you made are removed. Progress is not touched.</p>
+  const el = sheet(`<h3>Undo every change?</h3><p class="muted">All nine ladders go back to the built-in drills, and drills you made are removed. Progress is not touched.</p>
     <div class="row"><button class="btn danger" data-a="yes">Undo every change</button><button class="btn" data-a="no">Keep them</button></div>`);
   $("[data-a=yes]", el).onclick = () => { commit({ ladders: {}, drills: {} }); closeSheet(); again(); toast("Back to the built-in drills."); };
   $("[data-a=no]", el).onclick = () => closeSheet();
@@ -213,7 +220,7 @@ function confirmUndo(again) {
 function changesText() {
   const e = edits();
   const lines = ["Longcat drill changes"];
-  for (const t of ZONE_IDS) if (e.ladders[t]) lines.push(`${ladderOf(t).name}: ${e.ladders[t].map((id, k) => `${k + 1} ${DRILL[id].name}`).join(", ")}`);
+  for (const t of LADDER_KEYS) if (e.ladders[t]) lines.push(`${ladderOf(t).name}: ${e.ladders[t].map((id, k) => `${k + 1} ${DRILL[id].name}`).join(", ")}`);
   for (const [id, d] of Object.entries(e.drills)) lines.push(`${BUILT.drills[id] ? "Edited" : "New"} drill ${id}: ${d.name} · ${notesText(d)} · ${d.dur} s a note`);
   lines.push(JSON.stringify(e));
   return lines.join("\n");
