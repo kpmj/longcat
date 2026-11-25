@@ -3,7 +3,7 @@
    (S.dev.drillEdits) and laid over the built-in tables by content.js applyDrillEdits. "Copy the changes" gives
    text to paste into the chat, so a change that plays well can be made the built-in one. */
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
-import { TIMES, TIME_IDS, STEPS, DRILL, LADDERS, timeById, sylFor, builtInDrills, applyDrillEdits, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
+import { ZONES, ZONE_IDS, STEPS, DRILL, LADDERS, sylFor, builtInDrills, applyDrillEdits, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
 import { planTake, takeSeconds } from "../drill/drills.js";
 import { audioContext, now, demoNote, prepareDemo } from "../audio/synth.js";
 import { noteName } from "../audio/pitch.js";
@@ -17,7 +17,7 @@ const secs = (x) => `${(Math.round(x * 10) / 10).toFixed(1)} s`;
 const edits = () => cleanDrillEdits(app.S.dev.drillEdits);
 /* Keep only what differs from the built-in tables, apply it and save. */
 function commit(e) {
-  for (const t of TIME_IDS) if (e.ladders[t] && same(e.ladders[t], BUILT.ladders[t])) delete e.ladders[t];
+  for (const t of ZONE_IDS) if (e.ladders[t] && same(e.ladders[t], BUILT.ladders[t])) delete e.ladders[t];
   for (const id of Object.keys(e.drills)) if (BUILT.drills[id] && same(core(e.drills[id]), core(BUILT.drills[id]))) delete e.drills[id];
   const applied = applyDrillEdits(e);
   app.S.dev.drillEdits = drillEditCount(applied) ? applied : null;
@@ -32,7 +32,10 @@ function tagOf(time, i) {
 }
 
 /* ---------- measuring and hearing ---------- */
-const planOf = (drill, time) => planTake({ step: 1, time, zone: "scarf", range: app.S.settings.range, nudge: app.S.settings.nudge, seed: `editor.${time}.scarf`, drill: { id: "draft", ...drill } });
+/* In this file `time` is the id of a ladder. Ladders belonged to the times of day until 2026-11-25; they are the
+   garments' now (scarf, top, bottom), and the step says how many sets a take has. */
+const ladderOf = (id) => { const z = ZONES.find((x) => x.id === id) || ZONES[0]; return { id: z.id, name: z.name, flavour: z.aim, how: z.how }; };
+const planOf = (drill, time, step = 1) => planTake({ step, time: "golden", zone: time, range: app.S.settings.range, nudge: app.S.settings.nudge, seed: `editor.golden.${time}`, drill: { id: "draft", ...drill } });
 const relOf = (drill) => drill.rel;
 
 let sounding = [], soundT = 0, soundBtn = null;
@@ -44,11 +47,11 @@ function hush() {
   soundBtn = null;
 }
 /* every round, as a singer with this phone's range would get it; press again to stop */
-async function hear(drill, time, btn) {
+async function hear(drill, time, btn, step = 1) {
   const was = soundBtn === btn;
   hush();
   if (was || !audioContext()) return;
-  const plan = planOf(drill, time), syl = sylFor("scarf", time);
+  const plan = planOf(drill, time, step), syl = sylFor(time, "golden");
   soundBtn = btn;
   btn.textContent = "■ Stop";
   /* the recorded voice is fetched note by note: wait for the whole phrase, so a preview is one voice, not two */
@@ -75,14 +78,14 @@ const roundsText = (p) => (p.reps.length > 1 ? ` · ${p.reps.length} rounds` : "
 /* ---------- the page ---------- */
 function render(root, props = {}) {
   const S = app.S;
-  const time = TIME_IDS.includes(props.time) ? props.time : "morning";
-  const T = timeById(time), ladder = LADDERS[time].map((id) => DRILL[id]);
-  const plans = ladder.map((d) => planOf(d, time));
+  const time = ZONE_IDS.includes(props.time) ? props.time : "scarf";
+  const T = ladderOf(time), ladder = LADDERS[time].map((id) => DRILL[id]);
+  const plans = ladder.map((d, i) => planOf(d, time, i + 1));
   const e = edits(), n = drillEditCount(e);
   root.innerHTML = `
     <header class="topbar"><div class="where"><button class="icon-btn" data-a="back" aria-label="Back to Settings">‹</button><span class="place">Drill editor</span></div></header>
     <section class="dedit">
-      <div class="segs three" role="tablist">${TIMES.map((t) => `<button role="tab" aria-selected="${t.id === time}" class="${t.id === time ? "on" : ""}" data-time="${t.id}">${esc(t.name)}${e.ladders[t.id] ? " •" : ""}</button>`).join("")}</div>
+      <div class="segs three" role="tablist">${ZONES.map((t) => `<button role="tab" aria-selected="${t.id === time}" class="${t.id === time ? "on" : ""}" data-time="${t.id}">${esc(t.name)}${e.ladders[t.id] ? " •" : ""}</button>`).join("")}</div>
       <p class="muted small"><b>${esc(T.flavour)}</b>: ${esc(T.how)}. ▲ ▼ move a step; tap a step to change it. All twelve: ${secs(plans.reduce((a, p) => a + p.total, 0))} of notes.</p>
       <ol class="de-list">${ladder.map((d, i) => {
         const tag = tagOf(time, i);
@@ -119,9 +122,9 @@ function render(root, props = {}) {
 
 /* ---------- one step ---------- */
 function openStep(time, i, again) {
-  const T = timeById(time), id = LADDERS[time][i], d = DRILL[id];
+  const T = ladderOf(time), id = LADDERS[time][i], d = DRILL[id];
   const builtIn = !!BUILT.drills[id], changed = builtIn && !same(core(d), core(BUILT.drills[id]));
-  const used = TIME_IDS.flatMap((t) => LADDERS[t].map((x, k) => (x === id && !(t === time && k === i) ? `${timeById(t).name} step ${k + 1}` : null)).filter(Boolean));
+  const used = ZONE_IDS.flatMap((t) => LADDERS[t].map((x, k) => (x === id && !(t === time && k === i) ? `${ladderOf(t).name} step ${k + 1}` : null)).filter(Boolean));
   const all = Object.values(DRILL).sort((a, b) => a.name.localeCompare(b.name));
   const el = sheet(`
     <h3>Step ${i + 1} · ${esc(T.name)}</h3>
@@ -131,7 +134,7 @@ function openStep(time, i, again) {
     <label class="de-f"><span>Notes</span><input data-f="rel" value="${esc(d.rel.join(" "))}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
          <p class="muted small">Semitones from the first note, with spaces. 0 2 4 is do–re–mi; 0 -2 0 dips below. Up to ${DRILL_LIMITS.notes} notes.</p>
     <label class="de-f"><span>Seconds per note</span><input data-f="dur" type="number" inputmode="decimal" step="0.05" min="${DRILL_LIMITS.durMin}" max="${DRILL_LIMITS.durMax}" value="${d.dur}"></label>
-    <p class="muted small">Seconds per note is the note and the gap after it. How many times it is sung is the time of day’s: once in the morning, three rounds at golden hour, about a minute of rounds at night.</p>
+    <p class="muted small">Seconds per note is the note and the gap after it. How many times it is sung is the step’s: once in steps 1 to 4, three sets in 5 to 8, five in 9 to 12.</p>
     <p class="de-info small" id="de-info" role="status"></p>
     ${used.length ? `<p class="muted small">Also in ${esc(used.join(", "))}. Save changes it there too; “Save as a new drill” changes only this step.</p>` : ""}
     <div class="row"><button class="btn" data-a="hear">▶ Hear it</button><button class="btn primary" data-a="save">Save</button></div>
@@ -154,7 +157,7 @@ function openStep(time, i, again) {
     const r = draft(), box = $("#de-info", el);
     box.classList.toggle("bad", !!r.error);
     if (r.error) return void (box.textContent = r.error);
-    const p = planOf(r.drill, time), rel = relOf(r.drill, time), span = Math.max(...rel) - Math.min(...rel);
+    const p = planOf(r.drill, time, i + 1), rel = relOf(r.drill, time), span = Math.max(...rel) - Math.min(...rel);
     const rounds = p.reps.length > 1 ? ` · on this phone’s range: ${p.reps.length} rounds (${p.way}), top note ${noteName(Math.max(...p.notes.map((n) => n.midi)))}, ${secs(takeSeconds(p))} a take with the demo and the count` : ` · ${secs(takeSeconds(p))} a take with the demo and the count`;
     box.textContent = `${T.name}: ${secs(r.drill.dur)} a note, ${secs(p.demoTotal)}${p.reps.length > 1 ? ` a round, ${secs(p.total)} in all` : " in all"} · ${rel.length} note${rel.length === 1 ? "" : "s"}, ${span} semitone${span === 1 ? "" : "s"} wide${span > 12 ? " (wider than an octave: may not fit a small range)" : ""}${rounds}`;
   };
@@ -169,7 +172,7 @@ function openStep(time, i, again) {
     commit(ed);
     reopen();
   };
-  $("[data-a=hear]", el).onclick = (ev) => { const dr = ok(); if (dr) hear(dr, time, ev.currentTarget); };
+  $("[data-a=hear]", el).onclick = (ev) => { const dr = ok(); if (dr) hear(dr, time, ev.currentTarget, i + 1); };
   $("[data-a=save]", el).onclick = () => {
     const dr = ok();
     if (!dr) return;
@@ -210,7 +213,7 @@ function confirmUndo(again) {
 function changesText() {
   const e = edits();
   const lines = ["Longcat drill changes"];
-  for (const t of TIME_IDS) if (e.ladders[t]) lines.push(`${timeById(t).name}: ${e.ladders[t].map((id, k) => `${k + 1} ${DRILL[id].name}`).join(", ")}`);
+  for (const t of ZONE_IDS) if (e.ladders[t]) lines.push(`${ladderOf(t).name}: ${e.ladders[t].map((id, k) => `${k + 1} ${DRILL[id].name}`).join(", ")}`);
   for (const [id, d] of Object.entries(e.drills)) lines.push(`${BUILT.drills[id] ? "Edited" : "New"} drill ${id}: ${d.name} · ${notesText(d)} · ${d.dur} s a note`);
   lines.push(JSON.stringify(e));
   return lines.join("\n");

@@ -175,10 +175,10 @@ export function openPicker({ after = null, except = null, tipText = null } = {})
   const fresh = ZONES.every((z) => St.progress(S, place, time, z.id) === 0);
   const el = sheet(`
     <h3>${after ? esc(after) + "<br>" : ""}${except ? "Wear which one instead?" : fresh ? "Which one first?" : "Which one next?"}</h3>
-    <p class="muted">${first ? "The first one is also the tutorial: twelve short steps, one at a time." : except ? "The one you’re wearing keeps its steps and waits for you." : `${timeById(time).name} · ${timeById(time).flavour}: ${timeById(time).how}. Each cat sings it with its own sound.`}</p>
+    <p class="muted">${first ? "The first one is also the tutorial: twelve short steps, one at a time." : except ? "The one you’re wearing keeps its steps and waits for you." : "Each garment trains one thing: the scarf agility, the top breath, the hat range. Each cat sings its own with its own sound."}</p>
     <div class="pick-row">${left.map((z) => `<button class="pick" data-zone="${z.id}">
       ${wardrobeThumbSvg({ zone: z.id, ...St.garmentSpec(S, place, time, z.id), steps: STEPS })}
-      <b>${esc(garmentName(time, z.id))}</b><span>${esc(SOUNDS[z.id].cat)} · “${sylFor(z.id, time)}” · ${St.progress(S, place, time, z.id)} / ${STEPS}</span></button>`).join("")}</div>`, { onClose: () => {} });
+      <b>${esc(garmentName(time, z.id))}</b><em>${esc(z.aim)}</em><span>${esc(SOUNDS[z.id].cat)} · “${sylFor(z.id, time)}” · ${St.progress(S, place, time, z.id)} / ${STEPS}</span></button>`).join("")}</div>`, { onClose: () => {} });
   $$(".pick", el).forEach((b) => (b.onclick = () => {
     St.chooseZone(S, place, b.dataset.zone);
     app.save();
@@ -202,7 +202,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   const folds = steps.map((st, i) => (st?.tuft ? i + 1 : 0)).filter(Boolean);
   const others = ZONES.filter((x) => x.id !== zone && !St.garmentDone(S, place, time, x.id));
   const inTutorial = !St.tutorialDone(S);
-  const grid = ladderFor(time).map((d, i) => {
+  const grid = ladderFor(zone).map((d, i) => {
     const k = i + 1, st = k <= n ? (folds.includes(k) ? "fold" : "done") : k === n + 1 && !done ? "next" : "todo";
     /* a step already sung can be sung again (the designer, 2026-11-14: "allow user to go back to the previous drills
        to redo them"); it never moves anything forward */
@@ -226,7 +226,8 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
     buttons = `<div class="row"><button class="btn primary" data-a="wear">Wear this one</button><button class="btn" data-a="close">Not now</button></div>`;
   }
   const el = sheet(`
-    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.name.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">${esc(singerLabel(S, g.singer))} · ${esc(yarnLabel(g.yarn).toLowerCase())} · change</button></div></div>
+    <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.aim.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">${esc(singerLabel(S, g.singer))} · ${esc(yarnLabel(g.yarn).toLowerCase())} · change</button></div></div>
+    <p class="muted small"><b>${esc(z.aim)}:</b> ${esc(z.how)}. Steps 1 to 4 are sung once, 5 to 8 in three sets, 9 to 12 in five.</p>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}
@@ -263,7 +264,7 @@ function openTimes() {
     const badge = here ? '<span class="badge">Here</span>' : !ok ? '<span class="badge quiet">Not yet</span>' : `<span class="tod-go" aria-hidden="true">${t.id === cur ? "Back ›" : "Go ›"}</span>`;
     return `<button class="place-row tod${here ? " here" : ""}${ok ? "" : " future"}" data-time="${t.id}" ${ok && !here ? "" : "disabled"} aria-label="${esc(t.name)}. ${esc(here ? "You are here." : ok ? "Go there." : "Not yet.")}">
       <span class="thumb">${placeThumbSvg(place, t.id)}</span>
-      <span class="pinfo"><b>${esc(t.name)}${t.id === cur ? ' <i class="tod-now">singing now</i>' : ""}</b><span>${esc(t.flavour)} · ${esc(t.how)}</span><span>${esc(line)}</span></span>
+      <span class="pinfo"><b>${esc(t.name)}${t.id === cur ? ' <i class="tod-now">singing now</i>' : ""}</b><span>${esc(t.weather)}</span><span>${esc(line)}</span></span>
       ${badge}</button>`;
   }).join("");
   const el = sheet(`
@@ -280,7 +281,7 @@ function openTimes() {
 }
 
 function askRedo(place, time, zone, step) {
-  const d = ladderFor(time)[step - 1], name = garmentName(time, zone);
+  const d = ladderFor(zone)[step - 1], name = garmentName(time, zone);
   const el = sheet(`
     <h3>Sing step ${step} again?</h3>
     <p class="muted">${esc(name)} · ${esc(d.name)}. What you sing now takes the place of this step, folds and all. Nothing moves forward or back.</p>
@@ -289,7 +290,7 @@ function askRedo(place, time, zone, step) {
     closeSheet(true);
     /* after singing, go back to where this was asked from (home or the Wardrobe) */
     const back = app.screen === "wardrobe" ? "wardrobe" : "home";
-    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step, time), seed: `${place}.${time}.${zone}`, back }, retake: true, outcome: null });
+    show("take", { ctx: { place, time, zone, step, drill: drillForStep(step, zone), seed: `${place}.${time}.${zone}`, back }, retake: true, outcome: null });
   };
   el.querySelector("[data-a=no]").onclick = () => { closeSheet(true); openGarment(zone, time); };
 }

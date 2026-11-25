@@ -21,7 +21,7 @@ import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
 import { demoVoice } from "../audio/demo-voices.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
-import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS, drillCard, timeById } from "../content.js";
+import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS, ZONES, drillCard, timeById } from "../content.js";
 import { noteName } from "../audio/pitch.js";
 import { tip, hideTip } from "./tips.js";
 import { micBlocked } from "./onboarding.js";
@@ -244,7 +244,7 @@ function openCard() {
   const fresh = !St.heardDrill(S, d.id), props = app.props;
   const rounds = P.reps.length > 1 ? ` · ${P.reps.length} rounds, ${wayWords(P)}` : "";
   const el = sheet(`
-    <p class="eyebrow">${fresh ? "New · " : ""}${esc(T.name)} · ${esc(T.flavour)}</p>
+    <p class="eyebrow">${fresh ? "New · " : ""}${esc(garmentName(R.ctx.time, R.ctx.zone))} · ${esc((ZONES.find((z) => z.id === R.ctx.zone) || ZONES[0]).aim)}</p>
     <h3>${esc(d.name)}</h3>
     <div class="dc-fig">${cardFigure(P)}<b>“${esc(P.syl)}”</b><span>starts on ${noteName(P.notes[0].midi)}${rounds}</span></div>
     ${words ? `<div class="dc-words"><p class="eyebrow">GOAL</p><p class="dc-goal">${esc(words.goal)}</p><p class="eyebrow">HOW</p><p>${esc(words.how)}</p></div>` : ""}

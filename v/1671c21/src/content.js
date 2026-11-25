@@ -5,13 +5,15 @@
 export const STEPS = 12;
 
 export const ZONES = [
-  { id: "scarf", name: "Scarf", where: "neck" },
-  { id: "top", name: "Top", where: "chest to belly" },
-  { id: "bottom", name: "Hat", where: "head" },
+  { id: "scarf", name: "Scarf", where: "neck", aim: "Agility", how: "quick notes, from low to high" },
+  { id: "top", name: "Top", where: "chest to belly", aim: "Breath", how: "few notes, held long" },
+  { id: "bottom", name: "Hat", where: "head", aim: "Range", how: "wide skips and leaps, to the edges of your voice" },
 ];
 export const ZONE_IDS = ZONES.map((z) => z.id);
 
-/* Each time of day has its fur, its weather and its own ladder of drills (flavour = the ladder's name). */
+/* Each time of day has its fur and its weather. `flavour` and `how` are from when a time of day had its own
+   ladder of drills (until 2026-11-25); the drills belong to the garments now (ZONES: aim, how; LADDERS), and no
+   screen shows these two any more. */
 export const TIMES = [
   { id: "morning", name: "Morning", fur: "short", weather: "Cool, the mist hasn't lifted", flavour: "Land", how: "short shapes, sung once: landing each note" },
   { id: "golden", name: "Golden hour", fur: "mid", weather: "Warm, the sun low and slanting", flavour: "Move", how: "phrases in three rounds, a step higher or lower each time" },
@@ -93,50 +95,50 @@ export const GUESTS = {
    lowest note is placed in the singer's range, so a rel may be negative); dur = the seconds a note gets, the gap
    before the next note included (drills.js gapOf), the same at every time of day.
    What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
-   How many times a drill is sung is not here either: the time of day decides (drills.js TIME_RULE, the designer
-   2026-11-25): once in the morning, three rounds at golden hour, about a minute of rounds at night. From
-   2026-11-14 to then a drill carried its own `climb`, and only steps 10 to 12 of a ladder had one. */
+   How many times a drill is sung is not here either: the step decides (drills.js STEP_RULE, the designer 2026-11-25):
+   once in steps 1 to 4, three sets in steps 5 to 8, five in steps 9 to 12. From 2026-11-14 to then a drill carried
+   its own `climb`, and only steps 10 to 12 of a ladder had one. */
 export const DRILL = {
   long: { name: "One long note", rel: [0], dur: 3.4 },
   long2: { name: "The same note twice", rel: [0, 0], dur: 1.5 },
-  hold4: { name: "A longer note", rel: [0], dur: 3.5 },
+  hold4: { name: "A longer note", rel: [0], dur: 4.2 },
   hold5: { name: "The longest note", rel: [0], dur: 5.0 },
   two: { name: "One step up", rel: [0, 2], dur: 1.5 },
   twodown: { name: "One step down", rel: [2, 0], dur: 1.5 },
-  nbup: { name: "Step up and back", rel: [0, 2, 0], dur: 1.0 },
-  nbdown: { name: "Step down and back", rel: [0, -2, 0], dur: 1.0 },
-  doremi: { name: "Three steps up", rel: [0, 2, 4], dur: 1.0 },
-  down3: { name: "Three steps down", rel: [4, 2, 0], dur: 1.0 },
-  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.95 },
-  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.95 },
+  nbup: { name: "Step up and back", rel: [0, 2, 0], dur: 1.4 },
+  nbdown: { name: "Step down and back", rel: [0, -2, 0], dur: 1.4 },
+  doremi: { name: "Three steps up", rel: [0, 2, 4], dur: 0.9 },
+  down3: { name: "Three steps down", rel: [4, 2, 0], dur: 1.4 },
+  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.58 },
+  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.58 },
   fivedown: { name: "Five steps down", rel: [7, 5, 4, 2, 0], dur: 0.95 },
   five: { name: "Up five and back", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.56 },
-  fast5: { name: "Quick five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.5 },
-  scaleup: { name: "Eight steps up", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
+  fast5: { name: "Quick five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.57 },
+  scaleup: { name: "Eight steps up", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.6 },
   scaledown: { name: "Eight steps down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7 },
   third: { name: "Skip up", rel: [0, 4], dur: 1.5 },
-  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.0 },
+  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.4 },
   arp: { name: "Two skips up", rel: [0, 4, 7], dur: 1.0 },
   arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 1.4 },
   arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.95 },
   fifth: { name: "Leap up", rel: [0, 7], dur: 1.5 },
-  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.95 },
-  octave: { name: "Big leap up", rel: [0, 12], dur: 1.6 },
-  octdown: { name: "Big leap down", rel: [12, 0], dur: 1.6 },
-  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
-  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.68 },
+  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.6 },
+  octave: { name: "Big leap up", rel: [0, 12], dur: 2.0 },
+  octdown: { name: "Big leap down", rel: [12, 0], dur: 2.0 },
+  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.65 },
+  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.62 },
   /* added when the ladders were dealt again (2026-11-15), so that no two ladders share a drill */
-  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.4 },
+  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.0 },
   fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.4 },
-  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.15 },
-  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.95 },
+  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.3 },
+  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.98 },
   fifthdown: { name: "Leap down", rel: [7, 0], dur: 1.8 },
-  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.7 },
+  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.62 },
   /* the designer's own example of a drill sung in rounds (2026-11-14: do re mi fa so fa mi re do, the next round from re);
      it was the last step of every garment until 2026-11-25 and is a night drill now. */
-  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.7 },
+  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.62 },
   /* added on 2026-11-25, when the night ladder became twelve long drills */
-  fiveskip: { name: "Five up, two skips home", rel: [0, 2, 4, 5, 7, 4, 0], dur: 0.8 },
+  fiveskip: { name: "Five up, two skips home", rel: [0, 2, 4, 5, 7, 4, 0], dur: 0.62 },
 };
 /* What the card of a drill says (the designer, 2026-11-24, after Vocalista's intro card): a goal in a few words and one line
    of how, about the body and the breath as much as the notes. Kept apart from DRILL so a drill edited in the dev
@@ -154,7 +156,7 @@ export const DRILL_CARD = {
   arc: ["One smooth curve.", "Sing it on one breath, up and back, like drawing a small hill."],
   third: ["Jump over a note.", "Think of the note in between, then leave it out and land cleanly."],
   thirdback: ["Jump and return.", "Keep your jaw and shoulders loose. The last note should match the first."],
-  fiveup: ["Climb five without pushing.", "Stay as light on the fifth note as on the first. Breathe in every rest."],
+  fiveup: ["Climb five without pushing.", "Stay as light on the fifth note as on the first."],
   climb5: ["Keep it easy all the way up.", "The same hill each round, one step higher. If it gets tight, sing softer, not harder."],
   arp: ["Skip, skip, land.", "Three notes far apart: keep your mouth the same shape and let the pitch do the moving."],
   arpdown: ["Come down in two skips.", "Start a little softer than you think, and keep the low note from dropping away."],
@@ -187,25 +189,25 @@ export const drillCard = (id) => { const c = DRILL_CARD[id]; return c ? { goal: 
 const DRILL_ALIAS = { free: "climb5", free5: "climb5" };
 for (const [id, d] of Object.entries(DRILL)) d.id = id;
 
-/* One ladder of twelve steps per time of day, the same in every place. DEALT AGAIN ON 2026-11-25 under the rule of
-   the three times (drills.js TIME_RULE; the designer: mornings short "for building the foundation", afternoons three times
-   as long, climbing up or down, nights as long as the exercise in the Vocalista recording):
-   - morning: twelve short shapes of one to three notes, sung once, 8 to 9 seconds a take. Held notes, one step,
-     three steps, a skip, two skips, a leap.
-   - golden hour: twelve phrases of three to nine notes, three rounds each, 25 to 29 seconds. A phrase that ends
-     lower than it starts (Four steps down, Five steps down, Two skips down) goes a step lower each round; the
-     others a step higher.
-   - night: twelve drills of 52 to 58 seconds: five to ten rounds up and back. Long notes, the five-note hill of
-     the recording, its darker sister, the eight steps, the big leaps, and the quick five last.
-   A step is harder than the one before by its shape (wider, more notes, quicker), no longer by its length: within
-   a time of day every take is about as long as the next. No drill is in two ladders. The order is the agent's,
-   DRAFT, like the note lengths; docs/later.md lists what to read.
-   A place added later needs nothing here: it uses these ladders. Should a place ever get ladders of its own, the
-   rule still holds by itself, since the rounds come from the time of day; only `dur` has to be chosen so the take
-   lands in the band (drills.js says how long a phrase that is).
+/* One ladder of twelve steps per GARMENT, the same in every place and at every time of day (the designer, 2026-11-25, in
+   the evening: "drills designed for hat is to increase your range, for top is to increase your breath support, so
+   more sustained notes, for scarf is to increase agility, so having notes go from low to high in a quick tempo").
+   The step says how long a take is (drills.js STEP_RULE): steps 1 to 4 once, 5 to 8 three sets, 9 to 12 five sets.
+   - scarf, agility: quick notes, mostly from low to high. Three steps, the small hill, five up, the zigzag; then
+     the five-note hill, skips, the eight steps and the wide curve in three sets; then the long quick ones in five.
+   - top, breath: few notes, held. One long note, the same twice, a step up, a step down; then a longer note and
+     slow neighbours in three sets; then the longest note and slow falling lines in five.
+   - hat, range: wide. A skip, a wide skip, a leap, two skips; then skips and leaps down to the bottom of the
+     singer's range and up to the octave in three sets; then long lines to the bottom and to the top in five.
+     The hat's sets do not come back: they keep going to the edge of the singer's range (drills.js wayOf).
+   No drill is in two ladders. Which shape went where, the order and the note lengths are the agent's, DRAFT;
+   docs/later.md lists what to read. A place added later needs nothing here: it uses these ladders.
 
-   The deal before this one, of 2026-11-15 (the designer: "把現有的 drill review 過一次 … 重新 assign 所有的 drills"), on the same plan as
-   before. What the review found and what changed:
+   Before this: one ladder per time of day. From 2026-11-14 the last three steps climbed; for some hours of
+   2026-11-25 the time of day decided the length instead (morning once, golden hour three rounds, night a minute).
+   The notes below are from the deal of 2026-11-15 and use the names of that day. */
+/*
+   What the review of 2026-11-15 found and what changed then:
    - the same drill came up in two ladders (Three down, Up and back, Five down, Arpeggio down, Five-note scale) and
      the nine notes of the five-note scale were sung in six of the thirty-six steps. Now every ladder has its own
      eleven drills; only step 12, the climbing five, is shared (the designer's choice of 2026-11-14). "five" is still in the
@@ -221,16 +223,16 @@ for (const [id, d] of Object.entries(DRILL)) d.id = id;
      five as its one long phrase, the octave down before the scale down.
    Morning only swapped steps 10 and 11. */
 export const LADDERS = {
-  morning: ["long", "long2", "two", "twodown", "nbup", "nbdown", "doremi", "down3", "third", "thirdback", "arp", "fifth"],
-  golden: ["arc", "fourdown", "fiveup", "fivedown", "nbboth", "arpud", "arpdown", "fourthback", "skips", "fifthoct", "penta", "five"],
-  night: ["hold4", "fifthdown", "climb5", "hold5", "minor5", "fiveskip", "scaleup", "scaledown", "octave", "octdown", "arp8", "fast5"],
+  scarf: ["doremi", "arc", "fiveup", "skips", "penta", "five", "scaleup", "fiveskip", "arp8", "climb5", "minor5", "fast5"],
+  top: ["long", "long2", "two", "twodown", "hold4", "nbup", "nbdown", "down3", "hold5", "thirdback", "fourdown", "nbboth"],
+  bottom: ["third", "fourthback", "fifth", "arp", "arpdown", "fifthdown", "fifthoct", "octave", "fivedown", "arpud", "octdown", "scaledown"],
 };
-export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
-export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
+export const ladderFor = (zoneId) => (LADDERS[zoneId] || LADDERS.scarf).map((id) => DRILL[id]);
+export const drillAt = (zoneId, step) => ladderFor(zoneId)[Math.max(1, Math.min(STEPS, step)) - 1];
 
 /* The drill editor (dev tools, the designer 2026-11-14): the designer moves and edits drills on the phone. The edits live in the
    save (S.dev.drillEdits) and are laid over the tables above when the game starts and after every change, so
-   everything that reads DRILL / LADDERS sees them. Shape: { ladders: { morning: [twelve ids] }, drills: { id:
+   everything that reads DRILL / LADDERS sees them. Shape: { ladders: { scarf: [twelve ids] }, drills: { id:
    { name, rel, dur } } }. Nothing here is graded differently. A `climb` saved by an older editor is dropped: the
    time of day decides the rounds now. */
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -260,7 +262,7 @@ export function cleanDrillEdits(e) {
   }
   const known = (id) => typeof id === "string" && (id in out.drills || id in BUILT_IN.drills);
   const now = (id) => (typeof id === "string" && !(id in out.drills) && DRILL_ALIAS[id]) || id; // a drill that was removed
-  for (const t of TIME_IDS) {
+  for (const t of ZONE_IDS) {
     const l = e.ladders?.[t];
     if (Array.isArray(l) && l.length === STEPS && l.map(now).every(known)) out.ladders[t] = l.map(now);
   }
@@ -273,7 +275,7 @@ export function applyDrillEdits(e) {
   for (const k of Object.keys(DRILL)) delete DRILL[k];
   Object.assign(DRILL, base.drills, clone(c.drills));
   for (const [id, d] of Object.entries(DRILL)) d.id = id;
-  for (const t of TIME_IDS) LADDERS[t] = c.ladders[t] || base.ladders[t];
+  for (const t of ZONE_IDS) LADDERS[t] = c.ladders[t] || base.ladders[t];
   return c;
 }
 

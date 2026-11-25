@@ -1,7 +1,7 @@
 /* Drill planning: which notes a take asks for, in which key, at which speed, how many times.
    Key (decision 1, 2026-11-12): the player sings their lowest and highest note once; every drill's root is
-   placed inside that range. Each time of day has its own ladder of drills (content.js LADDERS) and its own rule
-   for how long a take is (TIME_RULE below). */
+   placed inside that range. Each garment has its own ladder of drills (content.js LADDERS); the step says how
+   many sets a take has (STEP_RULE below). */
 import { drillAt, sylFor, MOUTH } from "../content.js";
 
 export const DEFAULT_RANGE = { low: 48, high: 67 }; // C3–G4: used until the range finder has run
@@ -21,36 +21,38 @@ export const BEAT_AIM = 0.66; // seconds: notes up to about a second apart get o
 export const GAP_SHARE = 0.18, GAP_MIN = 0.12, GAP_MAX = 0.25;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
-/* Where in the singer's range a time of day puts its drills: morning in the middle, the others a little under it. */
+/* Where in the singer's range a time of day puts a drill sung once: morning in the middle, the others a little
+   under it. It is all the time of day changes about a drill. */
 export const FLAVOURS = {
   morning: { centred: true },
   golden: { centred: false },
   night: { centred: false },
 };
 
-/* THE RULE OF THE THREE TIMES (the designer, 2026-11-25). A drill is a shape and the time each note gets; how often it is
-   sung is not the drill's, it is the time of day's:
-     morning  once. Short, for the foundation: a take of 8 to 10 seconds.
-     golden   three rounds, each a step higher, or each a step lower when the shape itself comes down: 24 to 30 s.
-     night    as long as the exercise in the designer's Vocalista recording: round after round, up to the top and back, 50
-              seconds to a minute. The number of rounds is whatever brings the take nearest to `aim`.
+/* THE RULE OF THE STEPS (the designer, 2026-11-25, in the evening: "i don't like using the time in the day to seperate the
+   length. let's change it back to what we had but slightly different ... step 1-4 ranges from 8-10 seconds, step
+   5-8 ranges from 24-30 seconds(3 sets), step 9-12 ranges from 40-50 seconds(5sets)"). A drill is a shape and the
+   time each note gets; how often it is sung is the step's:
+     steps 1 to 4    once: a take of 8 to 10 seconds
+     steps 5 to 8    three sets: 24 to 30 seconds
+     steps 9 to 12   five sets: 40 to 50 seconds
    A take is counted as the player meets it: the demo, the count and the singing (`takeSeconds`), not the card or
-   the result. Every place uses this rule, and a place added later gets it without anything being written for it:
-   a shape put in a morning ladder is sung once, in a night ladder for a minute. What a new ladder has to do itself
-   is choose `dur` so that its takes land in the band (tests/engine.test.mjs checks the built-in ones):
-     morning  a phrase of about 2.5 to 3.2 s (one note of 3 s, two of 1.5, three of 1, four of 0.75)
-     golden   a phrase of about 4.4 to 5.2 s
-     night    a phrase of up to 7 s or so; the rounds make up the rest */
-export const TIME_RULE = {
-  morning: { rounds: 1, take: [8, 10] },
-  golden: { rounds: 3, take: [24, 30] },
-  night: { aim: 55, most: 15, take: [50, 60] },
-};
+   the result. What a drill is for belongs to the garment (content.js LADDERS: the scarf agility, the top breath,
+   the hat range), and the time of day changes nothing about the drills. For some hours of the same day the time
+   of day decided the length (morning once, golden hour three rounds, night a minute); the designer played it and took it
+   back. A ladder only has to choose `dur` so that its takes land in the band of their step (tests/engine.test.mjs
+   checks the built-in ones). */
+export const STEP_RULE = [
+  { to: 4, rounds: 1, take: [8, 10] },
+  { to: 8, rounds: 3, take: [24, 30] },
+  { to: 12, rounds: 5, take: [40, 50] },
+];
+export const ruleOf = (step) => STEP_RULE.find((r) => step <= r.to) || STEP_RULE[STEP_RULE.length - 1];
 const DEMO_TAIL = 0.45; // as in take.js: the demo ends on the first beat this long after its last note
 
-/* The drill of a step: each time of day has its own ladder (content.js). */
-export function drillForStep(step, time = "golden") {
-  return drillAt(time, step);
+/* The drill of a step: each garment (scarf, top, hat) has its own ladder (content.js). */
+export function drillForStep(step, zone = "scarf") {
+  return drillAt(zone, step);
 }
 
 
@@ -72,8 +74,8 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
 
 /* Rounds. the designer, 2026-11-14, of the first climbing drill: "for do re mi fa so fa mi re do ... the next one will be
    starting from re ... climb to the note that is the limit for the user and go back down". Until 2026-11-25 a
-   drill said itself whether it climbed (`climb: { by, most, back }`, steps 10 to 12 of every ladder); now the time
-   of day says it (TIME_RULE) and `roundsFor` places the rounds. */
+   drill said itself whether it climbed (`climb: { by, most, back }`, steps 10 to 12 of every ladder); now the step
+   says it (STEP_RULE) and `roundsFor` places the rounds. */
 /* Between rounds, as Vocalista does it (the designer, 2026-11-24: "it plays the whole chord for the next set and it's on
    beat so the player doesn't get confused when to start ... Please follow exactly how it's implemented"). Measured
    from the sound of the designer's recording, round after round the same: the last note has its beat; on the next beat the
@@ -119,17 +121,18 @@ export function chordOf(c, rel = [0, 4, 7]) {
    step a round, as far as half the rounds go, and back the same way. A step is a whole tone where the singer has
    room for two of them above the phrase, a semitone where there is less, and nothing where there is none: then
    every round is sung in the same place, and the take is as long as the rule says all the same. With less room
-   than the rounds ask for they turn round early. Returns the lowest note of the lowest round and every round's
-   shift above it. */
-export function roundsFor(range, span, base, { n = 1, way = "up", nudge = 0 } = {}) {
+   than the rounds ask for they turn round early. `reach` (the hat's drills, which are for the range): the rounds
+   end at the edge of what the singer has, the top going up and the bottom coming down, instead of starting from
+   the usual place. Returns the lowest note of the lowest round and every round's shift above it. */
+export function roundsFor(range, span, base, { n = 1, way = "up", nudge = 0, reach = false } = {}) {
   if (n <= 1) return { start: base, shifts: [0], by: 0, up: 0 };
   const { lo, hi } = bounds(range);
   const floor = Math.ceil(lo) + nudge, top = Math.floor(hi) + nudge - span; // where the phrase's lowest note may sit
   const room = Math.max(0, top - floor);
-  const want = way === "wave" ? Math.floor(n / 2) : n - 1; // a wave of six goes up three and comes down two
+  const want = way === "wave" ? Math.floor(n / 2) : n - 1; // a wave of five goes up two and comes down two
   const by = Math.floor(room / 2) >= Math.min(want, 2) ? 2 : room >= 1 ? 1 : 0;
   const up = by ? Math.min(want, Math.floor(room / by)) : 0;
-  const start = up ? Math.max(floor, Math.min(base, top - up * by)) : base;
+  const start = !up ? base : !reach ? Math.max(floor, Math.min(base, top - up * by)) : way === "down" ? floor : top - up * by;
   const shifts = [];
   for (let k = 0, pos = 0, dir = 1; k < n; k++) {
     shifts.push(pos * by);
@@ -137,20 +140,26 @@ export function roundsFor(range, span, base, { n = 1, way = "up", nudge = 0 } = 
     if (pos + dir > up || pos + dir < 0) dir = -dir;
     pos += dir;
   }
-  if (way === "down") shifts.reverse();
-  return { start, shifts, by, up };
+  /* coming down, the same walk is taken from the top: 4, 2, 0, and with little room 3, 2, 1, 0, 1 */
+  return { start, shifts: way === "down" ? shifts.map((v) => up * by - v) : shifts, by, up };
 }
-/* how a time of day sings this shape: "once", or the way of its rounds */
-const wayOf = (time, rel) => (time === "night" ? "wave" : rel[rel.length - 1] < rel[0] ? "down" : "up");
+/* How the sets of a garment move. Three sets: a step higher each time, or a step lower when the phrase itself
+   comes down. Five sets: up two steps and back, as the first climbing drills did. The hat's drills are for the
+   range, so its sets keep going the one way, to the top of what the singer has, or down to the bottom. */
+const wayOf = (zone, rel, n) => {
+  const falls = rel[rel.length - 1] < rel[0];
+  if (zone === "bottom") return { way: falls ? "down" : "up", reach: true };
+  return { way: n >= 5 ? "wave" : falls ? "down" : "up", reach: false };
+};
 
 /* A take as the player meets it, in seconds: the demo (one round, to its closing beat), the count, the singing. */
 export const takeSeconds = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAIL) / P.beat - 1e-6) * P.beat + P.countBeats * P.beat + P.total;
 
-/* The full plan of one take: notes with start/end in seconds from the first downbeat. At golden hour and at night
+/* The full plan of one take: notes with start/end in seconds from the first downbeat. From step 5 on
    it has several rounds (plan.reps; plan.way says how they move: "up", "down", "wave", or "same" where the singer
    has no room), a rest between them, and two places for a cue in each rest (plan.cues); the demo is the first
    round only (plan.demoCount notes, plan.demoTotal seconds). Every round knows its chord (rep.chord).
-   `rounds` is for the dev drill editor and the tests: sing it this many times whatever the time of day says. */
+   `rounds` is for the tests: sing it this many times whatever the step says. */
 /* The count-in: 3, 2, 1, Go, four beats on the demo's own beat, and the first note is the beat after Go (the designer,
    2026-11-24: "Let's do 3,2,1 go", and the metronome is to run on from the demo into the singing without a gap).
    It was five from 2026-11-14: Ready, 3, 2, 1 and a beat that showed nothing. Ready was the silent beat on which
@@ -158,7 +167,8 @@ export const takeSeconds = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAI
    that nobody starts on a starting gun; Go stands on that beat now, still a whole beat before the note. */
 export const COUNT_BEATS = 4;
 export function planTake({ step, time = "golden", zone = "", range, nudge = 0, seed = "", drill: given = null, rounds = null }) {
-  const drill = given || drillForStep(step, time); // `drill` is for the dev drill editor: hear a drill before it is saved
+  const zoneId = zone || String(seed).split(".")[2] || "scarf";
+  const drill = given || drillForStep(step, zoneId); // `drill` is for the dev drill editor: hear a drill before it is saved
   const fl = FLAVOURS[time] || FLAVOURS.golden;
   const rel = drill.rel;
   const low = Math.min(...rel), span = Math.max(...rel) - low;
@@ -181,12 +191,9 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
      the cue on the third beat of the last bar, a beat to think, and the round on the bar line. */
   const noteBeats = rel.length * perNote;
   const roundBeats = Math.ceil((noteBeats + REST_BEATS) / BAR - 1e-9) * BAR, restBeats = roundBeats - noteBeats;
-  /* how many rounds: the time of day's (TIME_RULE). At night, as many as bring the whole take nearest to its aim */
-  const rule = TIME_RULE[time] || TIME_RULE.golden, phrase = (rel.length - 1) * every + len;
-  const whole = (n) => Math.ceil((phrase + DEMO_TAIL) / beat - 1e-6) * beat + COUNT_BEATS * beat + (n - 1) * roundBeats * beat + phrase;
-  let n = rounds || rule.rounds || 0;
-  if (!n) for (let k = 3, best = Infinity; k <= rule.most; k++) { const d = Math.abs(whole(k) - rule.aim); if (d < best - 1e-9) { best = d; n = k; } }
-  const climb = roundsFor(range, span, base, { n, way: wayOf(time, rel), nudge });
+  /* how many sets: the step's (STEP_RULE) */
+  const n = rounds || ruleOf(step || 1).rounds;
+  const climb = roundsFor(range, span, base, { n, nudge, ...wayOf(zoneId, rel, n) });
   const root = climb.start - low;
   const notes = [], reps = [], cues = [], lift = chordLift(root);
   climb.shifts.forEach((shift, k) => {
