@@ -9,7 +9,7 @@ export const TIPS = {
   line: "Start when the note reaches this line.",
   voice: "Your voice moves the cat. Keep its head on the bar.",
   step: null, // written when shown: "That’s one step. Eleven more and the scarf is done."
-  climb: "It climbs: the same shape, a step higher each round. The cat gives you the new first note.",
+  climb: "It comes in rounds: the same shape, a step higher or lower each time. The cat gives you the new first note.",
   fold: "A fold marks a note that got away. Sing the step again to smooth it, or keep it.",
   garment: null, // "The scarf is in the Wardrobe now. Other places are open too."
   letter: "A letter came. Reading it doesn’t move you.",

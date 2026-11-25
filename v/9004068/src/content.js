@@ -90,53 +90,53 @@ export const GUESTS = {
    words (2026-11-24): a step, a skip (a third), a wide skip (a fourth), a leap (a fifth), a big leap (an octave).
    The notes further down about how the ladders were dealt use the names of that day ("Arpeggio down", "Five-note
    scale"). rel = semitones above the drill's root (the
-   lowest note is placed in the singer's range, so a rel may be negative); dur = seconds per note at golden hour.
+   lowest note is placed in the singer's range, so a rel may be negative); dur = the seconds a note gets, the gap
+   before the next note included (drills.js gapOf), the same at every time of day.
    What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
-   climb (the designer, 2026-11-14: more reps on the harder steps, the 10th and 11th): the drill is sung in rounds, each
-   `by` semitones higher, up to the top of the singer's range (`most` rounds up at the most), then back down.
-   Steps 10 to 12 of every ladder climb; drills.js climbRounds places the rounds. `most` is set so a take stays
-   under about 40 seconds for a wide range: long rounds climb fewer times. */
+   How many times a drill is sung is not here either: the time of day decides (drills.js TIME_RULE, the designer
+   2026-11-25): once in the morning, three rounds at golden hour, about a minute of rounds at night. From
+   2026-11-14 to then a drill carried its own `climb`, and only steps 10 to 12 of a ladder had one. */
 export const DRILL = {
-  long: { name: "One long note", rel: [0], dur: 2.4 },
-  long2: { name: "The same note twice", rel: [0, 0], dur: 1.6 },
-  hold4: { name: "A longer note", rel: [0], dur: 4.0 },
+  long: { name: "One long note", rel: [0], dur: 3.4 },
+  long2: { name: "The same note twice", rel: [0, 0], dur: 1.5 },
+  hold4: { name: "A longer note", rel: [0], dur: 3.5 },
   hold5: { name: "The longest note", rel: [0], dur: 5.0 },
-  two: { name: "One step up", rel: [0, 2], dur: 1.0 },
-  twodown: { name: "One step down", rel: [2, 0], dur: 1.4 },
+  two: { name: "One step up", rel: [0, 2], dur: 1.5 },
+  twodown: { name: "One step down", rel: [2, 0], dur: 1.5 },
   nbup: { name: "Step up and back", rel: [0, 2, 0], dur: 1.0 },
   nbdown: { name: "Step down and back", rel: [0, -2, 0], dur: 1.0 },
   doremi: { name: "Three steps up", rel: [0, 2, 4], dur: 1.0 },
   down3: { name: "Three steps down", rel: [4, 2, 0], dur: 1.0 },
-  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.9 },
-  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.85, climb: { by: 2, most: 2, back: true } },
-  fivedown: { name: "Five steps down", rel: [7, 5, 4, 2, 0], dur: 0.85 },
-  five: { name: "Up five and back", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75 },
-  fast5: { name: "Quick five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.55 },
+  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.95 },
+  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.95 },
+  fivedown: { name: "Five steps down", rel: [7, 5, 4, 2, 0], dur: 0.95 },
+  five: { name: "Up five and back", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.56 },
+  fast5: { name: "Quick five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.5 },
   scaleup: { name: "Eight steps up", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.7 },
-  scaledown: { name: "Eight steps down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7, climb: { by: 2, most: 1, back: true } },
-  third: { name: "Skip up", rel: [0, 4], dur: 1.0 },
-  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.0, climb: { by: 2, most: 3, back: true } },
-  arp: { name: "Two skips up", rel: [0, 4, 7], dur: 0.9 },
-  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 0.9 },
-  arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.85 },
-  fifth: { name: "Leap up", rel: [0, 7], dur: 1.1 },
-  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.9 },
-  octave: { name: "Big leap up", rel: [0, 12], dur: 1.2, climb: { by: 2, most: 3, back: true } },
-  octdown: { name: "Big leap down", rel: [12, 0], dur: 1.2, climb: { by: 2, most: 3, back: true } },
-  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8, climb: { by: 2, most: 2, back: true } },
-  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.85 },
+  scaledown: { name: "Eight steps down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.7 },
+  third: { name: "Skip up", rel: [0, 4], dur: 1.5 },
+  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.0 },
+  arp: { name: "Two skips up", rel: [0, 4, 7], dur: 1.0 },
+  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 1.5 },
+  arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.95 },
+  fifth: { name: "Leap up", rel: [0, 7], dur: 1.5 },
+  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.95 },
+  octave: { name: "Big leap up", rel: [0, 12], dur: 1.6 },
+  octdown: { name: "Big leap down", rel: [12, 0], dur: 1.6 },
+  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.8 },
+  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.7 },
   /* added when the ladders were dealt again (2026-11-15), so that no two ladders share a drill */
-  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.0 },
-  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.0 },
-  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.0 },
-  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.9 },
+  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.5 },
+  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.5 },
+  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.15 },
+  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.95 },
   fifthdown: { name: "Leap down", rel: [7, 0], dur: 1.8 },
-  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.75 },
-  /* the last step of every garment (the designer, 2026-11-14: "把 free drill 完全拿掉，換成剛剛討論的進階 drill"): the designer's own
-     example of a climbing drill, do re mi fa so fa mi re do, the next round from re. Five rounds at the most
-     (two up, the top, two back): about 45 to 60 seconds. the designer, the same day: "最後一關算是最難的 所以 30-40 秒沒
-     問題", and of the five-round version, "50-60 seconds is good". */
-  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.75, climb: { by: 2, most: 2, back: true } },
+  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.7 },
+  /* the designer's own example of a drill sung in rounds (2026-11-14: do re mi fa so fa mi re do, the next round from re);
+     it was the last step of every garment until 2026-11-25 and is a night drill now. */
+  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.7 },
+  /* added on 2026-11-25, when the night ladder became twelve long drills */
+  fiveskip: { name: "Five up, two skips home", rel: [0, 2, 4, 5, 7, 4, 0], dur: 0.8 },
 };
 /* What the card of a drill says (the designer, 2026-11-24, after Vocalista's intro card): a goal in a few words and one line
    of how, about the body and the breath as much as the notes. Kept apart from DRILL so a drill edited in the dev
@@ -153,7 +153,7 @@ export const DRILL_CARD = {
   down3: ["Come down without sagging.", "Keep the breath moving as you go down, so the last note doesn’t sink."],
   arc: ["One smooth curve.", "Sing it on one breath, up and back, like drawing a small hill."],
   third: ["Jump over a note.", "Think of the note in between, then leave it out and land cleanly."],
-  thirdback: ["Jump and return, a little higher each round.", "Keep your jaw and shoulders loose as it climbs. Breathe in every rest."],
+  thirdback: ["Jump and return.", "Keep your jaw and shoulders loose. The last note should match the first."],
   fiveup: ["Climb five without pushing.", "Stay as light on the fifth note as on the first. Breathe in every rest."],
   climb5: ["Keep it easy all the way up.", "The same hill each round, one step higher. If it gets tight, sing softer, not harder."],
   arp: ["Skip, skip, land.", "Three notes far apart: keep your mouth the same shape and let the pitch do the moving."],
@@ -179,6 +179,7 @@ export const DRILL_CARD = {
   octdown: ["From the top to its twin below.", "Start light. Let the low note be quiet rather than pushed."],
   scaledown: ["Eight even steps home.", "Spend the air slowly. The last three notes are where it likes to sag."],
   five: ["A steady hill.", "Up five steps and down again on one breath, every note the same length."],
+  fiveskip: ["Walk up, skip home.", "Five even steps to the top, then two skips down. Land the last note as gently as you left it."],
 };
 export const drillCard = (id) => { const c = DRILL_CARD[id]; return c ? { goal: c[0], how: c[1] } : null; };
 /* drills that no longer exist, for saves and drill-editor edits made before they went: the made-up melodies of
@@ -186,9 +187,24 @@ export const drillCard = (id) => { const c = DRILL_CARD[id]; return c ? { goal: 
 const DRILL_ALIAS = { free: "climb5", free5: "climb5" };
 for (const [id, d] of Object.entries(DRILL)) d.id = id;
 
-/* One ladder of twelve steps per time of day: a month runs Land, then Move, then Carry. Each ladder climbs by
-   length and by a rough difficulty index (docs/design/longcat-drill-ladder.md); steps 10 to 12 climb, and the last step is the climbing five.
-   Dealt again on 2026-11-15 (the designer: "把現有的 drill review 過一次 … 重新 assign 所有的 drills"), on the same plan as
+/* One ladder of twelve steps per time of day, the same in every place. DEALT AGAIN ON 2026-11-25 under the rule of
+   the three times (drills.js TIME_RULE; the designer: mornings short "for building the foundation", afternoons three times
+   as long, climbing up or down, nights as long as the exercise in the Vocalista recording):
+   - morning: twelve short shapes of one to three notes, sung once, 8 to 9 seconds a take. Held notes, one step,
+     three steps, a skip, two skips, a leap.
+   - golden hour: twelve phrases of three to nine notes, three rounds each, 25 to 29 seconds. A phrase that ends
+     lower than it starts (Four steps down, Five steps down, Two skips down) goes a step lower each round; the
+     others a step higher.
+   - night: twelve drills of 52 to 58 seconds: five to ten rounds up and back. Long notes, the five-note hill of
+     the recording, its darker sister, the eight steps, the big leaps, and the quick five last.
+   A step is harder than the one before by its shape (wider, more notes, quicker), no longer by its length: within
+   a time of day every take is about as long as the next. No drill is in two ladders. The order is the agent's,
+   DRAFT, like the note lengths; docs/later.md lists what to read.
+   A place added later needs nothing here: it uses these ladders. Should a place ever get ladders of its own, the
+   rule still holds by itself, since the rounds come from the time of day; only `dur` has to be chosen so the take
+   lands in the band (drills.js says how long a phrase that is).
+
+   The deal before this one, of 2026-11-15 (the designer: "把現有的 drill review 過一次 … 重新 assign 所有的 drills"), on the same plan as
    before. What the review found and what changed:
    - the same drill came up in two ladders (Three down, Up and back, Five down, Arpeggio down, Five-note scale) and
      the nine notes of the five-note scale were sung in six of the thirty-six steps. Now every ladder has its own
@@ -205,9 +221,9 @@ for (const [id, d] of Object.entries(DRILL)) d.id = id;
      five as its one long phrase, the octave down before the scale down.
    Morning only swapped steps 10 and 11. */
 export const LADDERS = {
-  morning: ["long", "long2", "two", "nbup", "nbdown", "doremi", "down3", "arc", "third", "thirdback", "fiveup", "climb5"],
-  golden: ["arp", "arpdown", "arpud", "fourthback", "skips", "fifth", "fast5", "fifthoct", "scaleup", "octave", "arp8", "climb5"],
-  night: ["twodown", "hold4", "fourdown", "nbboth", "fivedown", "hold5", "fifthdown", "penta", "minor5", "octdown", "scaledown", "climb5"],
+  morning: ["long", "long2", "two", "twodown", "nbup", "nbdown", "doremi", "down3", "third", "thirdback", "arp", "fifth"],
+  golden: ["arc", "fourdown", "fiveup", "fivedown", "nbboth", "arpud", "arpdown", "fourthback", "skips", "fifthoct", "penta", "five"],
+  night: ["hold4", "fifthdown", "climb5", "hold5", "minor5", "fiveskip", "scaleup", "scaledown", "octave", "octdown", "arp8", "fast5"],
 };
 export const ladderFor = (timeId) => (LADDERS[timeId] || LADDERS.golden).map((id) => DRILL[id]);
 export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
@@ -215,18 +231,12 @@ export const drillAt = (timeId, step) => ladderFor(timeId)[Math.max(1, Math.min(
 /* The drill editor (dev tools, the designer 2026-11-14): the designer moves and edits drills on the phone. The edits live in the
    save (S.dev.drillEdits) and are laid over the tables above when the game starts and after every change, so
    everything that reads DRILL / LADDERS sees them. Shape: { ladders: { morning: [twelve ids] }, drills: { id:
-   { name, rel, dur, climb? } } }. Nothing here is graded differently. */
+   { name, rel, dur } } }. Nothing here is graded differently. A `climb` saved by an older editor is dropped: the
+   time of day decides the rounds now. */
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const BUILT_IN = { drills: clone(DRILL), ladders: clone(LADDERS) };
 export const builtInDrills = () => clone(BUILT_IN);
-export const DRILL_LIMITS = { notes: 16, low: -12, high: 24, span: 19, durMin: 0.3, durMax: 8, climbBy: 4, climbMost: 7 };
-/* a drill's climb from untrusted input: { by, most, back }, or null for none */
-export function cleanClimb(c) {
-  if (!c || typeof c !== "object") return null;
-  const by = Math.round(Number(c.by)), most = Math.round(Number(c.most));
-  if (!(by >= 1 && by <= DRILL_LIMITS.climbBy && most >= 1 && most <= DRILL_LIMITS.climbMost)) return null;
-  return { by, most, back: c.back !== false };
-}
+export const DRILL_LIMITS = { notes: 16, low: -12, high: 24, span: 19, durMin: 0.3, durMax: 8 };
 
 /* One drill from untrusted input (a save, or text pasted into the editor); null when it cannot be sung. */
 export function cleanDrill(d) {
@@ -238,8 +248,7 @@ export function cleanDrill(d) {
   const rel = d.rel.map(Number);
   if (rel.some((r) => !Number.isInteger(r) || r < L.low || r > L.high)) return null;
   if (Math.max(...rel) - Math.min(...rel) > L.span) return null;
-  const climb = cleanClimb(d.climb);
-  return climb ? { name, rel, dur, climb } : { name, rel, dur };
+  return { name, rel, dur };
 }
 /* The whole set of edits, cleaned: anything that does not fit is dropped, never half applied. */
 export function cleanDrillEdits(e) {

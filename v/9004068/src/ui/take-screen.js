@@ -105,7 +105,7 @@ function laneNotes(plan) {
     return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/><text x="${(x + 12).toFixed(1)}" y="${(y + 5).toFixed(1)}">${esc(plan.syl)}</text></g>`;
   }).join("");
   /* a climbing drill: each later round is marked where it begins, "↑ 2 / 5" or "↓ 4 / 5" */
-  const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * PXS).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : "↓"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
+  const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * PXS).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : r.dir === "down" ? "↓" : "·"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
   return bars + tags;
 }
 
@@ -137,6 +137,12 @@ function playCues() {
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
+/* how the rounds of a take move, in words (drills.js: the time of day decides the rounds; plan.way says how they
+   go, plan.by is 2 for a whole tone, 1 for a semitone where the singer has less room) */
+const WAY_WORDS = { up: "higher each time", down: "lower each time", wave: "higher each time, then back down", same: "the same notes each time" };
+const wayWords = (P) => WAY_WORDS[P.way] || "";
+const DIR_WORDS = { up: ["A step higher", "A little higher"], down: ["A step lower", "A little lower"], same: ["Once more", "Once more"] };
+const dirWords = (P, rep) => (DIR_WORDS[rep.dir] || DIR_WORDS.same)[P.by === 2 ? 0 : 1];
 
 /* Every take plays the phrase once before the count (of a climbing drill, its first round). For a few hours on
    2026-11-24 a drill met before gave its first note only; the designer, after playing it: "The demo is too short. The player
@@ -236,7 +242,7 @@ function cardFigure(P) {
 function openCard() {
   const S = app.S, P = R.plan, d = P.drill, T = timeById(R.ctx.time), words = drillCard(d.id);
   const fresh = !St.heardDrill(S, d.id), props = app.props;
-  const rounds = P.reps.length > 1 ? ` · ${P.reps.length} rounds, a step higher each time${d.climb?.back === false ? "" : ", then back down"}` : "";
+  const rounds = P.reps.length > 1 ? ` · ${P.reps.length} rounds, ${wayWords(P)}` : "";
   const el = sheet(`
     <p class="eyebrow">${fresh ? "New · " : ""}${esc(T.name)} · ${esc(T.flavour)}</p>
     <h3>${esc(d.name)}</h3>
@@ -678,7 +684,7 @@ export function frame(dt) {
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
   for (const e of evs) {
-    if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: higher each time${P.drill.climb?.back === false ? "" : ", then back down"}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
+    if (e.type === "demo-note") hint("Listen first", P.reps.length > 1 ? `Then ${P.reps.length} rounds: ${wayWords(P)}` : `${P.drill.name} · ${noteName(P.notes[e.i].midi)}`);
     else if (e.type === "phase" && e.phase === "count") onCount();
     else if (e.type === "beat") { const w = ["3", "2", "1", "Go"][e.k - (P.countBeats - 4)] || ""; countdown(w, w === "Go"); hint("", "sing as the notes reach the line"); }
     else if (e.type === "phase" && e.phase === "sing") {
@@ -694,12 +700,14 @@ export function frame(dt) {
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
     const many = P.reps.length > 1, k = roundAt(P, T.t), rep = P.reps[k], resting = many && T.t < rep.s && k > 0;
+    /* a rest between rounds is not the singer being silent: without this, "Sing out" flashed as every round began */
+    if (T.t > rep.e || T.t < rep.s) R.silentFor = 0;
     if (many) { focusRound(k); playCues(); }
     /* one thing at a time: a note's verdict, or where the next round starts, or that nothing is heard. "Sing" is
        said as the singing begins and then goes; it used to sit there for the whole take */
     if (R.flash && T.t < R.flash.until) hint(R.flash.text, "", R.flash.level);
-    else if (resting) hint(rep.dir === "up" ? "A step higher" : "Back down", `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
-    else if (R.silentFor > 1.4 && T.t < P.total) hint("Sing out", "the judge can’t hear you yet");
+    else if (resting) hint(dirWords(P, rep), `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
+    else if (R.silentFor > 1.4 && T.t < rep.e) hint("Sing out", "the judge can’t hear you yet"); // never in the rest between rounds
     else if (T.t < 1.2 && !R.marks.length) hint("Sing", `“${P.syl}”`);
     else hint("", "");
   }

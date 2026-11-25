@@ -3,14 +3,14 @@
    (S.dev.drillEdits) and laid over the built-in tables by content.js applyDrillEdits. "Copy the changes" gives
    text to paste into the chat, so a change that plays well can be made the built-in one. */
 import { app, show, sheet, closeSheet, esc, $, $$, toast } from "./app.js";
-import { TIMES, TIME_IDS, STEPS, DRILL, LADDERS, timeById, sylFor, builtInDrills, applyDrillEdits, cleanClimb, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
-import { planTake, FLAVOURS, CLIMB_DEFAULT } from "../drill/drills.js";
+import { TIMES, TIME_IDS, STEPS, DRILL, LADDERS, timeById, sylFor, builtInDrills, applyDrillEdits, cleanDrillEdits, drillEditCount, DRILL_LIMITS } from "../content.js";
+import { planTake, takeSeconds } from "../drill/drills.js";
 import { audioContext, now, demoNote, prepareDemo } from "../audio/synth.js";
 import { noteName } from "../audio/pitch.js";
 
 const BUILT = builtInDrills();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const core = (d) => (d ? { name: d.name, rel: d.rel, dur: d.dur, climb: cleanClimb(d.climb) } : null);
+const core = (d) => (d ? { name: d.name, rel: d.rel, dur: d.dur } : null);
 const secs = (x) => `${(Math.round(x * 10) / 10).toFixed(1)} s`;
 
 /* ---------- the edits ---------- */
@@ -58,7 +58,6 @@ async function hear(drill, time, btn) {
   sounding = plan.notes.map((n) => demoNote(kind, t0 + n.s, n.midi, n.e - n.s, syl));
   soundT = setTimeout(hush, (plan.total + 0.4) * 1000);
 }
-const climbText = (c) => `climbs by ${c.by}, ${c.most} up at most${c.back ? "" : ", no way back"}`;
 
 /* a small picture of the shape: one bar per note, higher = higher */
 function shapeSvg(drill, time) {
@@ -88,7 +87,7 @@ function render(root, props = {}) {
       <ol class="de-list">${ladder.map((d, i) => {
         const tag = tagOf(time, i);
         return `<li class="de-row${tag ? " changed" : ""}">
-          <button class="de-main" data-step="${i}"><b class="de-n">${i + 1}</b>${shapeSvg(d, time)}<span class="de-txt"><b>${esc(d.name)}</b><small>${esc(notesText(d))}${d.climb ? " ↑" : ""}${roundsText(plans[i])} · ${secs(plans[i].total)}${tag ? ` · <i>${tag}</i>` : ""}</small></span></button>
+          <button class="de-main" data-step="${i}"><b class="de-n">${i + 1}</b>${shapeSvg(d, time)}<span class="de-txt"><b>${esc(d.name)}</b><small>${esc(notesText(d))}${roundsText(plans[i])} · ${secs(plans[i].total)}${tag ? ` · <i>${tag}</i>` : ""}</small></span></button>
           <span class="de-move"><button data-up="${i}" aria-label="Move step ${i + 1} up" ${i ? "" : "disabled"}>▲</button><button data-down="${i}" aria-label="Move step ${i + 1} down" ${i < STEPS - 1 ? "" : "disabled"}>▼</button></span></li>`;
       }).join("")}</ol>
       <div class="grid2">
@@ -120,9 +119,8 @@ function render(root, props = {}) {
 
 /* ---------- one step ---------- */
 function openStep(time, i, again) {
-  const T = timeById(time), id = LADDERS[time][i], d = DRILL[id], fl = FLAVOURS[time] || FLAVOURS.golden;
+  const T = timeById(time), id = LADDERS[time][i], d = DRILL[id];
   const builtIn = !!BUILT.drills[id], changed = builtIn && !same(core(d), core(BUILT.drills[id]));
-  const cl = { ...CLIMB_DEFAULT, ...(d.climb || {}) };
   const used = TIME_IDS.flatMap((t) => LADDERS[t].map((x, k) => (x === id && !(t === time && k === i) ? `${timeById(t).name} step ${k + 1}` : null)).filter(Boolean));
   const all = Object.values(DRILL).sort((a, b) => a.name.localeCompare(b.name));
   const el = sheet(`
@@ -132,15 +130,8 @@ function openStep(time, i, again) {
     <label class="de-f"><span>Name</span><input data-f="name" maxlength="40" value="${esc(d.name)}" autocomplete="off"></label>
     <label class="de-f"><span>Notes</span><input data-f="rel" value="${esc(d.rel.join(" "))}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
          <p class="muted small">Semitones from the first note, with spaces. 0 2 4 is do–re–mi; 0 -2 0 dips below. Up to ${DRILL_LIMITS.notes} notes.</p>
-    <label class="de-f"><span>Seconds per note (at golden hour)</span><input data-f="dur" type="number" inputmode="decimal" step="0.05" min="${DRILL_LIMITS.durMin}" max="${DRILL_LIMITS.durMax}" value="${d.dur}"></label>
-    <h4>Rounds</h4>
-    <label class="toggle"><input type="checkbox" data-f="climb" ${d.climb ? "checked" : ""}><span>Climb: sing it again higher each round, up to the top of the singer’s range</span></label>
-    <div class="de-climb" ${d.climb ? "" : "hidden"}>
-      <div class="grid2"><label class="de-f"><span>Higher each round by</span><select data-f="by">${[[1, "a semitone"], [2, "a whole tone"], [3, "3 semitones"], [4, "4 semitones"]].map(([v, t]) => `<option value="${v}" ${v === cl.by ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-      <label class="de-f"><span>Rounds up, at most</span><input data-f="most" type="number" inputmode="numeric" min="1" max="${DRILL_LIMITS.climbMost}" value="${cl.most}"></label></div>
-      <label class="toggle"><input type="checkbox" data-f="back" ${cl.back ? "checked" : ""}><span>Then come back down the same way</span></label>
-      <p class="muted small">How far it climbs depends on the singer: a small range may leave no room, and then it is sung once. With fewer rounds than there is room for, it starts higher so the last one still reaches the top. The cat gives each new first note in the rest between rounds.</p>
-    </div>
+    <label class="de-f"><span>Seconds per note</span><input data-f="dur" type="number" inputmode="decimal" step="0.05" min="${DRILL_LIMITS.durMin}" max="${DRILL_LIMITS.durMax}" value="${d.dur}"></label>
+    <p class="muted small">Seconds per note is the note and the gap after it. How many times it is sung is the time of day’s: once in the morning, three rounds at golden hour, about a minute of rounds at night.</p>
     <p class="de-info small" id="de-info" role="status"></p>
     ${used.length ? `<p class="muted small">Also in ${esc(used.join(", "))}. Save changes it there too; “Save as a new drill” changes only this step.</p>` : ""}
     <div class="row"><button class="btn" data-a="hear">▶ Hear it</button><button class="btn primary" data-a="save">Save</button></div>
@@ -157,21 +148,17 @@ function openStep(time, i, again) {
     if (rel.length > L.notes) return { error: `Up to ${L.notes} notes.` };
     if (rel.some((r) => r < L.low || r > L.high)) return { error: `Each note between ${L.low} and ${L.high}.` };
     if (Math.max(...rel) - Math.min(...rel) > L.span) return { error: `Lowest to highest is more than ${L.span} semitones.` };
-    if (!f("climb").checked) return { drill: { name, rel, dur } };
-    const climb = cleanClimb({ by: f("by").value, most: f("most").value, back: f("back").checked });
-    return climb ? { drill: { name, rel, dur, climb } } : { error: `Rounds up: 1 to ${L.climbMost}.` };
+    return { drill: { name, rel, dur } };
   };
   const info = () => {
     const r = draft(), box = $("#de-info", el);
     box.classList.toggle("bad", !!r.error);
     if (r.error) return void (box.textContent = r.error);
     const p = planOf(r.drill, time), rel = relOf(r.drill, time), span = Math.max(...rel) - Math.min(...rel);
-    const up = Math.max(...p.reps.map((x) => x.shift)) / (r.drill.climb?.by || 1);
-    const rounds = !r.drill.climb ? "" : p.reps.length > 1 ? ` · on this phone’s range: ${p.reps.length} rounds (${up} up${r.drill.climb.back ? `, ${up} back` : ""}), top note ${noteName(Math.max(...p.notes.map((n) => n.midi)))}` : " · on this phone’s range there is no room to climb: sung once";
-    box.textContent = `${T.name}: ${secs(r.drill.dur / fl.speed)} a note, ${secs(p.demoTotal)}${p.reps.length > 1 ? ` a round, ${secs(p.total)} in all` : " in all"} · ${rel.length} note${rel.length === 1 ? "" : "s"}, ${span} semitone${span === 1 ? "" : "s"} wide${span > 12 ? " (wider than an octave: may not fit a small range)" : ""}${rounds}`;
+    const rounds = p.reps.length > 1 ? ` · on this phone’s range: ${p.reps.length} rounds (${p.way}), top note ${noteName(Math.max(...p.notes.map((n) => n.midi)))}, ${secs(takeSeconds(p))} a take with the demo and the count` : ` · ${secs(takeSeconds(p))} a take with the demo and the count`;
+    box.textContent = `${T.name}: ${secs(r.drill.dur)} a note, ${secs(p.demoTotal)}${p.reps.length > 1 ? ` a round, ${secs(p.total)} in all` : " in all"} · ${rel.length} note${rel.length === 1 ? "" : "s"}, ${span} semitone${span === 1 ? "" : "s"} wide${span > 12 ? " (wider than an octave: may not fit a small range)" : ""}${rounds}`;
   };
   $$("input, select:not([data-f=pick])", el).forEach((x) => (x.oninput = info));
-  if (f("climb")) f("climb").onchange = () => { $(".de-climb", el).hidden = !f("climb").checked; info(); };
   info();
   const ok = () => { const r = draft(); if (r.error) { toast(r.error); return null; } return r.drill; };
   const reopen = () => { again(); openStep(time, i, again); };
@@ -224,7 +211,7 @@ function changesText() {
   const e = edits();
   const lines = ["Longcat drill changes"];
   for (const t of TIME_IDS) if (e.ladders[t]) lines.push(`${timeById(t).name}: ${e.ladders[t].map((id, k) => `${k + 1} ${DRILL[id].name}`).join(", ")}`);
-  for (const [id, d] of Object.entries(e.drills)) lines.push(`${BUILT.drills[id] ? "Edited" : "New"} drill ${id}: ${d.name} · ${notesText(d)} · ${d.dur} s a note${d.climb ? ` · ${climbText(d.climb)}` : " · no climb"}`);
+  for (const [id, d] of Object.entries(e.drills)) lines.push(`${BUILT.drills[id] ? "Edited" : "New"} drill ${id}: ${d.name} · ${notesText(d)} · ${d.dur} s a note`);
   lines.push(JSON.stringify(e));
   return lines.join("\n");
 }
