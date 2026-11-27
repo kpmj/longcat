@@ -1679,6 +1679,29 @@ export const FILES = {
       2
     ]
   },
+  "fx.place.jungle.miss": {
+    "path": "fx/jungle/hoot.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "jungle_voices@hoot",
+    "version": 1,
+    "libraries": [
+      "freesound-400085"
+    ],
+    "bytes": 5135,
+    "sha256": "efdfef757ed70efbd7d2aca29cc6579019b1d5f45b326149fd4a15e32c34972f",
+    "seconds": 0.3187,
+    "channels": 1,
+    "lufs": -6.1,
+    "measure": "TP",
+    "peak": -6.1,
+    "lead": 0.0015,
+    "below300": 0.005,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.039,
+    "clicks": 0
+  },
   "fx.tap.acorn": {
     "path": "fx/jungle/acorn.m4a",
     "family": "fx_knock",
@@ -1771,6 +1794,29 @@ export const FILES = {
     "attack": 0.4102,
     "clicks": 0
   },
+  "fx.tap.cat@jungle": {
+    "path": "fx/jungle/cat.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_voices@cat",
+    "version": 1,
+    "libraries": [
+      "freesound-714179"
+    ],
+    "bytes": 12155,
+    "sha256": "36559d5402781761bb0af6e9e0e48e02c5f58aafd25241b14c9835be65a1ed63",
+    "seconds": 0.8947,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -7.7,
+    "lead": 0.0017,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.2592,
+    "clicks": 0
+  },
   "fx.tap.heart": {
     "path": "fx/jungle/heart.m4a",
     "family": "fx",
@@ -1792,6 +1838,29 @@ export const FILES = {
     "monoLoss": 0.0,
     "tags": [],
     "attack": 0.1988,
+    "clicks": 0
+  },
+  "fx.tap.monkey": {
+    "path": "fx/jungle/monkey.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_voices@monkey",
+    "version": 1,
+    "libraries": [
+      "freesound-400085"
+    ],
+    "bytes": 12935,
+    "sha256": "45a82c69c552d14e9e01b2e36a520b8f44ffa5215dbe68cea702a551f05032e8",
+    "seconds": 0.9587,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -2.5,
+    "lead": 0.0017,
+    "below300": 0.02,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.7812,
     "clicks": 0
   },
   "music.home.yuzu.golden": {

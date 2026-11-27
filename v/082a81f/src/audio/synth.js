@@ -350,7 +350,11 @@ export function purr() { noise(0.5, 0.05, "lowpass", 180, 0.7); }
    shifts the colour: morning a little brighter, night lower and softer. */
 const SFX = {
   onsen: { hit: () => tone("sine", 620, 1500, 0.13, 0.16), miss: () => { tone("sine", 220, 90, 0.22, 0.2); noise(0.18, 0.05, "lowpass", 600); } },
-  jungle: { hit: () => { tone("sine", 2300, 3100, 0.07, 0.1); tone("sine", 2700, 3500, 0.07, 0.08, now() + 0.09); }, miss: () => { tone("triangle", 430, 560, 0.12, 0.09); tone("triangle", 430, 330, 0.16, 0.08, now() + 0.15); } },
+  /* the jungle's miss is a monkey's hoot: three quiet hoots cut from a recording of a chimpanzee (ambient.js fetches
+     it with the jungle's tap sounds; docs/audio/credits.md). Until it is here, and when the Dev panel asks for the
+     page's sounds, the two notes the page made */
+  jungle: { hit: () => { tone("sine", 2300, 3100, 0.07, 0.1); tone("sine", 2700, 3500, 0.07, 0.08, now() + 0.09); },
+    miss: () => { if (!fxFile("fx.place.jungle.miss", 0.2)) { tone("triangle", 430, 560, 0.12, 0.09); tone("triangle", 430, 330, 0.16, 0.08, now() + 0.15); } } },
   livingroom: { hit: () => { tone("triangle", 2600, 2550, 0.18, 0.08); tone("sine", 3900, 3900, 0.12, 0.04); }, miss: () => { tone("sine", 660, 660, 0.14, 0.1); tone("sine", 523, 523, 0.2, 0.1, now() + 0.17); } },
   nightmarket: { hit: () => { noise(0.08, 0.12, "bandpass", 3200, 4); tone("square", 900, 880, 0.05, 0.03); }, miss: () => noise(0.5, 0.06, "bandpass", 1800, 6, null, 500) },
   train: { hit: () => tone("sine", 1760, 1760, 0.35, 0.1), miss: () => { tone("sawtooth", 440, 430, 0.5, 0.04, null, { type: "lowpass", f: 1200 }); tone("sawtooth", 554, 545, 0.5, 0.03, null, { type: "lowpass", f: 1200 }); } },
@@ -365,6 +369,19 @@ const SFX = {
 };
 /* scale < 1 while the player is singing, so the effect doesn't drown the voice the microphone is listening to */
 const TIME_COLOUR = { morning: { f: 2600, gain: 5 }, golden: { f: 1200, gain: 0 }, night: { f: 900, gain: -7 } };
+/* A result sound that is a sound file, through the same colouring by time of day as the others. False if the file
+   is not here (the caller then makes its sound in the page) or files are switched off in the Dev panel. */
+let fxFiles = true;
+export function setFxFiles(on) { fxFiles = on !== false; }
+function fxFile(id, vol) {
+  const e = fxFiles ? fileReady(id) : null;
+  if (!e) return false;
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = e.buf; g.gain.value = vol;
+  s.connect(g); g.connect(fx);
+  s.start(ac.currentTime, e.lead);
+  return true;
+}
 export function placeSfx(place, time, kind, scale = 1) {
   if (muted || !audioContext()) return;
   const s = SFX[place] || SFX.onsen;
