@@ -29,10 +29,11 @@ export const GAP_SHARE = 0.25, GAP_MIN = 0.16, GAP_MAX = 0.32;
    line had been moved back to the note's start: "I still think the cat head is too ahead than note. maybe let's
    slow like 0.5 seconds of the cat head. e.g. the cat head is right on beat but it feels rushed so just slow the
    cat head arrival by 0.5 second"). The beat, the count, the chords and Go are where they were; the notes in the
-   lane come this much later, and the grade follows the lane (take.js createTake). the designer's number, given as a guess
-   ("maybe", "like"): Dev tools → Head delay tries others on the phone. With it the picture is no longer on the
-   metronome: at a beat of 0.6 s a note meets the head just before the NEXT tick. */
-export const HEAD_DELAY = 0.5;
+   lane come this much later, and the grade follows the lane (take.js createTake). 0.5 s was the designer's guess ("maybe",
+   "like") and went live; the designer played it the same day: half a second "feels not quite right", could it be 0.2 (in
+   Chinese). So 0.2 s. Dev tools → Head delay tries other numbers on the phone. The picture is that much behind the
+   metronome: a note meets the head a fifth of a second after its tick. */
+export const HEAD_DELAY = 0.2;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
 /* Where in the singer's range a time of day puts a drill sung once: morning in the middle, the others a little

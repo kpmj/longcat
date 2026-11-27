@@ -119,7 +119,7 @@ const TAP_SOURCES = [
 ];
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
 /* Dev: how long after its beat a note reaches the cat's head (drills.js HEAD_DELAY; null = the game's) */
-const HEAD_DELAYS = [null, 0, 0.15, 0.3, 0.75];
+const HEAD_DELAYS = [null, 0, 0.1, 0.3, 0.5];
 const BETWEEN = [
   { id: "chords", name: "Two quick piano chords (this round’s, the next one’s), then Go" },
   { id: "sung", name: "The cat sings the next first note (as before)" },
