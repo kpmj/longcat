@@ -1681,25 +1681,25 @@ export const FILES = {
   },
   "fx.place.jungle.miss": {
     "path": "fx/jungle/hoot.m4a",
-    "family": "fx_knock",
+    "family": "fx",
     "kind": "sound",
     "piece": "jungle_voices@hoot",
     "version": 1,
     "libraries": [
-      "freesound-400085"
+      "designer-voice"
     ],
-    "bytes": 5135,
-    "sha256": "efdfef757ed70efbd7d2aca29cc6579019b1d5f45b326149fd4a15e32c34972f",
-    "seconds": 0.3187,
+    "bytes": 6175,
+    "sha256": "dc40a0c38ed8565bf632f63a2474bec5158b6f05c2ae98ecc94d83bd7a2d70b8",
+    "seconds": 0.404,
     "channels": 1,
-    "lufs": -6.1,
-    "measure": "TP",
-    "peak": -6.1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -5.6,
     "lead": 0.0015,
-    "below300": 0.005,
+    "below300": 0.0,
     "monoLoss": 0.0,
     "tags": [],
-    "attack": 0.039,
+    "attack": 0.0673,
     "clicks": 0
   },
   "fx.tap.acorn": {
@@ -1847,20 +1847,20 @@ export const FILES = {
     "piece": "jungle_voices@monkey",
     "version": 1,
     "libraries": [
-      "freesound-400085"
+      "designer-voice"
     ],
-    "bytes": 12935,
-    "sha256": "45a82c69c552d14e9e01b2e36a520b8f44ffa5215dbe68cea702a551f05032e8",
-    "seconds": 0.9587,
+    "bytes": 9295,
+    "sha256": "4071582b33cc6090885683705c7afa9ddd0bb918b8722bfd3d1c2bfbf95d3275",
+    "seconds": 0.66,
     "channels": 1,
     "lufs": -16.0,
     "measure": "M",
-    "peak": -2.5,
-    "lead": 0.0017,
-    "below300": 0.02,
+    "peak": -6.5,
+    "lead": 0.0027,
+    "below300": 0.0,
     "monoLoss": 0.0,
     "tags": [],
-    "attack": 0.7812,
+    "attack": 0.3155,
     "clicks": 0
   },
   "music.home.yuzu.golden": {

@@ -173,7 +173,7 @@ const ALSO = ["fx.place.jungle.miss"];
 /* How loud a tap's file sits on the bus, so that it is about as loud as the sound it replaces (the files are at
    one loudness, the page's sounds each at their own). Measured on the bus in a desktop browser; a DRAFT. */
 const TAP_LEVEL = { "bird-1": 0.2, "bird-2": 0.2, "bird-3": 0.2, acorn: 0.4, heart: 0.21, // peaks on the bus within 1 dB of the page's (-25, -22.5, -24 dB)
-  monkey: 0.11, "cat@jungle": 0.3 }; // (the same way: -26 and -23 dB)
+  monkey: 0.17, "cat@jungle": 0.3 }; // (the same way: -26 and -23 dB)
 /* The jungle's cat never meowed twice alike: the page's sound was moved up or down by as much as two semitones
    at each press. The recording is played a little faster or slower for the same reason. */
 const TAP_WANDER = { "cat@jungle": 2 };
