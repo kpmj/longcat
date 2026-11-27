@@ -54,7 +54,7 @@ export function freshSave(real = new Date()) {
     cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
     catNames: {},                    // the names the player gave them
     treats: { earned: 0, spent: 0, day: null, n: 0 }, // n = the takes that earned treats on `day`
-    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "rec", recVoice: true, drillEdits: null, homeMusic: "box", micMode: "speaker" },
+    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "rec", recVoice: true, drillEdits: null, homeMusic: "yuzu", yuzuHome: true, micMode: "speaker" },
   };
 }
 
@@ -74,6 +74,9 @@ export function migrate(o, real = new Date()) {
   /* 2026-11-14: the recorded voice became the demo voice. A save from before it existed holds whichever synthesised
      voice was picked last; it moves to the recorded one once, and the Dev panel can still choose another. */
   if (!o.dev || !o.dev.recVoice) { S.dev.demoVoice = "rec"; S.dev.recVoice = true; }
+  /* 2026-11-27: "Yuzu Bath" became Home's tune. A save from before holds whichever tune the Dev panel had last
+     (the music box, unless it was changed); it moves to the new one once, and the Dev panel can still choose. */
+  if (!o.dev || !o.dev.yuzuHome) { S.dev.homeMusic = "yuzu"; S.dev.yuzuHome = true; }
   for (const k of ["journal", "takes", "letters"]) if (!Array.isArray(S[k])) S[k] = [];
   if (!S.months || typeof S.months !== "object") S.months = {};
   /* 2026-11-14: coats (swapped fur) became yarn (a swapped sleeve); an old month's coat swaps are dropped */

@@ -35,12 +35,43 @@ export const FILES = {
       0.0
     ]
   },
-  "music.home.yuzu": {
-    "path": "music/home-yuzu.m4a",
+  "music.home.yuzu.golden": {
+    "path": "music/home-yuzu-golden.m4a",
+    "family": "music_long",
+    "kind": "loop",
+    "piece": "home_yuzu_golden",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "sneakybass"
+    ],
+    "loopStart": 0.125,
+    "loopEnd": 162.125,
+    "loopSeconds": 162.0,
+    "bpm": 80,
+    "bars": 54,
+    "beatsPerBar": 4,
+    "bytes": 2632665,
+    "sha256": "061fbcafad4595564c72724d9cd943b8c95aaf080a534e421b0f184d9bec3456",
+    "seconds": 162.5373,
+    "channels": 2,
+    "lufs": -18.1,
+    "measure": "I",
+    "peak": -2.1,
+    "lead": 0.0,
+    "below300": 0.336,
+    "monoLoss": 1.14,
+    "tags": [],
+    "joinJump": 1.36,
+    "loopResidual": -30.2,
+    "clicks": 0
+  },
+  "music.home.yuzu.morning": {
+    "path": "music/home-yuzu-morning.m4a",
     "family": "music_long",
     "kind": "loop",
     "piece": "home_yuzu",
-    "version": 3,
+    "version": 4,
     "libraries": [
       "vcsl",
       "sneakybass"
@@ -64,6 +95,37 @@ export const FILES = {
     "tags": [],
     "joinJump": 1.55,
     "loopResidual": -28.4,
+    "clicks": 0
+  },
+  "music.home.yuzu.night": {
+    "path": "music/home-yuzu-night.m4a",
+    "family": "music_long",
+    "kind": "loop",
+    "piece": "home_yuzu_night",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "sneakybass"
+    ],
+    "loopStart": 0.125,
+    "loopEnd": 153.45833333333334,
+    "loopSeconds": 153.33333333333334,
+    "bpm": 72,
+    "bars": 46,
+    "beatsPerBar": 4,
+    "bytes": 2492456,
+    "sha256": "54fb80e7178d3f4ec5c72ee48abf5477b4b57fd726d43f8cdd58d0b07d64f350",
+    "seconds": 153.8547,
+    "channels": 2,
+    "lufs": -18.0,
+    "measure": "I",
+    "peak": -3.2,
+    "lead": 0.0,
+    "below300": 0.284,
+    "monoLoss": 1.36,
+    "tags": [],
+    "joinJump": 0.44,
+    "loopResidual": -28.7,
     "clicks": 0
   },
   "music.trial.loop": {

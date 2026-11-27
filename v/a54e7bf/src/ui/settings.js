@@ -133,8 +133,8 @@ export function openDev() {
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
     <h4>Home music</h4>
-    <p class="muted small">Tunes to compare. A to D are made in the page; E and F are rendered from sampled instruments (E is four bars to try the path, F a whole tune of two and a half minutes). Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
-    <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "box") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <p class="muted small">F is Home's tune: rendered from sampled instruments, one file for each time of day. A to D are the earlier tunes, made in the page; E is four bars that tried the path. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
+    <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "yuzu") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Trial sounds</h4>
     <p class="muted small">Rendered from sampled instruments by the audio engine, not made in the page. Here to be listened to on a phone; nothing in a take uses them yet.</p>
     <button class="btn small" data-a="hear-chord">▶ Hear the chord (piano, C)</button>

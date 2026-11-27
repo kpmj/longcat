@@ -4,7 +4,7 @@
    Its sounds go to their own two buses and a limiter of their own, at a low level, so the game's limiter and the log
    of "sounds the game made itself" (synth.js) are left alone. */
 import { audioContext } from "./synth.js";
-import { loadFile } from "./files.js";
+import { loadFile, dropFile, fileInfo } from "./files.js";
 
 let ac = null, bus = null, musicBus = null, noiseBuf = null;
 function ctx() {
@@ -166,8 +166,9 @@ export function tapSound(kind, place = null) {
 }
 
 /* ---------- the home page's music ----------
-   Four tunes to compare (the designer, 2026-11-14: "generate 3 more bgm so I can compare them"); the Dev panel's "Home
-   music" picks one (S.dev.homeMusic), "box" is the first one and the default. Each is sixteen bars, written as
+   Home plays "Yuzu Bath" (the last of TUNES, sound files from the audio engine). Before it there were four tunes
+   to compare (the designer, 2026-11-14: "generate 3 more bgm so I can compare them"), still here: the Dev panel's "Home
+   music" picks one (S.dev.homeMusic), "box" was the first one and the default. Each is sixteen bars, written as
    numbers so it can be changed here, made from oscillators and noise, and each has three moods: morning a little
    quicker and brighter, night slower, an octave lower and softer.
 
@@ -180,7 +181,7 @@ const MOOD = {
   night: { speed: 0.857, lift: -12, mel: 0.8, bright: 0.08, pad: 1.2 },
 };
 const LEVEL = 0.95; // quiet under the game's own sounds, still heard on a phone speaker
-let mood = MOOD.golden;
+let mood = MOOD.golden, timeName = "golden"; // the time of day the music is in
 
 /* --- instruments --- */
 /* a music-box bar */
@@ -330,12 +331,14 @@ const TUNES = {
      instruments (docs/audio/playbook.md), looped between the two points its manifest gives. This one is four bars
      to try the path, for the designer to hear on a phone (2026-11-26); it has one mood, whatever the time of day. */
   trial: { name: "E · Trial loop (sampled instruments, four bars)", bpm: 72, per: 8, file: "music.trial.loop" },
-  /* "Yuzu Bath": 54 bars, just under two and a half minutes, written after the designer named the kind of music the game should have
-     (2026-11-27: quiet life-sim game music; its manner, none of its tunes). Ocarina, vibraphone, folk harp, piano,
-     glockenspiel, double bass, hand drums. One mood for now. Here for the designer to hear; Home's own tune is still A.
-     Second version the same day, after the designer's notes: the beat made plain, and one hook the tune keeps coming back to.
-     Third: a two-bar intro that plays the hook itself, so the tune is there from the first second. */
-  yuzu: { name: "F · Yuzu Bath (sampled instruments, 2:27)", bpm: 88, per: 8, file: "music.home.yuzu" },
+  /* "Yuzu Bath": Home's own tune since 2026-11-27 (the designer: "I really like this version. Let's put it into the
+     game"). Written after the designer named the kind of music the game should have (quiet life-sim game music; its manner,
+     none of its tunes), and made by the audio engine from sampled instruments. A tune with `files` has one sound
+     file for each time of day: the same tune and hook, slower as the day goes on (88, 80, 72 beats a minute; the designer:
+     "Morning is more energetic, afternoon is slower, night is even slower and chill"), with a glockenspiel and
+     hand drums in the morning, a kalimba and a half-time cajon at golden hour, hand chimes and no drums at night. */
+  yuzu: { name: "F · Yuzu Bath (Home's tune: morning, golden hour, night)", bpm: 80, per: 8,
+    files: { morning: "music.home.yuzu.morning", golden: "music.home.yuzu.golden", night: "music.home.yuzu.night" } },
 };
 /* How loud a file tune sits on the music bus. The files are all at one loudness (-18 LUFS); the tunes made in the
    page are far below full scale. Set so the trial loop reads the same on the bus as tune A does at golden hour
@@ -348,17 +351,22 @@ const BARS = 16;
    The music is only ever switched by its bus: a fade-in from silence when it starts, a quick fade to silence when
    it stops. Nothing here stops a note that is sounding; the bus is simply closed over it. */
 const FADE_OUT = 0.35; // seconds: fast enough that a take can wait for it, slow enough not to be a cut
-let tune = TUNES.box, wanted = false, playing = false, step = 0, nextAt = 0, timer = null, haltTimer = null, armed = false, quietAt = 0, startTimer = null, fadeIn = 1.5;
+let tune = TUNES.yuzu, wanted = false, playing = false, step = 0, nextAt = 0, timer = null, haltTimer = null, armed = false, quietAt = 0, startTimer = null, fadeIn = 1.5;
 let loopSrc = null, loopWait = false; // a file tune's looping source, and whether its file is on the way
 
+/* the sound file a file tune plays now: its one file, or the one for the time of day */
+const fileOf = (t) => t.file || (t.files && (t.files[timeName] || t.files.golden)) || null;
 /* Start a file tune's loop at `at` (once its file is here; the first time that is a moment later). */
 function startLoop(at) {
   if (loopSrc || loopWait) return;
-  const c = ac, want = tune;
+  const c = ac, want = tune, id = fileOf(tune);
   loopWait = true;
-  loadFile(c, want.file).then((e) => {
+  loadFile(c, id).then((e) => {
     loopWait = false;
     if (ac !== c || !playing || tune !== want || loopSrc) return;
+    if (fileOf(tune) !== id) return schedule(); // the time of day changed while this was on its way: get that one
+    /* the other times of day are let go: decoded, each is some sixty megabytes */
+    for (const other of Object.values(want.files || {})) if (other !== id) dropFile(other);
     const s = c.createBufferSource(), g = c.createGain();
     s.buffer = e.buf; s.loop = true; s.loopStart = e.info.loopStart; s.loopEnd = e.info.loopEnd;
     g.gain.value = FILE_LEVEL * LEVEL;
@@ -376,7 +384,7 @@ function stopLoop(at = 0) {
 const unitNow = () => 60 / (tune.bpm * mood.speed) / 2;
 function schedule() {
   if (!playing || !ac) return;
-  if (tune.file) return startLoop(nextAt);
+  if (fileOf(tune)) return startLoop(nextAt);
   const unit = unitNow();
   while (nextAt < ac.currentTime + 0.5) {
     tune.step(Math.floor(step / tune.per) % BARS, step % tune.per, nextAt, unit);
@@ -422,11 +430,16 @@ function begin() {
 /* Start the music (or keep it going) in the colour of the time of day. `delay`: seconds of silence first, so the
    page it starts on can settle; `fade`: how long it takes to come up. Coming home from a take both are longer. */
 export function startMusic(time = "golden", { delay = 0, fade = 1.5 } = {}) {
+  const was = fileOf(tune);
   mood = MOOD[time] || MOOD.golden;
+  timeName = MOOD[time] ? time : "golden";
   wanted = true;
   fadeIn = fade;
   clearTimeout(haltTimer); haltTimer = null;
   clearTimeout(startTimer); startTimer = null;
+  /* a tune with a file for each time of day changes file when the time does (Home shown at another time): the
+     bus closes over the old one and opens on the new, as when the Dev panel changes the tune */
+  if (playing && ac && was && fileOf(tune) !== was) return restart();
   if (playing && ac) return openBus(Math.min(fade, 0.8)); // it was only fading out: bring it back
   if (delay > 0) startTimer = setTimeout(() => { startTimer = null; if (wanted) begin(); }, delay * 1000);
   else begin();
@@ -456,13 +469,16 @@ export function musicQuiet() {
 /* Which tune plays (the Dev panel). Changing it while the music is on closes the bus, starts the new tune from
    its first bar and opens the bus again. */
 export function setTune(id) {
-  const next = TUNES[id] || TUNES.box;
+  const next = TUNES[id] || TUNES.yuzu;
   if (next === tune) return;
-  if (!playing || !ac) { tune = next; step = 0; return; }
-  /* no more of the old tune is booked from now; the bus closes over what is already sounding or booked (half a
-     second ahead at the most), and opens again as the new tune's first bar begins */
-  const c = ac, t = c.currentTime, g = musicBus.gain;
   tune = next; step = 0;
+  if (playing && ac) restart();
+}
+/* no more of what was playing is booked from now; the bus closes over what is already sounding or booked (half a
+   second ahead at the most), and opens again as the tune's first bar begins */
+function restart() {
+  const c = ac, t = c.currentTime, g = musicBus.gain;
+  step = 0;
   nextAt = t + 0.75;
   stopLoop(t + 0.3); // a file tune that was playing ends once the bus has closed over it
   g.cancelScheduledValues(t);
@@ -472,7 +488,7 @@ export function setTune(id) {
   setTimeout(() => { if (ac === c && playing && wanted) openBus(0.6); }, 620);
 }
 export const tuneId = () => Object.keys(TUNES).find((k) => TUNES[k] === tune);
-export const musicState = () => ({ wanted, playing, step, tune: tuneId(), bpm: Math.round(tune.bpm * mood.speed) });
+export const musicState = () => ({ wanted, playing, step, tune: tuneId(), time: timeName, file: fileOf(tune), looping: !!loopSrc, bpm: fileOf(tune) ? fileInfo(fileOf(tune)).bpm : Math.round(tune.bpm * mood.speed) });
 /* the two buses, for measuring levels in the dev tools */
 export const ambientNodes = () => (ctx() ? { bus, musicBus } : null);
 /* the game made a fresh sound context: if the music is wanted, it begins again on the new one */

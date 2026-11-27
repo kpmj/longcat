@@ -41,6 +41,10 @@ export function loadFile(ctx, id) {
   return promise;
 }
 
+/* Let a decoded file go. A long tune is tens of megabytes once decoded, and Home has one for each time of day:
+   only the one that is playing is kept. (Fetched again from the browser's own cache if it is wanted later.) */
+export function dropFile(id) { const e = cache.get(id); if (e && e.buf) cache.delete(id); }
+
 /* Several files before they are needed. Resolves true when all are here, false if one is missing, fails, or they
    take longer than `ms`: the caller then plays what it played before, never half and half. */
 export function loadFiles(ctx, ids, ms = 6000) {
