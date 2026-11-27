@@ -1679,6 +1679,29 @@ export const FILES = {
       2
     ]
   },
+  "fx.place.jungle.hit": {
+    "path": "fx/jungle/chirp.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_taps@chirp",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 11375,
+    "sha256": "7910f39dc0905ab86c75f08aa616134013779f6d22183ac8cbde5290d2a3fe58",
+    "seconds": 0.8307,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -6.4,
+    "lead": 0.0009,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0425,
+    "clicks": 0
+  },
   "fx.place.jungle.miss": {
     "path": "fx/jungle/hoot.m4a",
     "family": "fx",
@@ -1700,6 +1723,52 @@ export const FILES = {
     "monoLoss": 0.0,
     "tags": [],
     "attack": 0.0673,
+    "clicks": 0
+  },
+  "fx.place.onsen.hit": {
+    "path": "fx/onsen/hit.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "onsen_taps@hit",
+    "version": 1,
+    "libraries": [
+      "freesound-771257"
+    ],
+    "bytes": 4095,
+    "sha256": "b515fa80db4740958d675985321de1efe46477d669d8771ac2a7e3d035d2dbc4",
+    "seconds": 0.2333,
+    "channels": 1,
+    "lufs": -6.2,
+    "measure": "TP",
+    "peak": -6.2,
+    "lead": 0.003,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0244,
+    "clicks": 0
+  },
+  "fx.place.onsen.miss": {
+    "path": "fx/onsen/miss.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "onsen_taps@miss",
+    "version": 1,
+    "libraries": [
+      "freesound-771257"
+    ],
+    "bytes": 4355,
+    "sha256": "07a249c92d63c5cc5c6152c5d6b0b5afff785838e07bd9c94837cb91b24caed9",
+    "seconds": 0.2547,
+    "channels": 1,
+    "lufs": -6.1,
+    "measure": "TP",
+    "peak": -6.1,
+    "lead": 0.003,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0153,
     "clicks": 0
   },
   "fx.tap.acorn": {
@@ -1794,6 +1863,29 @@ export const FILES = {
     "attack": 0.4102,
     "clicks": 0
   },
+  "fx.tap.cat": {
+    "path": "fx/onsen/cat.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "onsen_taps@cat",
+    "version": 1,
+    "libraries": [
+      "freesound-262311"
+    ],
+    "bytes": 6435,
+    "sha256": "40deed45abde406ddb3cf1768c89425573fcd65daaddfb382c51f08ddfde0123",
+    "seconds": 0.4253,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -3.9,
+    "lead": 0.0023,
+    "below300": 0.007,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.1834,
+    "clicks": 0
+  },
   "fx.tap.cat@jungle": {
     "path": "fx/jungle/cat.m4a",
     "family": "fx",
@@ -1815,6 +1907,29 @@ export const FILES = {
     "monoLoss": 0.0,
     "tags": [],
     "attack": 0.2592,
+    "clicks": 0
+  },
+  "fx.tap.dunk": {
+    "path": "fx/onsen/dunk.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "onsen_taps@dunk",
+    "version": 1,
+    "libraries": [
+      "freesound-771257"
+    ],
+    "bytes": 5395,
+    "sha256": "09ac5adbdb7746727eefd3ddb3b433f1e1c0d5b48ecf617eb86f6509687d391b",
+    "seconds": 0.34,
+    "channels": 1,
+    "lufs": -6.0,
+    "measure": "TP",
+    "peak": -6.0,
+    "lead": 0.003,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0075,
     "clicks": 0
   },
   "fx.tap.heart": {
@@ -1840,6 +1955,53 @@ export const FILES = {
     "attack": 0.1988,
     "clicks": 0
   },
+  "fx.tap.judge": {
+    "path": "fx/onsen/judge.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "onsen_taps@judge",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "designer-voice"
+    ],
+    "bytes": 13715,
+    "sha256": "64b89261ba55dc4b60711df2c47a27bf166d55e59cd01c6bfe582d94b66c295a",
+    "seconds": 1.0227,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -6.5,
+    "lead": 0.002,
+    "below300": 0.704,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.255,
+    "clicks": 0
+  },
+  "fx.tap.lamp": {
+    "path": "fx/onsen/lamp.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "onsen_taps@lamp",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 23595,
+    "sha256": "eef6ef9a967abbb86c533c28b0803a8ecdd1782295eb4ae62f9d0c8a8ea9fe42",
+    "seconds": 1.8333,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -9.9,
+    "lead": 0.0004,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0137,
+    "clicks": 0
+  },
   "fx.tap.monkey": {
     "path": "fx/jungle/monkey.m4a",
     "family": "fx",
@@ -1861,6 +2023,52 @@ export const FILES = {
     "monoLoss": 0.0,
     "tags": [],
     "attack": 0.3155,
+    "clicks": 0
+  },
+  "fx.tap.window": {
+    "path": "fx/onsen/window.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "onsen_taps@window",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 20735,
+    "sha256": "8ecd2e20b2027febab2747d0248fe51a940c3862f1125423072f782d18671f9e",
+    "seconds": 1.5987,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -4.8,
+    "lead": 0.0006,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0734,
+    "clicks": 0
+  },
+  "fx.tap.yuzu": {
+    "path": "fx/onsen/yuzu.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "onsen_taps@yuzu",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 11635,
+    "sha256": "5b01fac49f5801fd3dbe3c7b945786d0f6c22455666903bd3b482a8c9c48b9e9",
+    "seconds": 0.852,
+    "channels": 1,
+    "lufs": -16.1,
+    "measure": "M",
+    "peak": -2.7,
+    "lead": 0.0018,
+    "below300": 0.001,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0958,
     "clicks": 0
   },
   "music.home.yuzu.golden": {

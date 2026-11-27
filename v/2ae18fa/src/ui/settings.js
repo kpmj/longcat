@@ -8,7 +8,7 @@ import * as St from "../state.js";
 import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
 import { DEFAULT_RANGE, planTake, chordOf, CHORD_SPLIT, HEAD_DELAY } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
-import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano } from "../audio/synth.js";
+import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano, setFxFiles } from "../audio/synth.js";
 import { loadFile } from "../audio/files.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
 import { MUSIC, setTune, startMusic, stopMusic, setTapSource, prepareTaps, tapSound } from "../audio/ambient.js";
@@ -114,7 +114,7 @@ function confirmReset() {
 /* ---------- dev tools ---------- */
 /* what the jungle's birds, acorn and heart sound like when pressed (ambient.js `tapSound`) */
 const TAP_SOURCES = [
-  { id: "files", name: "Sampled instruments (ocarina, woodblock, vibraphone)" },
+  { id: "files", name: "Sound files (instruments, recordings, the designer's voice)" },
   { id: "page", name: "Made in the page (as before)" },
 ];
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
@@ -155,10 +155,10 @@ export function openDev() {
     <p class="muted small">What sounds in the rest before the next round of a drill. The chords are piano notes rendered from a sampled upright: two beats before the round the chord of the round just sung and, half a beat later, the chord of the round to come; the screen says Go on the next beat.</p>
     <div class="radio">${BETWEEN.map((v) => `<label><input type="radio" name="between" value="${v.id}" ${(S.dev.between || "chords") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-rest">▶ Hear one rest (C, then up to D)</button>
-    <h4>Jungle sounds</h4>
-    <p class="muted small">The three birds, the acorn and the heart, when pressed. The monkeys and the cat are voices and are made in the page either way.</p>
+    <h4>Sounds of things you press</h4>
+    <p class="muted small">From sampled instruments, recordings and the designer's voice: the jungle's birds, acorn, heart, monkey and cat; the hot spring's sun or moon, lantern and yuzu in the water; the capybara and the yuzu on its head; a cat; and the sounds after a take at the hot spring and in the jungle. Or all of them as the page made them before.</p>
     <div class="radio">${TAP_SOURCES.map((v) => `<label><input type="radio" name="taps" value="${v.id}" ${(S.dev.tapSounds || "files") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
-    <div class="row">${["bird-1", "bird-2", "bird-3", "acorn", "heart"].map((k) => `<button class="btn small" data-hear-tap="${k}">▶ ${k}</button>`).join("")}</div>
+    <div class="row">${["bird-1", "bird-2", "bird-3", "acorn", "heart", "monkey", "window", "lamp", "dunk", "yuzu", "judge", "cat"].map((k) => `<button class="btn small" data-hear-tap="${k}">▶ ${k}</button>`).join("")}</div>
     <h4>Home music</h4>
     <p class="muted small">F is Home's tune: rendered from sampled instruments, one file for each time of day. A to D are the earlier tunes, made in the page; E is four bars that tried the path. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
     <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "yuzu") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
@@ -198,11 +198,11 @@ export function openDev() {
   $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
   const hearDemo = async () => { audioContext(); const m = firstNote(S).midi, hs = sylFor("bottom", St.currentTime(S, place) || "morning"), kind = await prepareDemo(S.dev.demoVoice, hs, [0, 2, 4].map((d) => m + d)); [0, 2, 4, 2, 0].forEach((d, k) => demoNote(kind, now() + 0.08 + k * 0.6, m + d, 0.52, hs)); };
   el.querySelector("[data-a=hear-demo]").onclick = hearDemo;
-  $$("input[name=taps]", el).forEach((i) => (i.onchange = () => { S.dev.tapSounds = i.value; app.save(); setTapSource(i.value); prepareTaps(); toast(`Jungle sounds: ${TAP_SOURCES.find((v) => v.id === i.value).name}`); }));
+  $$("input[name=taps]", el).forEach((i) => (i.onchange = () => { S.dev.tapSounds = i.value; app.save(); setTapSource(i.value); prepareTaps(); setFxFiles(i.value !== "page"); toast(`Sounds of things you press: ${TAP_SOURCES.find((v) => v.id === i.value).name}`); }));
   $$("[data-hear-tap]", el).forEach((b) => (b.onclick = () => {
     if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
     audioContext(); setTapSource(S.dev.tapSounds); prepareTaps();
-    tapSound(b.dataset.hearTap); // the first press of each may still be the page's sound: its file is on the way
+    tapSound(b.dataset.hearTap, ["monkey"].includes(b.dataset.hearTap) ? "jungle" : null); // the first press may still be the page's sound: its file is on the way
   }));
   $$("input[name=view]", el).forEach((i) => (i.onchange = () => { S.dev.view = i.value; app.save(); toast(i.value === "scroll" ? "Note area: scroll" : "Note area: sweep"); }));
   $$("input[name=headdelay]", el).forEach((i) => (i.onchange = () => { S.dev.headDelay = i.value === "" ? null : Number(i.value); app.save(); toast(`Head delay: ${i.value === "" ? HEAD_DELAY : i.value} s`); }));

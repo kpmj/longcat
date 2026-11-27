@@ -349,11 +349,15 @@ export function purr() { noise(0.5, 0.05, "lowpass", 180, 0.7); }
 /* Per place: what an in-tune note and a missed note sound like (design doc section 7 table). The time of day
    shifts the colour: morning a little brighter, night lower and softer. */
 const SFX = {
-  onsen: { hit: () => tone("sine", 620, 1500, 0.13, 0.16), miss: () => { tone("sine", 220, 90, 0.22, 0.2); noise(0.18, 0.05, "lowpass", 600); } },
+  /* the hot spring's are water drops: a high one ("a water drop, plink") and a low one ("a plop"), from a CC0
+     recording (docs/audio/credits.md), 2026-11-27; until they are here, what the page made. Each file's level is
+     its peak matched to the page's sound */
+  onsen: { hit: () => { if (!fxFile("fx.place.onsen.hit", 0.33)) tone("sine", 620, 1500, 0.13, 0.16); },
+    miss: () => { if (fxFile("fx.place.onsen.miss", 0.4)) return; tone("sine", 220, 90, 0.22, 0.2); noise(0.18, 0.05, "lowpass", 600); } },
   /* the jungle's miss is a monkey's hoot: three quiet hoots cut from a recording of a chimpanzee (ambient.js fetches
      it with the jungle's tap sounds; docs/audio/credits.md). Until it is here, and when the Dev panel asks for the
      page's sounds, the two notes the page made */
-  jungle: { hit: () => { tone("sine", 2300, 3100, 0.07, 0.1); tone("sine", 2700, 3500, 0.07, 0.08, now() + 0.09); },
+  jungle: { hit: () => { if (!fxFile("fx.place.jungle.hit", 0.21)) { tone("sine", 2300, 3100, 0.07, 0.1); tone("sine", 2700, 3500, 0.07, 0.08, now() + 0.09); } },
     miss: () => { if (!fxFile("fx.place.jungle.miss", 0.2)) { tone("triangle", 430, 560, 0.12, 0.09); tone("triangle", 430, 330, 0.16, 0.08, now() + 0.15); } } },
   livingroom: { hit: () => { tone("triangle", 2600, 2550, 0.18, 0.08); tone("sine", 3900, 3900, 0.12, 0.04); }, miss: () => { tone("sine", 660, 660, 0.14, 0.1); tone("sine", 523, 523, 0.2, 0.1, now() + 0.17); } },
   nightmarket: { hit: () => { noise(0.08, 0.12, "bandpass", 3200, 4); tone("square", 900, 880, 0.05, 0.03); }, miss: () => noise(0.5, 0.06, "bandpass", 1800, 6, null, 500) },

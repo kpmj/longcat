@@ -111,11 +111,12 @@ export const jungleParts = (time = "morning", picked = PICKED) => parts(VIEW[tim
 
 /* The scenery as a picture: one tall painting (400 x 711 in the print's units) of trunks, a roof of leaves, far hills
    and mist, with nothing in it where Home's buttons and the judge are. Home shows all of it (`tall`); the print
-   shows its top 4:5. It was painted as morning: the other two times of day are the same picture moved to their
-   light, a first pass done with a colour matrix and not yet painted for themselves. */
+   shows its top 4:5. A time of day with a picture of its own (`back-golden`, `back-night` in art/pictures.js) shows
+   that one; a time without one shows the morning picture moved to its light through a colour matrix. */
 const TALL = [400, 711];
 const LIGHT = { golden: ".86 .06 0 0 .12  .02 .76 0 0 .07  0 .04 .62 0 .03  0 0 0 1 0", night: ".30 .02 0 0 .02  .02 .36 .02 0 .05  .03 .06 .52 0 .11  0 0 0 1 0" };
-const scenery = (time, x, y, w, h, fit) => (LIGHT[time] ? `<filter id="lc-jungle-${time}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${LIGHT[time]}"/></filter>` : "")
+const scenery = (time, x, y, w, h, fit) => (PIC[`back-${time}`] ? picture(PIC[`back-${time}`], x, y, w, h, fit) : sceneryLit(time, x, y, w, h, fit));
+const sceneryLit = (time, x, y, w, h, fit) => (LIGHT[time] ? `<filter id="lc-jungle-${time}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${LIGHT[time]}"/></filter>` : "")
   + `<g${LIGHT[time] ? ` filter="url(#lc-jungle-${time})"` : ""}>${picture(PIC.back, x, y, w, h, fit)}</g>`;
 /* what moves in front of the painting: leaves that come down the two strips beside the judge's head, one at a
    time, from under the roof of leaves. Only when the picture is animated: a still shows none in mid air */

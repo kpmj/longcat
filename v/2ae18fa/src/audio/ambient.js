@@ -166,17 +166,23 @@ function whistle(notes, t, step) {
    The monkeys and the jungle's cat are voices, which an instrument cannot be: theirs are cut from recordings of
    a chimpanzee and of a house cat that their makers gave to the public domain (docs/audio/credits.md), found at
    the designer's word the same day. A sound for one place has its key as in TAP: kind@place. */
+/* Since the same day (the designer: 「可以重做溫泉裡所有的音效嗎 還有點水豚君的音效」) the hot spring's too, and what is
+   pressed at every place: the sun or moon (a glockenspiel), the lantern (a hand chime), a yuzu in the water (two
+   water drops), the yuzu on the capybara's head (a marimba), the capybara (a pat on a hand drum and the designer's
+   own "mm", as the monkey is made), and a cat (a cat's own purr-and-chirp, from a CC0 recording). */
 const TAP_FILES = { "bird-1": "fx.tap.bird-1", "bird-2": "fx.tap.bird-2", "bird-3": "fx.tap.bird-3", acorn: "fx.tap.acorn", heart: "fx.tap.heart",
-  monkey: "fx.tap.monkey", "cat@jungle": "fx.tap.cat@jungle" };
-/* fetched with them: the hoot after a missed take in the jungle, which synth.js plays (placeSfx) */
-const ALSO = ["fx.place.jungle.miss"];
+  monkey: "fx.tap.monkey", "cat@jungle": "fx.tap.cat@jungle",
+  window: "fx.tap.window", lamp: "fx.tap.lamp", dunk: "fx.tap.dunk", yuzu: "fx.tap.yuzu", judge: "fx.tap.judge", cat: "fx.tap.cat" };
+/* fetched with them: the result sounds that are files, which synth.js plays (placeSfx) */
+const ALSO = ["fx.place.jungle.miss", "fx.place.jungle.hit", "fx.place.onsen.hit", "fx.place.onsen.miss"];
 /* How loud a tap's file sits on the bus, so that it is about as loud as the sound it replaces (the files are at
    one loudness, the page's sounds each at their own). Measured on the bus in a desktop browser; a DRAFT. */
 const TAP_LEVEL = { "bird-1": 0.2, "bird-2": 0.2, "bird-3": 0.2, acorn: 0.4, heart: 0.21, // peaks on the bus within 1 dB of the page's (-25, -22.5, -24 dB)
-  monkey: 0.17, "cat@jungle": 0.3 }; // (the same way: -26 and -23 dB)
+  monkey: 0.17, "cat@jungle": 0.3, // (the same way: -26 and -23 dB)
+  window: 0.25, lamp: 0.27, dunk: 0.56, yuzu: 0.21, judge: 0.25, cat: 0.16 }; // (the same way: -24, -23, -24, -19, -21, -24.5 dB)
 /* The jungle's cat never meowed twice alike: the page's sound was moved up or down by as much as two semitones
    at each press. The recording is played a little faster or slower for the same reason. */
-const TAP_WANDER = { "cat@jungle": 2 };
+const TAP_WANDER = { "cat@jungle": 2, cat: 2 };
 let tapSource = "files"; // or "page": every tap as the page makes it (the Dev panel)
 export function setTapSource(v) { tapSource = v === "page" ? "page" : "files"; }
 /* fetch the tap files before they are pressed (Home, when it shows the jungle) */

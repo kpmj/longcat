@@ -113,10 +113,11 @@ export function renderHome(root) {
      the microphone go and the result's sounds may still ring. Then the music comes up slowly. */
   const afterTake = app.from === "take" || app.from === "beat";
   setTune(S.dev.homeMusic);
-  /* the jungle's birds, acorn and heart have sound files: fetched now, so the first press already plays one */
+  /* what can be pressed has sound files (the jungle's, the hot spring's, a cat's, the capybara's): fetched now,
+     about 250 kB, so that the first press already plays one */
   setTapSource(S.dev.tapSounds);
   setFxFiles(S.dev.tapSounds !== "page");
-  if (S.here === "jungle" && S.settings.sound !== false) prepareTaps();
+  if (S.settings.sound !== false) prepareTaps(); // a cat, the capybara and its yuzu are at every place
   if (musicOn(S)) startMusic(shown, afterTake ? { delay: 0.6, fade: 2.6 } : { fade: 1.2 }); else stopMusic();
   /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
   const mb = $("[data-act=music]", root);
