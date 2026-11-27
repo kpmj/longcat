@@ -249,3 +249,47 @@ export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, hold
   return { subs: clip(subs), threads: clip(threads), tail, slim: false, headJoins };
 }
 const clip = (list) => list.filter((s) => s.length > 1);
+
+/* THE GAME'S LINE (the designer, 2026-11-27, of the thin flat line of some hours before: "Inside the note it can show the
+   fluctuation of the note, don't need to draw the lines right around the note"). The voice is drawn only where it
+   is INSIDE a note's block: while the block is under the head, and while the pitch is within the block's own
+   height. There it follows the voice as it is, a little smoothed, so a waver shows. Outside the block nothing is
+   drawn at all: not the way to the note, not a pitch held beside it; the cat's head says where the voice is.
+     off: seconds between a frame's own time and the place it is drawn at on the notes' clock (the delay the line is
+          drawn back by, and the delay of the picture), so that "inside" is what the eye sees;
+     half: half the block's height, in the units of yOf.
+   Returns { subs, tail } for laneCatSvg. Pure. */
+export const INSIDE_EASE = 2; // frames either side that a short note's line is averaged over
+export function laneInside({ frames, notes, off = 0, xOf, yOf, half = 12, cull = -30 }) {
+  const line = eased(despike(dropFarBlips(frames, notes, off)), isShort(notes) ? INSIDE_EASE : HOLD_EASE);
+  const subs = [[]];
+  let tail = null, k = 0;
+  const cut = () => { if (subs[subs.length - 1].length) subs.push([]); };
+  for (const f of line) {
+    const t = f.t - off;
+    while (k < notes.length && t > notes[k].e) { k++; cut(); }
+    const n = k < notes.length && t >= notes[k].s ? notes[k] : null;
+    if (!n || f.midi == null) { cut(); continue; }
+    const y = yOf(f.midi);
+    if (Math.abs(y - yOf(n.midi)) > half) { cut(); continue; }
+    const x = xOf(f.t);
+    if (x < cull) continue;
+    const p = { x, y };
+    if (!tail) tail = p;
+    subs[subs.length - 1].push(p);
+  }
+  return { subs: clip(subs), tail };
+}
+
+/* WHERE THE HEAD IS when the voice is off the chart (the designer, the same message: "If the user is off from the note like
+   octave higher or lower please mo[ve] the cat head accordingly to the note is based on the chart as the
+   background"). The chart has a line for the phrase's notes and three semitones either side; a voice an octave
+   away used to pin the head to the lane's edge, where no line says what it is. Now a pitch outside the chart
+   that is inside it one or two octaves up or down is shown at that place, on the note of the same name, and
+   `oct` says how many octaves the voice really is from there (+1 = an octave higher). A pitch that is on the
+   chart, or that no octave brings onto it, is shown as it is. Pure. */
+export function onChart(midi, lo, hi) {
+  if (midi == null || !(hi > lo) || (midi >= lo && midi <= hi)) return { midi, oct: 0 };
+  for (const k of [1, -1, 2, -2]) { const m = midi - 12 * k; if (m >= lo && m <= hi) return { midi: m, oct: k }; }
+  return { midi, oct: 0 };
+}

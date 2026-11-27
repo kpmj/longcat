@@ -14,7 +14,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD, latOf
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { laneShape, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
+import { laneShape, laneInside, onChart, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
 import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
@@ -54,6 +54,8 @@ const MIC_BOOST = { speaker: 1.3, plain: 2.2 };
 const clock = () => (audioContext() ? now() : performance.now() / 1000);
 const wall = () => performance.now() / 1000;
 
+const CHART_PAD = 3; // semitones of faint lines above and below the phrase's notes
+const BLOCK_H = 24; // a note's block
 function geometry(plan) {
   const ms = plan.notes.map((n) => n.midi);
   const lo = Math.min(...ms), hi = Math.max(...ms);
@@ -61,7 +63,8 @@ function geometry(plan) {
      the head follows the real voice, and more pixels per semitone would make every waver look bigger (the designer asked
      for a calmer head, 2026-11-14). */
   const step = Math.max(9, Math.min(20, (H - 130) / Math.max(4, hi - lo)));
-  return { mid: (lo + hi) / 2, step };
+  /* lo, hi: what the chart shows, the phrase's notes and three semitones either side (laneGrid) */
+  return { mid: (lo + hi) / 2, step, lo: lo - CHART_PAD, hi: hi + CHART_PAD };
 }
 const yRaw = (m) => MID_Y - (m - R.geo.mid) * R.geo.step;
 const yOf = (m) => Math.max(26, Math.min(H - 26, yRaw(m)));
@@ -70,7 +73,7 @@ const yOf = (m) => Math.max(26, Math.min(H - 26, yRaw(m)));
    faint semitone lines, so the singer sees which note is which and how far apart they are. */
 function laneGrid(plan) {
   const targets = new Set(plan.notes.map((n) => n.midi));
-  const lo = Math.min(...targets) - 3, hi = Math.max(...targets) + 3;
+  const lo = Math.min(...targets) - CHART_PAD, hi = Math.max(...targets) + CHART_PAD;
   let lines = "", labels = "";
   for (let m = lo; m <= hi; m++) {
     const y = yRaw(m);
@@ -102,7 +105,7 @@ function guideY(t) {
 function laneNotes(plan) {
   const bars = plan.notes.map((n, i) => {
     const x = n.s * PXS, w = Math.max(14, (n.e - n.s) * PXS - 3), y = yOf(n.midi);
-    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/></g>`;
+    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - BLOCK_H / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${BLOCK_H}" rx="${BLOCK_H / 2}"/></g>`;
   }).join("");
   /* a climbing drill: each later round is marked where it begins, "↑ 2 / 5" or "↓ 4 / 5" */
   const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * PXS).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : r.dir === "down" ? "↓" : "·"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
@@ -765,6 +768,10 @@ function steadyVoice(v, t, notes, lat) {
   return R.headMidi ?? null;
 }
 
+/* beside the head, when the voice is shown an octave from where it really is (lane-body.js onChart) */
+const OCT_WORDS = { 1: "an octave high", 2: "two octaves high", "-1": "an octave low", "-2": "two octaves low" };
+const octTag = (oct, x, y) => (OCT_WORDS[oct] ? `<text class="oct-tag" x="${(x + 26).toFixed(1)}" y="${(y - 14).toFixed(1)}">${oct > 0 ? "↑" : "↓"} ${OCT_WORDS[oct]}</text>` : "");
+
 /* a critically damped spring towards `want`, with time constant tau, stepped finely so a slow frame is fine */
 function springHead(want, tau, dt) {
   if (!(dt > 0)) { R.headY = want; R.headV = 0; return; }
@@ -785,24 +792,33 @@ function draw(v, dt = 1 / 60) {
   document.getElementById("lane-labels")?.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
   /* What is drawn of the voice (the designer, 2026-11-27: the line was a mess; a line thinner than the note's button,
      that does not hide the note, without the lines that jump up and down; the cat's head shows what is heard).
-     So: a thin flat line where the voice sat on a note, on that note's own line (or on the pitch the singer
-     held, when that was well off it), long holds too; nothing for the voice on its way between notes, which was
-     the thread; and the head alone follows the voice as it is. The line lies between the note blocks and their
-     labels. Until then the body was as fat as a block and lay over it, and a long hold followed the voice. */
+     For some hours that was a thin FLAT line on each note sung. the designer, the same day: "Inside the note it can show
+     the fluctuation of the note, don't need to draw the lines right around the note." So: a thin line that
+     follows the voice, drawn only while the voice is inside a note's block (lane-body.js laneInside); nothing
+     beside a block or between two; and the head alone says where the voice is. The line lies between the note
+     blocks and their labels. Until that day the body was as fat as a block and lay over it.
+     The other ways of drawing (Dev tools → lane) still go through laneShape. */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
   /* the line is drawn where it was sung, not where it was heard: back by the delay the matcher measures */
   const measured = T.matcher.offsets.length ? T.matcher.latency : null;
   R.lag = easeLag(R.lag, lagToDraw(measured, R.lagKnown), dt);
   const lag = R.lag;
-  const shape = laneShape({ frames: voiced, notes: P.notes, lat: (measured ?? lag) + T.delay, now: T.t, mode: app.S.dev.shortBody, holds: "snap", xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
+  const xOf = (t) => PLAY_X - (T.t - t + lag) * PXS, mode = app.S.dev.shortBody || "snap";
+  const shape = mode === "snap"
+    ? { ...laneInside({ frames: voiced, notes: P.notes, off: lag + T.delay, xOf, yOf, half: BLOCK_H / 2 }), threads: [], slim: false, headJoins: false }
+    : laneShape({ frames: voiced, notes: P.notes, lat: (measured ?? lag) + T.delay, now: T.t, mode, holds: "snap", xOf, yOf });
   if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
     const hv = steadyVoice(v, T.t, P.notes, latOf(T));
-    const want = hv != null ? yOf(hv) : guideY(tp);
+    /* a voice off the chart by an octave is shown on the note of the same name, with a tag that says so */
+    const seen = onChart(hv, R.geo.lo - 0.5, R.geo.hi + 0.5);
+    R.oct = hv != null ? seen.oct : 0;
+    R.seenMidi = hv != null ? seen.midi : null;
+    const want = hv != null ? yOf(seen.midi) : guideY(tp);
     const semitone = Math.abs(yOf(61) - yOf(60));
     springHead(want, hv == null ? 0.08 : Math.abs(want - R.headY) > semitone ? LAND : FOLLOW, dt);
   }
-  markGrid(v ? v.midi : null);
+  markGrid(T.phase === "sing" && v ? R.seenMidi ?? v.midi : v ? v.midi : null);
   /* join the newest end of the line to the head, which eases after the voice */
   const sung = voiced.length && voiced[voiced.length - 1].midi != null;
   const joinTo = (list) => { const l = list[list.length - 1]; if (v && sung && l && PLAY_X - l[l.length - 1].x < 4 + lag * PXS) l.push({ x: PLAY_X, y: R.headY }); };
@@ -818,7 +834,7 @@ function draw(v, dt = 1 / 60) {
   const mouth = open || P.mouth === "mm" ? P.mouth : null;
   const line = document.getElementById("lane-line");
   if (line) line.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.slim ? shape.threads : [], slim: shape.slim, thin: true, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal });
-  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
+  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth }) + octTag(T.phase === "sing" && v ? R.oct : 0, PLAY_X, R.headY + bob);
 }
 
 function wireTouch(root) {

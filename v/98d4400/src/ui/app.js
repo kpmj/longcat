@@ -173,7 +173,7 @@ export function toast(msg) {
 /* How the lane draws the cat when the notes are short. The first is the game's own; the rest are kept for
    comparing (see lane-body.js). */
 export const LANE_MODES = [
-  { id: "snap", name: "A · Body lies flat on the note line (the game's choice)" },
+  { id: "snap", name: "The game’s: a thin line inside the notes, following the voice" },
   { id: "trace", name: "Before: fat following the voice, thread between" },
   { id: "slim", name: "B · One slim body, no fat pieces" },
   { id: "stub", name: "C · Short cat: head and a little body" },
@@ -183,6 +183,7 @@ export const VOICE_MODES = [
   { id: "god", name: "Auto-singer, in tune" },
   { id: "human", name: "Auto-singer, a little flat" },
   { id: "late", name: "Auto-singer, in tune, heard 0.12 s late" },
+  { id: "low", name: "Auto-singer, an octave low" },
   { id: "slide", name: "Auto-singer, slides between notes" },
   { id: "wobbly", name: "Auto-singer, drifting (close)" },
   { id: "tufty", name: "Auto-singer, one wrong note" },
@@ -203,6 +204,7 @@ export function readVoice(t, note, T) {
     case "tufty": return VOICES.tufty(t, note, T);
     case "human": return VOICES.human(t, note, T);
     case "late": return LATE_VOICE(t, note, T);
+    case "low": { const f = VOICES.human(t, note, T); return f ? { ...f, midi: f.midi - 12 } : null; }
     case "slide": return VOICES.slide(t, note, T);
     case "wobbly": return VOICES.wobbly(t, note, T);
     case "half": return VOICES.half(t, note, T);
