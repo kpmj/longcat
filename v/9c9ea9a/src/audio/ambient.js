@@ -4,7 +4,7 @@
    Its sounds go to their own two buses and a limiter of their own, at a low level, so the game's limiter and the log
    of "sounds the game made itself" (synth.js) are left alone. */
 import { audioContext } from "./synth.js";
-import { loadFile, dropFile, fileInfo } from "./files.js";
+import { loadFile, loadFiles, fileReady, dropFile, fileInfo } from "./files.js";
 
 let ac = null, bus = null, musicBus = null, noiseBuf = null;
 function ctx() {
@@ -159,11 +159,37 @@ function whistle(notes, t, step) {
 }
 /* play the sound of a tap; unknown kinds make no sound. `place`: where the picture is, for a thing that sounds
    different at one place (kind@place above) */
+/* Some things have a sound file instead: rendered by the audio engine from sampled instruments
+   (tools/audio/pieces/jungle_taps.py; docs/audio/playbook.md), since 2026-11-27 the jungle's three birds (a small
+   ocarina, each bird's own tune as it was), its acorn (a woodblock) and its heart (a vibraphone). A thing whose
+   file is not here yet makes its sound as the page makes it, and the files are fetched for the next press. The
+   monkeys and the cat are voices, which an instrument cannot be: they stay as the page makes them. */
+const TAP_FILES = { "bird-1": "fx.tap.bird-1", "bird-2": "fx.tap.bird-2", "bird-3": "fx.tap.bird-3", acorn: "fx.tap.acorn", heart: "fx.tap.heart" };
+/* How loud a tap's file sits on the bus, so that it is about as loud as the sound it replaces (the files are at
+   one loudness, the page's sounds each at their own). Measured on the bus in a desktop browser; a DRAFT. */
+const TAP_LEVEL = { "bird-1": 0.2, "bird-2": 0.2, "bird-3": 0.2, acorn: 0.4, heart: 0.21 }; // peaks on the bus within 1 dB of the page's (-25, -22.5, -24 dB)
+let tapSource = "files"; // or "page": every tap as the page makes it (the Dev panel)
+export function setTapSource(v) { tapSource = v === "page" ? "page" : "files"; }
+/* fetch the tap files before they are pressed (Home, when it shows the jungle) */
+export function prepareTaps() {
+  if (tapSource === "files" && ctx()) loadFiles(ac, Object.values(TAP_FILES)).catch(() => {});
+}
 export function tapSound(kind, place = null) {
   const play = (place && TAP[`${kind}@${place}`]) || TAP[kind];
   if (!play || !ctx() || ac.state !== "running") return;
+  const id = tapSource === "files" && !(place && TAP[`${kind}@${place}`]) ? TAP_FILES[kind] : null, e = id ? fileReady(id) : null;
+  if (e) {
+    const s = ac.createBufferSource(), g = ac.createGain();
+    s.buffer = e.buf; g.gain.value = TAP_LEVEL[kind] ?? 0.3;
+    s.connect(g); g.connect(bus);
+    s.start(ac.currentTime + 0.005, e.lead);
+    return;
+  }
+  if (id) prepareTaps();
   play(ac.currentTime + 0.005);
 }
+/* what a tap would play now, for tests and the Dev panel */
+export const tapState = (kind) => ({ source: tapSource, file: TAP_FILES[kind] || null, ready: !!(TAP_FILES[kind] && fileReady(TAP_FILES[kind])) });
 
 /* ---------- the home page's music ----------
    Home plays "Yuzu Bath" (the last of TUNES, sound files from the audio engine). Before it there were four tunes

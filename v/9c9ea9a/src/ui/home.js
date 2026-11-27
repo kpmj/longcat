@@ -5,7 +5,7 @@
    A cat's cell opens its Garment sheet. Nothing here counts streaks or shows a score.
    Wrapping a finished garment by hand is in the Wardrobe now (ui/wrap.js; the designer, 2026-11-22). */
 import { app, show, sheet, closeSheet, esc, toast, $, $$, wireTaps, hopCat, shownTime, visiting } from "./app.js";
-import { startMusic, stopMusic, setTune } from "../audio/ambient.js";
+import { startMusic, stopMusic, setTune, setTapSource, prepareTaps } from "../audio/ambient.js";
 import { rebuildAudio } from "../audio/synth.js";
 import * as St from "../state.js";
 import { openDress, singerLabel, yarnLabel } from "./cats.js";
@@ -112,6 +112,9 @@ export function renderHome(root) {
      the microphone go and the result's sounds may still ring. Then the music comes up slowly. */
   const afterTake = app.from === "take" || app.from === "beat";
   setTune(S.dev.homeMusic);
+  /* the jungle's birds, acorn and heart have sound files: fetched now, so the first press already plays one */
+  setTapSource(S.dev.tapSounds);
+  if (S.here === "jungle" && S.settings.sound !== false) prepareTaps();
   if (musicOn(S)) startMusic(shown, afterTake ? { delay: 0.6, fade: 2.6 } : { fade: 1.2 }); else stopMusic();
   /* one tap on the note turns the music off or on (the designer, 2026-11-14); the same setting as the one in Settings */
   const mb = $("[data-act=music]", root);

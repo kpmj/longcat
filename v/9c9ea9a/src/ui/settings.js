@@ -11,7 +11,7 @@ import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano } from "../audio/synth.js";
 import { loadFile } from "../audio/files.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
-import { MUSIC, setTune, startMusic, stopMusic } from "../audio/ambient.js";
+import { MUSIC, setTune, startMusic, stopMusic, setTapSource, prepareTaps, tapSound } from "../audio/ambient.js";
 import { openMic, closeMic, readMic, micReady, MIC_MODES, setMicMode, micMode } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
@@ -112,6 +112,11 @@ function confirmReset() {
 }
 
 /* ---------- dev tools ---------- */
+/* what the jungle's birds, acorn and heart sound like when pressed (ambient.js `tapSound`) */
+const TAP_SOURCES = [
+  { id: "files", name: "Sampled instruments (ocarina, woodblock, vibraphone)" },
+  { id: "page", name: "Made in the page (as before)" },
+];
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
 const BETWEEN = [
   { id: "chords", name: "Two quick piano chords (this round’s, the next one’s), then Go" },
@@ -142,6 +147,10 @@ export function openDev() {
     <p class="muted small">What sounds in the rest before the next round of a drill. The chords are piano notes rendered from a sampled upright: two beats before the round the chord of the round just sung and, half a beat later, the chord of the round to come; the screen says Go on the next beat.</p>
     <div class="radio">${BETWEEN.map((v) => `<label><input type="radio" name="between" value="${v.id}" ${(S.dev.between || "chords") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-rest">▶ Hear one rest (C, then up to D)</button>
+    <h4>Jungle sounds</h4>
+    <p class="muted small">The three birds, the acorn and the heart, when pressed. The monkeys and the cat are voices and are made in the page either way.</p>
+    <div class="radio">${TAP_SOURCES.map((v) => `<label><input type="radio" name="taps" value="${v.id}" ${(S.dev.tapSounds || "files") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <div class="row">${["bird-1", "bird-2", "bird-3", "acorn", "heart"].map((k) => `<button class="btn small" data-hear-tap="${k}">▶ ${k}</button>`).join("")}</div>
     <h4>Home music</h4>
     <p class="muted small">F is Home's tune: rendered from sampled instruments, one file for each time of day. A to D are the earlier tunes, made in the page; E is four bars that tried the path. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
     <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "yuzu") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
@@ -181,6 +190,12 @@ export function openDev() {
   $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
   const hearDemo = async () => { audioContext(); const m = firstNote(S).midi, hs = sylFor("bottom", St.currentTime(S, place) || "morning"), kind = await prepareDemo(S.dev.demoVoice, hs, [0, 2, 4].map((d) => m + d)); [0, 2, 4, 2, 0].forEach((d, k) => demoNote(kind, now() + 0.08 + k * 0.6, m + d, 0.52, hs)); };
   el.querySelector("[data-a=hear-demo]").onclick = hearDemo;
+  $$("input[name=taps]", el).forEach((i) => (i.onchange = () => { S.dev.tapSounds = i.value; app.save(); setTapSource(i.value); prepareTaps(); toast(`Jungle sounds: ${TAP_SOURCES.find((v) => v.id === i.value).name}`); }));
+  $$("[data-hear-tap]", el).forEach((b) => (b.onclick = () => {
+    if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
+    audioContext(); setTapSource(S.dev.tapSounds); prepareTaps();
+    tapSound(b.dataset.hearTap); // the first press of each may still be the page's sound: its file is on the way
+  }));
   $$("input[name=between]", el).forEach((i) => (i.onchange = () => { S.dev.between = i.value; app.save(); toast(`Between rounds: ${BETWEEN.find((v) => v.id === i.value).name}`); }));
   /* one rest as a take plays it, at 100 beats a minute: the chord of a round in C for a beat, then the chord of the
      next round, a whole tone up, for two beats; the round would begin where it stops */

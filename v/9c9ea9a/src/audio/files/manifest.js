@@ -1679,6 +1679,121 @@ export const FILES = {
       2
     ]
   },
+  "fx.tap.acorn": {
+    "path": "fx/jungle/acorn.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "jungle_taps@acorn",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 9555,
+    "sha256": "5e192cb2ef8c7ff80214985502c64be853978039294338528e7cb13e9d430702",
+    "seconds": 0.6813,
+    "channels": 1,
+    "lufs": -6.1,
+    "measure": "TP",
+    "peak": -6.1,
+    "lead": 0.0003,
+    "below300": 0.333,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0152,
+    "clicks": 0
+  },
+  "fx.tap.bird-1": {
+    "path": "fx/jungle/bird-1.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_taps@bird-1",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 15344,
+    "sha256": "d7026a0ca4d329eb866b5f2478759e821e87731012f0ff466988d0aac7aa41cc",
+    "seconds": 1.1507,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -10.6,
+    "lead": 0.0009,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.3863,
+    "clicks": 0
+  },
+  "fx.tap.bird-2": {
+    "path": "fx/jungle/bird-2.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_taps@bird-2",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 16055,
+    "sha256": "c1c3d756e139700eb0c113ea7eb91eed50881a1429367604e7f1f3a9515dbe9c",
+    "seconds": 1.2147,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -10.9,
+    "lead": 0.0009,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.5353,
+    "clicks": 0
+  },
+  "fx.tap.bird-3": {
+    "path": "fx/jungle/bird-3.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_taps@bird-3",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 15795,
+    "sha256": "b1f00df762a90d0702cbb08a1065f1e4e5792320ea25a8b25db3d972b304d51d",
+    "seconds": 1.1933,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -10.5,
+    "lead": 0.0006,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.4102,
+    "clicks": 0
+  },
+  "fx.tap.heart": {
+    "path": "fx/jungle/heart.m4a",
+    "family": "fx",
+    "kind": "sound",
+    "piece": "jungle_taps@heart",
+    "version": 1,
+    "libraries": [
+      "vcsl"
+    ],
+    "bytes": 22035,
+    "sha256": "f1d74350fcb8721ddafb77ae8dada0960f7a0295bab4eb1c6994bbed431878c9",
+    "seconds": 1.7053,
+    "channels": 1,
+    "lufs": -16.0,
+    "measure": "M",
+    "peak": -8.1,
+    "lead": 0.0003,
+    "below300": 0.01,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.1988,
+    "clicks": 0
+  },
   "music.home.yuzu.golden": {
     "path": "music/home-yuzu-golden.m4a",
     "family": "music_long",
