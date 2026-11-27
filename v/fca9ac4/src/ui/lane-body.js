@@ -204,8 +204,11 @@ export const isShort = (notes) => notes.length > 1 && notes[0].e - notes[0].s < 
 /* frames: [{ t, midi | null }]; now: the take clock; xOf(t), yOf(midi): the caller's coordinates. Returns
    { subs, threads, tail, slim, headJoins }: polylines for laneCatSvg, and whether the body runs up to the
    head (so the caller can join the two). */
-export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, xOf, yOf, cull = -30 }) {
-  const hold = !isShort(notes), m = hold ? "trace" : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
+/* `holds`: how a long hold is drawn. "trace" follows the smoothed voice, as it always did. "snap" lays it flat on
+   its note like the short ones (the designer, 2026-11-27: no lines that go up and down; the cat's head shows what is
+   heard), which is what the game uses now. */
+export function laneShape({ frames, notes, lat = 0, now, mode = SHORT_BODY, holds = "trace", xOf, yOf, cull = -30 }) {
+  const hold = !isShort(notes), m = hold ? (holds === "snap" ? "snap" : "trace") : BODY_MODES.includes(mode) ? mode : SHORT_BODY;
   const clean = despike(dropFarBlips(frames, notes, lat)), line = m === "slim" ? eased(clean) : m === "stub" ? eased(clean, 6) : hold ? eased(clean, HOLD_EASE) : clean;
   const threads = [[]], subs = [[]];
   const cut = (list) => { if (list[list.length - 1].length) list.push([]); };

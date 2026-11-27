@@ -157,20 +157,16 @@ button.time-chip:focus-visible { outline: 2px solid var(--brand); outline-offset
 .lane-bg { fill: #fdf6e8; }
 .playhead { stroke: #c9b48c; stroke-width: 2; stroke-dasharray: 4 5; }
 .nb rect { fill: #ecd9b0; opacity: .75; }
-.nb text { font-family: var(--body); font-weight: 700; font-size: 12px; fill: #6b5440; }
+.nl { font-family: var(--body); font-weight: 700; font-size: 12px; fill: #6b5440; }
+.nl.done { display: none; } /* a graded note's mark is drawn above the cat instead */
 /* the three levels of a note: the same three colours on the note block, the hint, the judge's frame and the
    result dots (fixed colours: the lane and the judge's frame are light in both themes) */
 .nb rect { transform-box: fill-box; transform-origin: center; }
-/* a graded block grows taller than the cat's body, so its colour shows as a band round the fur */
+/* a graded block grows taller, so its colour is plain to see (it once had to show round a body as fat as itself) */
 .nb.good rect, .nb.mid rect, .nb.off rect { transform: scaleY(1.7); opacity: 1; stroke-width: 2; }
 .nb.good rect { fill: #6fc17c; stroke: #2f8a4a; animation: nb-pop .32s ease-out; }
 .nb.mid rect { fill: #f3c95c; stroke: #b47a12; }
 .nb.off rect { fill: #f0a08c; stroke: #c14a36; stroke-dasharray: 5 4; }
-.nb.good text, .nb.mid text, .nb.off text { font-size: 15px; font-weight: 800; }
-.nb.good text { fill: #14502a; }
-.nb.mid text { fill: #6b4705; }
-.nb.off text { fill: #7c2414; }
-.nb.good text, .nb.mid text, .nb.off text { display: none; } /* the mark is drawn above the cat instead */
 @keyframes nb-pop { 0% { transform: scale(1); } 45% { transform: scale(1.1, 2.3); } 100% { transform: scaleY(1.7); } }
 .hint { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .hint b { font-family: var(--display); font-size: 22px; color: #4a3222; }

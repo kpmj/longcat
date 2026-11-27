@@ -102,12 +102,14 @@ function guideY(t) {
 function laneNotes(plan) {
   const bars = plan.notes.map((n, i) => {
     const x = n.s * PXS, w = Math.max(14, (n.e - n.s) * PXS - 3), y = yOf(n.midi);
-    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/><text x="${(x + 12).toFixed(1)}" y="${(y + 5).toFixed(1)}">${esc(plan.syl)}</text></g>`;
+    return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" width="${w.toFixed(1)}" height="24" rx="12"/></g>`;
   }).join("");
   /* a climbing drill: each later round is marked where it begins, "↑ 2 / 5" or "↓ 4 / 5" */
   const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * PXS).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : r.dir === "down" ? "↓" : "·"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
   return bars + tags;
 }
+/* the sound written on each note, in a layer of its own above the sung line, so the line never covers it */
+const laneLabels = (plan) => plan.notes.map((n, i) => `<text class="nl" id="nl-${i}" x="${(n.s * PXS + 12).toFixed(1)}" y="${(yOf(n.midi) + 5).toFixed(1)}">${esc(plan.syl)}</text>`).join("");
 
 /* ---------- rounds (a climbing drill) ----------
    The round being sung, or the one coming: it changes as the last note of a round ends. */
@@ -211,6 +213,8 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
         <g id="lane-grid">${grid.lines}</g>
         <g id="lane-notes">${laneNotes(plan)}</g>
         <line x1="${PLAY_X}" y1="14" x2="${PLAY_X}" y2="${H - 14}" class="playhead"/>
+        <g id="lane-line"></g>
+        <g id="lane-labels">${laneLabels(plan)}</g>
         <g id="lane-cat"></g>
         <g id="lane-gutter">${grid.gutter}</g>
       </svg>
@@ -621,11 +625,8 @@ function onNoteEnd(i, r) {
   noteCue(v, n.midi, last ? 1 : 0.6); // quieter while more notes are still to be sung
   R.flash = { text: `${NOTE_GLYPH[v]} ${v === "off" && r.heard < 0.2 ? "Didn’t hear it" : NOTE_WORD[v]}`, level: v, until: R.T.t + 0.8 };
   const nb = document.getElementById(`nb-${i}`);
-  if (nb) {
-    nb.classList.add(v);
-    const tx = nb.querySelector("text");
-    if (tx) tx.textContent = NOTE_GLYPH[v];
-  }
+  if (nb) nb.classList.add(v);
+  document.getElementById(`nl-${i}`)?.classList.add("done"); // the mark is drawn above the cat instead
 }
 
 /* The metronome runs under the demo and the singing (the designer, 2026-11-13: "add the 節拍器 in the background the
@@ -781,13 +782,19 @@ function draw(v, dt = 1 / 60) {
   const shift = PLAY_X - tp * PXS;
   const notes = document.getElementById("lane-notes");
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
-  /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
+  document.getElementById("lane-labels")?.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
+  /* What is drawn of the voice (the designer, 2026-11-27: the line was a mess; a line thinner than the note's button,
+     that does not hide the note, without the lines that jump up and down; the cat's head shows what is heard).
+     So: a thin flat line where the voice sat on a note, on that note's own line (or on the pitch the singer
+     held, when that was well off it), long holds too; nothing for the voice on its way between notes, which was
+     the thread; and the head alone follows the voice as it is. The line lies between the note blocks and their
+     labels. Until then the body was as fat as a block and lay over it, and a long hold followed the voice. */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
   /* the line is drawn where it was sung, not where it was heard: back by the delay the matcher measures */
   const measured = T.matcher.offsets.length ? T.matcher.latency : null;
   R.lag = easeLag(R.lag, lagToDraw(measured, R.lagKnown), dt);
   const lag = R.lag;
-  const shape = laneShape({ frames: voiced, notes: P.notes, lat: (measured ?? lag) + T.delay, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
+  const shape = laneShape({ frames: voiced, notes: P.notes, lat: (measured ?? lag) + T.delay, now: T.t, mode: app.S.dev.shortBody, holds: "snap", xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
     const hv = steadyVoice(v, T.t, P.notes, latOf(T));
@@ -809,7 +816,9 @@ function draw(v, dt = 1 / 60) {
   /* the cat's mouth shows the sound: while a demo note sounds, while it waits for the singer, and while it hears one */
   const open = R.saying || (T.phase === "demo" ? currentIndex(T) >= 0 : T.phase === "count" ? true : !!v);
   const mouth = open || P.mouth === "mm" ? P.mouth : null;
-  if (el) el.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.threads, slim: shape.slim, head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
+  const line = document.getElementById("lane-line");
+  if (line) line.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.slim ? shape.threads : [], slim: shape.slim, thin: true, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal });
+  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: PLAY_X, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
 }
 
 function wireTouch(root) {

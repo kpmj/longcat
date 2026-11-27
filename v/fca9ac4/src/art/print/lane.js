@@ -58,13 +58,18 @@ export function laneCatSvg(o = {}) {
   const head = o.head && typeof o.head === "object" ? o.head : null;
   const dir = head && num(head.dir, 1) < 0 ? -1 : 1;
   let out = "";
-  if (o.tail && typeof o.tail === "object") out += tailOf(animal, kind, num(o.tail.x), num(o.tail.y), dir, w * .45, pal, mood === "sleep");
+  /* o.thin (the designer, 2026-11-27: a line thinner than the note's button, that does not hide the note): the body is one
+     plain line, about a quarter of a note block high, in the yarn's ground colour or the fur's, with its key
+     line and nothing else: no pattern, no belly, no fluff. The tail is small to match. The head shows the pitch. */
+  const thin = o.thin === true, tb = w * .36;
+  if (o.tail && typeof o.tail === "object") out += tailOf(animal, kind, num(o.tail.x), num(o.tail.y), dir, w * (thin ? .26 : .45), pal, mood === "sleep");
   const tw = o.slim ? w * .52 : w * .26;
   if (td) out += stroke(td, KEY, tw + 2 * lw * .7) + stroke(td, pal.fur, tw) + (o.slim ? stroke(td, pal.belly, tw * .28, ` transform="translate(0 ${f(tw * .22)})"`) : "");
   /* o.yarn: the body being sung is knitting (print/yarn.js). Still a handful of strokes: the ground, and the yarn's
      second colour as one dashed stroke; head and tail stay the cat's own */
   const ink = yarnInk(o.yarn);
-  if (d && ink) {
+  if (d && thin) out += stroke(d, KEY, tb + 2 * lw * .7) + stroke(d, ink ? ink.a : pal.fur, tb);
+  else if (d && ink) {
     out += stroke(d, KEY, w + 2 * lw) + stroke(d, ink.a, w);
     if (ink.rep) out += `<path d="${d}" stroke="${ink.b}" stroke-width="${f(ink.rep[2] ? w * .28 : w)}" stroke-dasharray="${f(ink.rep[0] * w)} ${f(ink.rep[1] * w)}" stroke-dashoffset="${f(-ink.rep[1] * w / 2)}"${ink.rep[2] ? ` stroke-linecap="round"` : ""} stroke-linejoin="round" fill="none"/>`;
   } else if (d) {
