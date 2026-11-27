@@ -6,7 +6,7 @@ import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODE
 import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
 import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
-import { DEFAULT_RANGE, planTake, chordOf, CHORD_SPLIT } from "../drill/drills.js";
+import { DEFAULT_RANGE, planTake, chordOf, CHORD_SPLIT, HEAD_DELAY } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano } from "../audio/synth.js";
 import { loadFile } from "../audio/files.js";
@@ -118,6 +118,8 @@ const TAP_SOURCES = [
   { id: "page", name: "Made in the page (as before)" },
 ];
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
+/* Dev: how long after its beat a note reaches the cat's head (drills.js HEAD_DELAY; null = the game's) */
+const HEAD_DELAYS = [null, 0, 0.15, 0.3, 0.75];
 const BETWEEN = [
   { id: "chords", name: "Two quick piano chords (this round’s, the next one’s), then Go" },
   { id: "sung", name: "The cat sings the next first note (as before)" },
@@ -143,6 +145,9 @@ export function openDev() {
     <h4>Demo voice</h4>
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec2") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
+    <h4>Head delay</h4>
+    <p class="muted small">How long after its beat a note reaches the cat’s head while you sing. The grade follows the picture. The beat, the count, the chords and Go do not move.</p>
+    <div class="radio">${HEAD_DELAYS.map((d) => `<label><input type="radio" name="headdelay" value="${d ?? ""}" ${(S.dev.headDelay ?? null) === d ? "checked" : ""}> ${d == null ? `The game’s (${HEAD_DELAY} s)` : d === 0 ? "None: on the beat" : `${d} s`}</label>`).join("")}</div>
     <h4>Between rounds</h4>
     <p class="muted small">What sounds in the rest before the next round of a drill. The chords are piano notes rendered from a sampled upright: two beats before the round the chord of the round just sung and, half a beat later, the chord of the round to come; the screen says Go on the next beat.</p>
     <div class="radio">${BETWEEN.map((v) => `<label><input type="radio" name="between" value="${v.id}" ${(S.dev.between || "chords") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
@@ -196,6 +201,7 @@ export function openDev() {
     audioContext(); setTapSource(S.dev.tapSounds); prepareTaps();
     tapSound(b.dataset.hearTap); // the first press of each may still be the page's sound: its file is on the way
   }));
+  $$("input[name=headdelay]", el).forEach((i) => (i.onchange = () => { S.dev.headDelay = i.value === "" ? null : Number(i.value); app.save(); toast(`Head delay: ${i.value === "" ? HEAD_DELAY : i.value} s`); }));
   $$("input[name=between]", el).forEach((i) => (i.onchange = () => { S.dev.between = i.value; app.save(); toast(`Between rounds: ${BETWEEN.find((v) => v.id === i.value).name}`); }));
   /* one rest as a take plays it, at 100 beats a minute: the chord of a round in C for a beat, then the chord of the
      next round, a whole tone up, for two beats; the round would begin where it stops */

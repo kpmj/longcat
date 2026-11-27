@@ -11,8 +11,27 @@ export const DEMO_LEAD = 0.5;
 export const DEMO_TAIL = 0.45;
 export const SING_TAIL = 0.55; // keep listening after the last note so a late singer is not cut off
 
-export function createTake(plan) {
-  return { plan, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(plan.notes), octave: createOctaveGuard(), live: [], grade: null };
+/* `delay` (seconds): how long after its beat a note reaches the playhead while the take is sung (the designer, 2026-11-27:
+   "the cat head is right on beat but it feels rushed so just slow the cat head arrival by 0.5 second"). The beat,
+   the count, the cues and Go stay where the plan puts them; the PICTURE of the notes comes `delay` later, and a
+   singer is graded against the picture: the matcher is given the notes where the picture shows them. So a voice
+   that follows the picture is on time, and one that follows the metronome is `delay` early, which the matcher's
+   latency takes up as far as it goes (-0.3 s) and its timing leeway covers. The demo is not delayed: there the
+   notes sound on their beats and the picture is with the sound.
+   Everything that asks "how late is this singer against the plan's notes" uses latOf(T): the delay and the
+   latency the matcher measures on top of it. */
+export function createTake(plan, { delay = 0 } = {}) {
+  const d = Number.isFinite(delay) && delay > 0 ? delay : 0;
+  const targets = d ? plan.notes.map((n) => ({ ...n, s: n.s + d, e: n.e + d })) : plan.notes;
+  return { plan, delay: d, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(targets), octave: createOctaveGuard(), live: [], grade: null };
+}
+export const latOf = (T) => T.matcher.latency + T.delay;
+/* the take's clock as the singer sees it while singing: the note under the playhead is the one at this time */
+export const sungTime = (T) => T.t - (T.phase === "demo" ? 0 : T.delay);
+export function sungIndex(T) {
+  const n = T.plan.notes, t = sungTime(T);
+  for (let i = 0; i < n.length; i++) if (t >= n[i].s && t < n[i].e) return i;
+  return -1;
 }
 
 export function skipDemo(T) {
@@ -34,7 +53,7 @@ export const demoEnd = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAIL) /
 export function ticksIn(T, from, to) {
   const P = T.plan, out = [];
   if (T.phase === "done") return out;
-  const end = T.phase === "demo" ? demoEnd(P) - 1e-6 : P.total;
+  const end = T.phase === "demo" ? demoEnd(P) - 1e-6 : P.total + T.delay; // the last note is still being sung `delay` after its place
   for (let k = Math.max(0, Math.ceil(from / P.beat - 1e-6)); k * P.beat < to && k * P.beat <= end; k++) {
     /* a climbing drill rests between rounds, so its plan says which beats a note starts on */
     out.push({ t: k * P.beat, accent: P.accents ? P.accents.has(k) : k % P.perNote === 0 && k / P.perNote < P.notes.length });
@@ -71,36 +90,38 @@ export function stepTake(T, dt, frame = null) {
   let midi = frame && Number.isFinite(frame.midi) ? frame.midi : null;
   const conf = frame ? frame.conf ?? 1 : 0;
   /* a frame read an octave off from where the singer clearly is goes back to that octave (octave.js) */
-  if (midi !== null && conf >= 0.5) midi = guardOctave(T.octave, midi, T.t, P.notes, T.matcher.latency);
+  if (midi !== null && conf >= 0.5) midi = guardOctave(T.octave, midi, T.t, P.notes, latOf(T));
   T.frames.push({ t: T.t, midi, conf });
-  for (let i = T.singIdx + 1; i < P.notes.length && T.t >= P.notes[i].s; i++) { T.singIdx = i; ev.push({ type: "note-start", i }); }
+  for (let i = T.singIdx + 1; i < P.notes.length && T.t >= P.notes[i].s + T.delay; i++) { T.singIdx = i; ev.push({ type: "note-start", i }); }
   const ended = (list) => {
     for (const { index, result } of list) {
-      const r = { ...result, heard: heardShare(T.frames, P.notes[index], T.matcher.latency) };
+      const r = { ...result, heard: heardShare(T.frames, P.notes[index], latOf(T)) };
       T.live[index] = r;
       ev.push({ type: "note-end", i: index, result: r });
     }
   };
   /* the matcher sees what the old drill saw: a pitch, or nothing when the tracker heard none */
   ended(T.matcher.feed({ time: T.t, midi: midi !== null && conf >= 0.5 ? midi : null, rms: frame?.rms ?? 0.1 }));
-  if (T.t >= P.total + SING_TAIL) {
+  if (T.t >= P.total + T.delay + SING_TAIL) {
     ended(T.matcher.finish());
     T.phase = "done";
-    T.grade = gradeTake(T.frames, P, T.live, T.matcher.latency);
+    T.grade = gradeTake(T.frames, P, T.live, latOf(T));
     ev.push({ type: "done", grade: T.grade });
   }
   return ev;
 }
 
-/* Run a whole take with a synthetic voice: voice(t, note | null) -> { midi, conf } | null. */
-export function simulateTake(plan, voice, fps = 60) {
-  const T = createTake(plan);
+/* Run a whole take with a synthetic voice: voice(t, note | null) -> { midi, conf } | null. The voice sings with
+   the picture: it is given the note under the playhead and the time the picture is at (`opts.delay`, see
+   createTake). */
+export function simulateTake(plan, voice, fps = 60, opts = {}) {
+  const T = createTake(plan, opts);
   skipDemo(T);
   const dt = 1 / fps;
   let guard = 0;
   while (T.phase !== "done" && guard++ < 100000) {
-    const i = currentIndex(T);
-    stepTake(T, dt, T.phase === "sing" ? voice(T.t, i >= 0 ? plan.notes[i] : null, T) : null);
+    const i = sungIndex(T);
+    stepTake(T, dt, T.phase === "sing" ? voice(sungTime(T), i >= 0 ? plan.notes[i] : null, T) : null);
   }
   return T;
 }

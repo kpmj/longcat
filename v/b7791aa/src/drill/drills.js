@@ -24,6 +24,15 @@ export const BEAT_AIM = 0.66; // seconds: notes up to about a second apart get o
    tenth of a second past the end of each note into the gap (ui/lane-body.js, fixed the same day). A drill's `dur`
    is still a note's whole place, so the takes are as long as they were. */
 export const GAP_SHARE = 0.25, GAP_MIN = 0.16, GAP_MAX = 0.32;
+
+/* How long after its beat a note reaches the cat's head while the take is sung (the designer, 2026-11-27, after the sung
+   line had been moved back to the note's start: "I still think the cat head is too ahead than note. maybe let's
+   slow like 0.5 seconds of the cat head. e.g. the cat head is right on beat but it feels rushed so just slow the
+   cat head arrival by 0.5 second"). The beat, the count, the chords and Go are where they were; the notes in the
+   lane come this much later, and the grade follows the lane (take.js createTake). the designer's number, given as a guess
+   ("maybe", "like"): Dev tools → Head delay tries others on the phone. With it the picture is no longer on the
+   metronome: at a beat of 0.6 s a note meets the head just before the NEXT tick. */
+export const HEAD_DELAY = 0.5;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
 /* Where in the singer's range a time of day puts a drill sung once: morning in the middle, the others a little

@@ -14,17 +14,26 @@
       within 95 cents and 250 ms amber, anything else red. No sung note for a target is a miss.
 
    A target's verdict is given once the singer is past it (0.45 s after it should have started, and after the
-   note being sung then has ended), so the judge reacts as the old drill did. Pure: no DOM, no audio. */
+   note being sung then has ended), so the judge reacts as the old drill did. Pure: no DOM, no audio.
+
+   TIMING LOOSENED AT KAI'S WORD (2026-11-27: "be more lenient on the timing. add a invisible 0.5 seconds buffer
+   around the note so it will still be green if it's around that timeframe"). The three numbers about WHEN a note
+   is sung changed, and nothing about pitch: a sung note may start up to 0.5 s before or after its place (after
+   latency) and is still paired with its target (it was 0.45 s) and still green if it is in tune (it was 250 ms
+   with most of the note in tune, 120 ms otherwise; 250 ms for amber). So in rules 3 and 4 above read 0.5 s for
+   0.45 s, 250 ms and 120 ms, and a verdict now waits 0.5 s. How far the latency estimate reaches (rule 2,
+   0.9 s) is as it was. The old numbers: TIMING_GREEN_MS 120, TIMING_AMBER_MS 250, MATCH_WINDOW_SECONDS 0.45. */
 
 export const PITCH_GREEN_CENTS = 50.0;
 export const PITCH_AMBER_CENTS = 95.0;
-export const TIMING_GREEN_MS = 120.0;
-export const TIMING_AMBER_MS = 250.0;
+export const TIMING_GREEN_MS = 500.0;
+export const TIMING_AMBER_MS = 500.0;
 export const STABILITY_GREEN_CENTS = 25.0;
 export const COVERAGE_PASS_FRACTION = 0.5;
 export const FAR_OFF_CENTS = 300.0;
 export const FAR_OFF_FAIL_FRACTION = 0.3;
-export const MATCH_WINDOW_SECONDS = 0.45;
+export const MATCH_WINDOW_SECONDS = 0.5;
+const LATENCY_REACH_SECONDS = 0.9; // rule 2: it was 2 × MATCH_WINDOW_SECONDS when that was 0.45, and stays
 export const LATENCY_LOCK_COUNT = 3;
 const SMOOTH_WIDTH = 5;
 
@@ -220,7 +229,7 @@ export class NoteMatcher {
        very first sung note held through two written notes of the same pitch, it was split with no latency
        known yet, so the second half started a whole delay early and a late singer's second note was red. */
     if (this.fixedLatency === null && this.offsets.length < LATENCY_LOCK_COUNT) {
-      const nearby = this.targets.filter((t) => Math.abs(note.start - t.s) <= 2 * MATCH_WINDOW_SECONDS && Math.abs(note.midi - t.midi) <= 1.0);
+      const nearby = this.targets.filter((t) => Math.abs(note.start - t.s) <= LATENCY_REACH_SECONDS && Math.abs(note.midi - t.midi) <= 1.0);
       if (nearby.length) {
         const closest = nearby.reduce((best, t) => (Math.abs(note.start - t.s) < Math.abs(note.start - best.s) ? t : best));
         this.offsets.push(note.start - closest.s);

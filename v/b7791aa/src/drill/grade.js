@@ -64,7 +64,7 @@ function nearestNote(notes, t) {
 export function gradeTake(frames, plan, results, lat) {
   const dt = frameStep(frames);
   const notes = plan.notes.map((n, i) => ({ ...results[i], heard: heardShare(frames, n, lat) }));
-  const sing = frames.filter((f) => f.t >= -0.2 && f.t <= plan.total + 0.6);
+  const sing = frames.filter((f) => f.t >= -0.2 && f.t <= plan.total + 0.6 + Math.max(0, lat)); // a late singer's last note runs that much past the plan
   const voicedSeconds = sing.filter(isVoiced).length * dt;
   let inWin = 0, voicedIn = 0;
   for (const n of plan.notes) for (const f of frames) if (f.t >= n.s + lat && f.t < n.e + lat) { inWin++; if (isVoiced(f)) voicedIn++; }

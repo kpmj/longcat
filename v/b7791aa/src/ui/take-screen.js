@@ -9,8 +9,8 @@ import { app, show, sheet, closeSheet, esc, $, readVoice, prepareVoice, touchVoi
 import { openMic, closeMic, micReady, micMode, micInfo } from "../audio/mic.js";
 import * as St from "../state.js";
 import { treatLine } from "./cats.js";
-import { planTake } from "../drill/drills.js";
-import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from "../drill/take.js";
+import { planTake, HEAD_DELAY } from "../drill/drills.js";
+import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD, latOf, sungTime, sungIndex } from "../drill/take.js";
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
@@ -111,6 +111,8 @@ function laneNotes(plan) {
 
 /* ---------- rounds (a climbing drill) ----------
    The round being sung, or the one coming: it changes as the last note of a round ends. */
+/* how long after its beat a note reaches the head (drills.js HEAD_DELAY); the Dev panel can try another */
+export const headDelay = (S) => (Number.isFinite(S.dev.headDelay) ? Math.min(1, Math.max(0, S.dev.headDelay)) : HEAD_DELAY);
 const roundAt = (P, t) => { const k = P.reps.findIndex((r) => t < r.e); return k === -1 ? P.reps.length - 1 : k; };
 /* The chart has a line for every pitch of every round, which is a crowd: only the round at hand keeps its
    note names, the others' lines go faint. */
@@ -166,7 +168,7 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
   /* a drill met for the first time shows its card before anything sounds; the title opens it again (`card`) */
   const withCard = card || (!St.heardDrill(S, plan.drill.id) && !carded && !retake);
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
-  R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
+  R = { ctx, retake, outcome, plan, T: createTake(plan, { delay: headDelay(S) }), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
   /* how far back the sung line is drawn (lane-body.js): what earlier takes with the microphone found, until this one knows */
   R.lagKnown = S.dev.voice === "mic" ? St.knownLag(S) ?? LAG_GUESS : null;
   R.lag = lagToDraw(null, R.lagKnown);
@@ -692,11 +694,12 @@ function loop() {
 export function frame(dt) {
   if (!R || !R.started || R.paused) return;
   const T = R.T, P = R.plan;
-  const i = currentIndex(T);
-  let v = T.phase === "sing" ? readVoice(T.t, i >= 0 ? P.notes[i] : null, T) : null;
+  /* the auto-singers sing with the picture: the note under the head, which is `T.delay` behind the beat */
+  const i = sungIndex(T);
+  let v = T.phase === "sing" ? readVoice(sungTime(T), i >= 0 ? P.notes[i] : null, T) : null;
   const heard = v;
   /* the microphone also hears the phone's own bells: a frame that is one of them is not the singer */
-  if (v && app.S.dev.voice === "mic" && heardItself(v.midi, notesNear(P.notes, T.t, T.matcher.latency))) v = null;
+  if (v && app.S.dev.voice === "mic" && heardItself(v.midi, notesNear(P.notes, T.t, latOf(T)))) v = null;
   if (T.phase === "sing") R.raw.push([T.t, heard ? heard.midi : null, heard ? heard.conf : 0, heard ? heard.rms : null, !!heard && !v]);
   const evs = stepTake(T, dt, v);
   if (T.phase !== "done") bookTicks();
@@ -716,19 +719,23 @@ export function frame(dt) {
   }
   if (T.phase === "sing") {
     R.silentFor = v ? 0 : R.silentFor + dt;
-    const many = P.reps.length > 1, k = roundAt(P, T.t), rep = P.reps[k], resting = many && T.t < rep.s && k > 0;
+    /* where the singer is: the picture's time, `T.delay` behind the beat. The round, its rest and the hints go
+       by it; the chords and Go go by the beat */
+    const ts = sungTime(T);
+    const many = P.reps.length > 1, k = roundAt(P, ts), rep = P.reps[k], resting = many && ts < rep.s && k > 0;
     /* a rest between rounds is not the singer being silent: without this, "Sing out" flashed as every round began */
-    if (T.t > rep.e || T.t < rep.s) R.silentFor = 0;
+    if (ts > rep.e || ts < rep.s) R.silentFor = 0;
     if (many) { focusRound(k); playCues(); }
     /* Go on the last beat of a rest, as in the count before the take: the chord, Go, and the round on the next beat */
-    const go = resting && T.t >= rep.s - P.beat;
+    const kb = roundAt(P, T.t), rb = P.reps[kb];
+    const go = many && kb > 0 && T.t >= rb.s - P.beat && T.t < rb.s;
     if (go !== !!R.goOn) { R.goOn = go; countdown(go ? "Go" : "", go); }
     /* one thing at a time: a note's verdict, or where the next round starts, or that nothing is heard. "Sing" is
        said as the singing begins and then goes; it used to sit there for the whole take */
     if (R.flash && T.t < R.flash.until) hint(R.flash.text, "", R.flash.level);
     else if (resting) hint(dirWords(P, rep), `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
-    else if (R.silentFor > 1.4 && T.t < rep.e) hint("Sing out", "the judge can’t hear you yet"); // never in the rest between rounds
-    else if (T.t < 1.2 && !R.marks.length) hint("Sing", `“${P.syl}”`);
+    else if (R.silentFor > 1.4 && ts < rep.e) hint("Sing out", "the judge can’t hear you yet"); // never in the rest between rounds
+    else if (ts < 1.2 && !R.marks.length) hint("Sing", `“${P.syl}”`);
     else hint("", "");
   }
   if (R.face !== "neutral" && T.t > R.faceUntil) { setFace("neutral", 0); setLevel(""); }
@@ -768,7 +775,10 @@ function springHead(want, tau, dt) {
 
 function draw(v, dt = 1 / 60) {
   const T = R.T, P = R.plan;
-  const shift = PLAY_X - T.t * PXS;
+  /* the notes come to the head `T.delay` after their beat while the take is sung (and counted in); in the demo
+     they are with the sound */
+  const tp = sungTime(T), late = T.t - tp;
+  const shift = PLAY_X - tp * PXS;
   const notes = document.getElementById("lane-notes");
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
   /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
@@ -777,11 +787,11 @@ function draw(v, dt = 1 / 60) {
   const measured = T.matcher.offsets.length ? T.matcher.latency : null;
   R.lag = easeLag(R.lag, lagToDraw(measured, R.lagKnown), dt);
   const lag = R.lag;
-  const shape = laneShape({ frames: voiced, notes: P.notes, lat: measured ?? lag, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
+  const shape = laneShape({ frames: voiced, notes: P.notes, lat: (measured ?? lag) + T.delay, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
-    const hv = steadyVoice(v, T.t, P.notes, T.matcher.latency);
-    const want = hv != null ? yOf(hv) : guideY(T.t);
+    const hv = steadyVoice(v, T.t, P.notes, latOf(T));
+    const want = hv != null ? yOf(hv) : guideY(tp);
     const semitone = Math.abs(yOf(61) - yOf(60));
     springHead(want, hv == null ? 0.08 : Math.abs(want - R.headY) > semitone ? LAND : FOLLOW, dt);
   }
@@ -793,7 +803,7 @@ function draw(v, dt = 1 / 60) {
   if (shape.headJoins) joinTo(shape.subs);
   let mood = R.mood;
   if (T.t > R.moodUntil) mood = T.phase === "sing" && v ? "sing" : "listen";
-  const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
+  const marks = R.marks.map((m) => ({ x: PLAY_X - (T.t - m.t - late) * PXS, y: yOf(m.midi) - 26, type: m.type })).filter((m) => m.x > -20);
   const bob = T.phase === "demo" ? Math.sin(T.t * 6) * 1.5 : 0;
   const el = document.getElementById("lane-cat");
   /* the cat's mouth shows the sound: while a demo note sounds, while it waits for the singer, and while it hears one */
@@ -829,11 +839,11 @@ function finish(grade) {
   setBoost(1);
   closeMic(); // the singing is over: the result sounds play at full volume
   holdAudio(false); markAudioStale();
-  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: R.T.matcher.latency, extra: { voice: app.S.dev.voice, mic: heardBy, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
+  try { keepTake({ raw: R.raw, plan: R.plan, grade, latency: latOf(R.T), extra: { headDelay: R.T.delay, voice: app.S.dev.voice, mic: heardBy, retake: !!R.retake, sound: audioState(), soundDelay: R.micDelay ?? audioDelay(), ...(R.plan.reps.length > 1 ? { rounds: R.plan.reps.map((r) => [r.i0, r.n, r.shift]) } : {}) } }); } catch { /* debugging aid only */ }
   const { ctx, retake, plan } = R;
   /* did the held notes hold still? read beside the grade, which it does not touch (drill/steady.js) */
   let steady = "";
-  try { steady = steadyLine(steadiness(R.T.frames, plan, R.T.matcher.latency)); } catch { /* the result does without it */ }
+  try { steady = steadyLine(steadiness(R.T.frames, plan, latOf(R.T))); } catch { /* the result does without it */ }
   const S = app.S, real = app.real();
   /* what this take found about the delay, for the first notes of the next one (saved below with the take) */
   if (S.dev.voice === "mic" && grade.counted && R.T.matcher.offsets.length) St.keepLag(S, R.T.matcher.latency);
