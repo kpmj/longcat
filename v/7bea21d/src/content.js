@@ -500,10 +500,14 @@ export const NOTE_GLYPH = { good: "✓", mid: "~", off: "?" };
    The calendar keeps one thing, and it is never in the way: a visit. In January the New Year's guests come to see
    the judge (it used to be a whole place, the one that opened in January, where guests wrapped instead of cats).
    While they are here any of them may sing any garment at any place, and the pictures are dressed for the New
-   Year; a player who does nothing about it loses nothing. How a visit works is DRAFT (docs/later.md). */
+   Year; a player who does nothing about it loses nothing. How a visit works is DRAFT (docs/later.md).
+   SWITCHED OFF (the designer, 2026-11-27: "remove new year visit for now"): VISIT_MONTHS is empty, so no month brings a
+   visit: no letter, no row in Places, no lanterns, no guests in "Who sings", and the dragon is nowhere. Everything
+   that makes a visit is still here and in state.js; `{ 1: "newyear" }` brings January's back, and the tests still
+   run the whole visit with that value. */
 export const OPEN_AFTER = "morning";
 export const CALENDAR_LAUNCH = { year: 2026, month: 11 };
-export const VISIT_MONTHS = { 1: "newyear" };
+export const VISIT_MONTHS = {};
 export const VISITORS = { newyear: ["dachshund", "otter", "ferret", "dragon"] };
 
 /* lines: one postcard sentence per time. The design doc gave one line per place; the other two are DRAFT.

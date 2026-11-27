@@ -135,6 +135,7 @@ export function nextOpening(S) {
 export const placeWaiting = (S, but = null) => openedPlaces(S).find((p) => p !== but && !monthDone(S, p)) || null;
 
 /* ---------- a visit: the one thing the calendar still does ----------
+   Switched off for now (content.js VISIT_MONTHS is empty, the designer 2026-11-27), so `S.visit` is always null.
    The save says who is visiting ("newyear-2027": which visit, and the year, so that its letter comes again the next
    year). It is set from the date when the game is opened and whenever Home is drawn (keepVisit), so that everything
    that draws a singer can ask the save and not the clock. */
