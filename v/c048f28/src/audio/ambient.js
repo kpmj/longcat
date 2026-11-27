@@ -334,7 +334,7 @@ const TUNES = {
   /* "Yuzu Bath": Home's own tune since 2026-11-27 (the designer: "I really like this version. Let's put it into the
      game"). Written after the designer named the kind of music the game should have (quiet life-sim game music; its manner,
      none of its tunes), and made by the audio engine from sampled instruments. A tune with `files` has one sound
-     file for each time of day: the same tune and hook, slower as the day goes on (88, 80, 72 beats a minute; the designer:
+     file for each time of day: the same tune and hook, slower as the day goes on (88, 80, 76 beats a minute; the designer:
      "Morning is more energetic, afternoon is slower, night is even slower and chill"), with a glockenspiel and
      hand drums in the morning, a kalimba and a half-time cajon at golden hour, hand chimes and no drums at night. */
   yuzu: { name: "F · Yuzu Bath (Home's tune: morning, golden hour, night)", bpm: 80, per: 8,
