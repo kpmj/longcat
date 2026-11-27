@@ -22,7 +22,8 @@ import { FUR, lookOf, animalId, kindId, zoneId, timeId } from "../palettes.js";
 import { ZONES as OLD, moodOf } from "../garments.js";
 import { headFor, tailFor, palFor } from "./guests.js";
 import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
-import { zzPrint } from "./judge.js";
+import { zzPrint, bodyLeftAt } from "./judge.js";
+import { NEW_JUDGE } from "../style.js";
 import { yarnOf, sleeveMarkup, yarnPill, KNIT, CAT_W } from "./yarn.js";
 
 /* rows lowest first: [y, sag, x0, x1]. The hat is a small cap of three rows between the judge's ears; it runs right
@@ -32,6 +33,14 @@ export const ZONES = {
   top: { rows: OLD.top.rows.map(([y, s]) => [y, s, OLD.top.x0, OLD.top.x1]), per: OLD.top.per, headDx: OLD.top.headDx, headDy: OLD.top.headDy },
   scarf: { rows: OLD.scarf.rows.map(([y, s]) => [y, s, OLD.scarf.x0, OLD.scarf.x1]), per: OLD.scarf.per, headDx: OLD.scarf.headDx, headDy: OLD.scarf.headDy },
 };
+/* the new capybara (../style.js): its head is 13 higher, so the hat is; there is no chin and the body begins at 228,
+   so the scarf sits 20 higher and stands out over the shoulders like a cowl, as in the picked design; the body is
+   narrower, so the top's rows reach its sides there. A first fitting, to be drawn again after the knitting */
+if (NEW_JUDGE) {
+  ZONES.hat.rows = ZONES.hat.rows.map(([y, s, a, b]) => [y - 13, s, a, b]);
+  ZONES.scarf.rows = ZONES.scarf.rows.map(([y, s]) => [y - 20, s, 306, 94]);
+  ZONES.top.rows = ZONES.top.rows.map(([y, s]) => [y, s, 74, 326]);
+}
 export const ZONE_NAME = { scarf: "Scarf", top: "Top", hat: "Hat", bottom: "Hat" };
 /* the zone to draw: `bottom` (the game's id) and `hat` are the same garment */
 export const drawZone = z => (z === "hat" || z === "bottom" ? "hat" : zoneId(z));
@@ -73,6 +82,15 @@ const AREA = {
   scarf: { poly: [[96.4, 253], [128, 253], [160, 269], [240, 269], [272, 253], [303.6, 253], [312.7, 258], [319.6, 263], [327.3, 270], [332.5, 276], [338.3, 284], [343, 292], [346.9, 300], [350.1, 308], [352.7, 316], [47.3, 316], [49.9, 308], [53.1, 300], [57, 292], [61.7, 284], [67.5, 276], [72.7, 270], [80.4, 263], [87.3, 258]], view: [16, 176, 368, 250], shut: [[[352.7, 316], [47.3, 316]], [[96.4, 253], [128, 253], [160, 269], [240, 269], [272, 253], [303.6, 253]]] },
   top: { poly: [[44.7, 326], [355.3, 326], [357.8, 340], [359.5, 356], [360, 372], [360, 400], [40, 400], [40, 372], [40.5, 356], [42.2, 340]], view: [10, 216, 380, 268], shut: [[[44.7, 326], [355.3, 326]], [[360, 400], [40, 400]]] },
 };
+/* the new capybara's areas: the same rules, on its own outline (judge.js bodyLeftAt) */
+if (NEW_JUDGE) {
+  const side = (y0, y1) => { const L = [], R = []; for (let y = y0; y <= y1; y += 8) { const x = bodyLeftAt(y); L.push([x, y]); R.push([400 - x, y]); } return { L, R }; };
+  const s = side(232, 296), tp = side(326, 400);
+  AREA.hat = { ...AREA.hat, poly: AREA.hat.poly.map(([x, y]) => [x, y - 13]), view: [78, 21, 244, 226], shut: AREA.hat.shut.map(l => l.map(([x, y]) => [x, y - 13])) };
+  const neck = [[s.L[0][0], 232], [132, 232], [160, 248], [240, 248], [268, 232], [s.R[0][0], 232]];
+  AREA.scarf = { poly: [...neck, ...s.R.slice(1), ...[...s.L].reverse().slice(0, -1)], view: [16, 156, 368, 250], shut: [[s.R[s.R.length - 1], s.L[s.L.length - 1]], neck] };
+  AREA.top = { poly: [...tp.R, ...[...tp.L].reverse()], view: [10, 216, 380, 268], shut: [[tp.L[0], tp.R[0]], [tp.R[tp.R.length - 1], tp.L[tp.L.length - 1]]] };
+}
 export function wrapArea(zone) {
   const z = drawZone(zone);
   if (!z) return null;

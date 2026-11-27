@@ -14,7 +14,10 @@ import { catHead } from "../art/print/cat.js";
 import { headFor, palFor } from "../art/print/guests.js";
 import { lookOf, animalId, kindId } from "../art/palettes.js";
 
-const JUDGE_TOP = 51, JUDGE_FEET = 475; // the judge with the fruit on a bare head, in the print's own 400 x 500
+import { NEW_JUDGE } from "../art/style.js";
+
+/* the judge with the fruit on a bare head, in the print's own 400 x 500 (the new capybara's head is taller) */
+const JUDGE_TOP = NEW_JUDGE ? 35 : 51, JUDGE_FEET = 475;
 const MARGIN = 22; // clear space above the fruit and under the feet, at the least
 
 /* Where the judge goes. W, H: the screen in px; top: where the top row ends; bottom: where the tray begins;
