@@ -136,7 +136,7 @@ export function openDev() {
     <h4>Cat body on short notes</h4>
     <div class="radio">${LANE_MODES.map((v) => `<label><input type="radio" name="lane" value="${v.id}" ${(S.dev.shortBody || "snap") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <h4>Demo voice</h4>
-    <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec2") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
     <h4>Between rounds</h4>
     <p class="muted small">What sounds in the rest before the next round of a drill. The chords are piano notes rendered from a sampled upright: two beats before the round the chord of the round just sung and, half a beat later, the chord of the round to come; the screen says Go on the next beat.</p>

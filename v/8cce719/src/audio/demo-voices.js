@@ -271,9 +271,10 @@ export function sungVoiceNodes(ctx, dest, t0, hz, dur, syl, peak, fall = 0) {
    the others (measured with an offline context: all within about 3 dB of the cat voice); tail = seconds a note rings past its end. */
 export const DEMO_VOICES = [
   /* the recorded voice has no node graph here: its files are fetched and played by recorded.js through synth.js */
-  { id: "rec", name: "Recorded voice (the game's voice now)", words: true, recorded: true, set: "voice", tail: 0.1 },
-  /* the same recordings, edited note by note instead of synthesised again (recorded.js; 2026-11-27) */
-  { id: "rec2", name: "Recorded voice, edited not synthesised (new, to compare)", words: true, recorded: true, set: "voice2", tail: 0.1 },
+  /* the recordings edited note by note (recorded.js). The game's voice since 2026-11-27, chosen by ear over the
+     first making; it is first here, so it is also what an unknown id falls back to */
+  { id: "rec2", name: "Recorded voice (the game's voice now)", words: true, recorded: true, set: "voice2", tail: 0.1 },
+  { id: "rec", name: "Recorded voice, first making (synthesised from the recordings)", words: true, recorded: true, set: "voice", tail: 0.1 },
   { id: "cat", name: "First synthesised cat voice", words: true, peak: CAT_PEAK, tail: 0.1, partials: [1, 2, 3, 4, 5], nodes: (c, d, t, hz, dur, peak, syl, fall) => catVoiceNodes(c, d, t, hz, dur, syl, peak, fall) },
   { id: "sung", name: "E · Softer sung voice, sings the syllable", words: true, peak: 0.31, tail: 0.15, partials: [1, 2, 3, 4, 5], nodes: (c, d, t, hz, dur, peak, syl, fall) => sungVoiceNodes(c, d, t, hz, dur, syl, peak, fall) },
   { id: "hum", name: "A · Soft hum", peak: 0.26, tail: 0.1, partials: [1, 2, 3], nodes: humNodes },

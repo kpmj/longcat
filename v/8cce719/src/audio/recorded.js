@@ -14,7 +14,8 @@
    2026-11-27, a second making of the same recordings (`voice2/`, the set "voice2"): the recording itself edited to
    each note, its waves laid closer together or further apart (tools/audio/engine/psola.py), instead of taken apart
    and synthesised again; the mouth as it was recorded, and the voice's own small movement kept. Asked for so that
-   the voice sounds more like a person. Both sets are here until the designer has chosen by ear.
+   the voice sounds more like a person. The designer chose it by ear the same day: it is the game's voice (the
+   demo voice "rec2"); the first making is still here as "rec", for comparing, until it is taken out.
 
    This file only fetches, decodes and plays. No imports, so synth.js can use it without a circle. The files are a
    person's voice: they are in the game because that person said so. */
