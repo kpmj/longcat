@@ -145,6 +145,9 @@ export function openDev() {
     <h4>Demo voice</h4>
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec2") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
+    <h4>Note area</h4>
+    <p class="muted small">How a take is drawn. Sweep: the chart stands still and the cat’s head moves across it; a long drill moves on once the head is a third of the way in. Scroll: the head stands still and the notes come to it.</p>
+    <div class="radio">${[["sweep", "Sweep (the game’s)"], ["scroll", "Scroll, as before"]].map(([id, name]) => `<label><input type="radio" name="view" value="${id}" ${(S.dev.view || "sweep") === id ? "checked" : ""}> ${name}</label>`).join("")}</div>
     <h4>Head delay</h4>
     <p class="muted small">How long after its beat a note reaches the cat’s head while you sing. The grade follows the picture. The beat, the count, the chords and Go do not move.</p>
     <div class="radio">${HEAD_DELAYS.map((d) => `<label><input type="radio" name="headdelay" value="${d ?? ""}" ${(S.dev.headDelay ?? null) === d ? "checked" : ""}> ${d == null ? `The game’s (${HEAD_DELAY} s)` : d === 0 ? "None: on the beat" : `${d} s`}</label>`).join("")}</div>
@@ -201,6 +204,7 @@ export function openDev() {
     audioContext(); setTapSource(S.dev.tapSounds); prepareTaps();
     tapSound(b.dataset.hearTap); // the first press of each may still be the page's sound: its file is on the way
   }));
+  $$("input[name=view]", el).forEach((i) => (i.onchange = () => { S.dev.view = i.value; app.save(); toast(i.value === "scroll" ? "Note area: scroll" : "Note area: sweep"); }));
   $$("input[name=headdelay]", el).forEach((i) => (i.onchange = () => { S.dev.headDelay = i.value === "" ? null : Number(i.value); app.save(); toast(`Head delay: ${i.value === "" ? HEAD_DELAY : i.value} s`); }));
   $$("input[name=between]", el).forEach((i) => (i.onchange = () => { S.dev.between = i.value; app.save(); toast(`Between rounds: ${BETWEEN.find((v) => v.id === i.value).name}`); }));
   /* one rest as a take plays it, at 100 beats a minute: the chord of a round in C for a beat, then the chord of the

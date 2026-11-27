@@ -55,7 +55,7 @@ export function freshSave(real = new Date()) {
     cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
     catNames: {},                    // the names the player gave them
     treats: { earned: 0, spent: 0, day: null, n: 0 }, // n = the takes that earned treats on `day`
-    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "rec2", recVoice: true, voice2: true, drillEdits: null, homeMusic: "yuzu", yuzuHome: true, micMode: "speaker", between: "chords", headDelay: null },
+    dev: { dayOffset: 0, voice: "mic", panel: false, shortBody: "snap", demoVoice: "rec2", recVoice: true, voice2: true, drillEdits: null, homeMusic: "yuzu", yuzuHome: true, micMode: "speaker", between: "chords", headDelay: null, view: "sweep" },
   };
 }
 

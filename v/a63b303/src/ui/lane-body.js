@@ -293,3 +293,24 @@ export function onChart(midi, lo, hi) {
   for (const k of [1, -1, 2, -2]) { const m = midi - 12 * k; if (m >= lo && m <= hi) return { midi: m, oct: k }; }
   return { midi, oct: 0 };
 }
+
+/* THE SWEEP's window (take-screen.js; the designer, 2026-11-27, after the old Vocal Gym drill: a short drill drawn whole and
+   still, the head moving across; a long one moving on once the head is 35 % in). As in Vocal Gym's viewWindow: the
+   window is 7.5 times the median gap between two notes' starts, 3 to 16 seconds, and a drill that fits is shown
+   whole. Pure. */
+export const SWEEP_NOTES = 7.5, SWEEP_MIN = 3, SWEEP_MAX = 16, SWEEP_ANCHOR = 0.35;
+export function sweepSeconds(plan) {
+  const total = plan.total;
+  if (plan.notes.length < 2) return total;
+  const on = plan.notes.map((n) => n.s), gaps = on.slice(1).map((t, i) => t - on[i]).filter((g) => g > 0.01).sort((a, b) => a - b);
+  const median = gaps.length ? gaps[Math.floor(gaps.length / 2)] : total;
+  const seconds = Math.min(Math.max(SWEEP_NOTES * median, SWEEP_MIN), SWEEP_MAX);
+  return total <= seconds ? total : seconds;
+}
+/* one frame: tp = the notes' clock now; left = where time 0 sits while the window is at its start; pxs = pixels a
+   second. The head waits at the start before the first note and stops at the end after the last. */
+export function sweepView({ total, seconds, tp, left, pxs }) {
+  const start = Math.min(Math.max(0, tp - SWEEP_ANCHOR * seconds), Math.max(0, total - seconds));
+  const origin = left - start * pxs;
+  return { origin, headX: origin + Math.min(Math.max(tp, 0), total) * pxs };
+}
