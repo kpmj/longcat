@@ -52,6 +52,20 @@ export function homeArt(o, W, H, top, bottom) {
   const x0 = 200 - 200 * L.s, y0 = L.D + JUDGE_FEET - JUDGE_FEET * L.s, below = y0 + 496 * L.s;
   /* ripples only where the bottom of the picture is water */
   const waves = !down.water ? "" : [0, 1, 2, 3, 4, 5].map((k) => `<path d="M${-20 + (k % 2) * 30} ${(below + 22 + k * 32).toFixed(1)}q20 -8 40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0" fill="none" stroke="${ripple}" stroke-width="2" stroke-linecap="round" opacity=".5"/>`).join("");
+  /* A place whose scenery is one tall picture (P.tall, art/print/places/kit.js): the picture fills the phone from the
+     top, and over it, where the print would be, come the place's things, then the seat and the judge. The picture
+     and the things are one group to press, as the print's landscape is: a tap on it swings what hangs and wakes
+     the sun; a bird or a monkey answers for itself. Nothing of the print's own sky or ground is drawn. */
+  const print = (inner) => `<svg x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(400 * L.s).toFixed(1)}" height="${(500 * L.s).toFixed(1)}" viewBox="0 0 400 500">${inner}</svg>`;
+  if (P.tall && P.tall.inner) {
+    const scenery = `<svg x="0" y="0" width="400" height="${L.VH.toFixed(1)}" viewBox="${P.tall.box}" preserveAspectRatio="xMidYMin slice">${P.tall.inner}</svg>${print(P.things || "")}`;
+    return { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">
+<rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
+${/data-tap/.test(String(P.back)) ? `<g data-tap="swing">${scenery}</g>` : scenery}
+${print(`${p.special}${P.seat}${p.shelves}${p.character}`)}
+${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}
+</svg>`, layout: L };
+  }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">
 <rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
 ${y0 > 70 ? `<rect width="400" height="${(y0 - 62 * L.s).toFixed(1)}" fill="${mix(sky, "#2a1420", 0.13)}"/>` : ""}

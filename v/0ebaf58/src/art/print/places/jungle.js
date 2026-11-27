@@ -11,8 +11,17 @@
    the two strips beside the judge's head that no button, title block or judge covers (tools/art/ui-zones.json;
    tests/content.test.mjs checks each of them on both measured phones). The left strip is the big one: three birds
    and the sitting monkey, each on its own branch of the left tree. The right strip is small and under the title
-   block: the hanging monkey, from a branch of the right tree. The fireflies keep to the same strips. */
-import { makePlace, mist, floorBand, tint, mix, RED, VIEW, pen } from "./kit.js";
+   block: the hanging monkey, from a branch of the right tree. The fireflies keep to the same strips.
+   Which version of each piece (2026-11-27, the designer's picks on the piece-by-piece page, docs/art-generation.md): the
+   scenery, the sun, the three birds and the two monkeys are pictures (PICKED below, art/pictures.js); the branches,
+   the fireflies and everything that moves them are drawn here. The first drawings are still in this file, and
+   `jungleDrawn` is the place with none of the pictures: the art tools show it as "what was in the game before". */
+import { makePlace, mist, floorBand, tint, mix, RED, VIEW, pen } from "./kit.js"; // mist: the first drawing's
+import { PICTURES, picture } from "../../pictures.js";
+
+const PIC = PICTURES.jungle;
+/* the pieces that are pictures. Take a line out and that piece is drawn by code again */
+export const PICKED = { background: true, sun: true, "bird-1": true, "bird-2": true, "bird-3": true, "monkey-sit": true, "monkey-hang": true };
 
 const rep = (n, fn) => Array.from({ length: n }, (_, i) => fn(i)).join("");
 const YUZU = "#ebb229", INK = "#262122";
@@ -29,13 +38,17 @@ const vine = (q, on, x, y, len, G, dur) => `<g transform="translate(${x} ${y})">
 
 /* A bird at its feet (x y), facing dir. Pressed, it hops and two notes rise (lc-peep, lc-note in ART_CSS; the tune is
    the page's, audio/ambient.js). n = which bird: each has its own tune. */
-function bird(q, on, { x, y, s = 1, dir = 1, body, wing, beak = YUZU, n }) {
-  const art = q.p("M-6 -7Q-21 -4 -26 7Q-14 6 -5 -1Z", wing, 1.3) + q.e(0, -9, 10.5, 8.6, body, 1.5) + q.c(7.5, -17.5, 6.6, body, 1.5)
+function bird(q, on, { x, y, s = 1, dir = 1, body, wing, beak = YUZU, n, pic }) {
+  /* a picture already faces its way, so it is not turned over like the drawing: only its notes go the way it looks.
+     It stands in a box on its feet (the box's bottom is where the drawing's legs end) */
+  const art = pic ? picture(pic, -21, -37, 42, 39.5, "xMidYMax meet")
+    : q.p("M-6 -7Q-21 -4 -26 7Q-14 6 -5 -1Z", wing, 1.3) + q.e(0, -9, 10.5, 8.6, body, 1.5) + q.c(7.5, -17.5, 6.6, body, 1.5)
     + q.p("M13 -19.6L20.5 -16.6L13 -14Z", beak, 1.2) + `<circle cx="9" cy="-19" r="1.35" fill="${INK}"/>`
     + q.p("M-7 -11Q0 -17 6.5 -9Q0 -2.500 -7 -11Z", wing, 1.2) + q.l("M-2.500 -1V2.500M3 -1V2.500", 1.3);
-  const note = (nx, ny, d) => `<g transform="translate(${nx} ${ny}) scale(${dir} 1)"><g class="lc-note" style="--lc-x:${nx > 0 ? 7 : -7}px;animation-delay:${d}s"><ellipse cx="-2.600" cy="0" rx="3.200" ry="2.500" fill="${INK}"/><path d="M.400 0V-11Q4.500 -10 6 -5.500" fill="none" stroke="${INK}" stroke-width="1.500" stroke-linecap="round"/></g></g>`;
-  const inner = `<circle cy="-11" r="17" fill="${INK}" fill-opacity="0"/><g${on("lc-peep")}><g${on("lc-bob", `animation-delay:${-n * 1.3}s;animation-duration:${3.6 + n * .5}s`)}>${art}</g></g>${live(on) ? note(10, -32, 0) + note(20, -26, .14) : ""}`;
-  return `<g transform="translate(${x} ${y}) scale(${dir * s} ${s})">${live(on) ? `<g data-tap="bird-${n}">${inner}</g>` : inner}</g>`;
+  const turn = pic ? 1 : dir, fwd = pic ? dir : 1, top = pic ? -12 : 0;
+  const note = (nx, ny, d) => `<g transform="translate(${nx * fwd} ${ny + top}) scale(${pic ? 1 : dir} 1)"><g class="lc-note" style="--lc-x:${7 * fwd}px;animation-delay:${d}s"><ellipse cx="-2.600" cy="0" rx="3.200" ry="2.500" fill="${INK}"/><path d="M.400 0V-11Q4.500 -10 6 -5.500" fill="none" stroke="${INK}" stroke-width="1.500" stroke-linecap="round"/></g></g>`;
+  const inner = `<circle cy="${pic ? -18 : -11}" r="${pic ? 21 : 17}" fill="${INK}" fill-opacity="0"/><g${on("lc-peep")}><g${on("lc-bob", `animation-delay:${-n * 1.3}s;animation-duration:${3.6 + n * .5}s`)}>${art}</g></g>${live(on) ? note(10, -32, 0) + note(20, -26, .14) : ""}`;
+  return `<g transform="translate(${x} ${y}) scale(${turn * s} ${s})">${live(on) ? `<g data-tap="bird-${n}">${inner}</g>` : inner}</g>`;
 }
 
 const MONKEY = { fur: "#8a5f3c", dk: "#6d4a2e", face: "#e3c39a" };
@@ -44,8 +57,9 @@ const monkeyHead = q => q.c(-10.500, -1, 4.200, MONKEY.face, 1.3) + q.c(10.500, 
   + q.f("M-7 -2.500Q-7 -7 -3.500 -7Q0 -7 0 -4Q0 -7 3.500 -7Q7 -7 7 -2.500Q7 6.500 0 7.500Q-7 6.500 -7 -2.500Z", MONKEY.face)
   + `<circle cx="-3.200" cy="-2" r="1.300" fill="${INK}"/><circle cx="3.200" cy="-2" r="1.300" fill="${INK}"/>` + q.l("M-2.500 3Q0 5 2.500 3", 1.1);
 /* a monkey hanging from a vine by one arm; x y = where the vine is tied. It sways, and swings when pressed */
-function hanging(q, on, x, y, len, G) {
-  const m = q.s(`M0 0V${len}`, G[0], 2.4)
+function hanging(q, on, x, y, len, G, pic) {
+  /* the picture brings its own vine, at the middle of its top: it hangs from the same knot */
+  const m = pic ? picture(pic, -16.500, -3, 39, len + 61, "xMidYMin meet") : q.s(`M0 0V${len}`, G[0], 2.4)
     + q.s(`M9 ${len + 46}Q24 ${len + 50} 22 ${len + 34}Q21 ${len + 26} 15 ${len + 30}`, MONKEY.dk, 3.200)   // tail
     + q.s(`M3 ${len + 22}L1 ${len + 2}`, MONKEY.fur, 6) + q.c(0.500, len, 4, MONKEY.fur, 1.3)   // the arm up the vine
     + q.e(3, len + 34, 10.500, 13, MONKEY.fur, 1.5) + q.e(3, len + 37, 6, 8, MONKEY.face, 0)
@@ -55,8 +69,9 @@ function hanging(q, on, x, y, len, G) {
   return `<g transform="translate(${x} ${y})">${live(on) ? `<g data-tap="monkey">${inner}</g>` : inner}</g>`;
 }
 /* a monkey sitting on a branch, feet at x y, its tail hanging down behind the branch. Pressed, it jumps */
-function sitting(q, on, x, y) {
-  const m = q.s("M-9 -4Q-20 4 -16 18Q-13 26 -7 21", MONKEY.dk, 3.200)
+function sitting(q, on, x, y, pic) {
+  /* in the picture the feet are about three quarters of the way down, the tail hangs below them */
+  const m = pic ? picture(pic, -17.500, -45.600, 35, 60) : q.s("M-9 -4Q-20 4 -16 18Q-13 26 -7 21", MONKEY.dk, 3.200)
     + q.e(0, -13, 11.500, 13, MONKEY.fur, 1.5) + q.e(1, -10, 6.500, 8.500, MONKEY.face, 0)
     + q.s("M-8 -14Q-14 -6 -8 -1M9 -14Q15 -7 9 -2", MONKEY.fur, 5) + q.s("M-5 -1H-11M6 -1H12", MONKEY.dk, 4.600)
     + `<g transform="translate(1 -32)">${monkeyHead(q)}</g>`;
@@ -68,32 +83,58 @@ function sitting(q, on, x, y) {
    its `box` in the print's 400 x 500 ([x, y, width, height], measured off the drawing) and where it holds on to the
    picture (`hold`: "bottom" stands on its branch, "top" hangs from it). The art tools read this list to show each
    thing alone and to lay other versions in the same boxes (tools/art/set.mjs). */
-function parts(V, q, time, on) {
-  const G = greens(time), bark = tint("#8a6a48", time);
+function parts(V, q, time, on, picked = PICKED) {
+  const G = greens(time), bark = tint("#8a6a48", time), pic = id => (picked[id] ? PIC[id] : null);
+  /* the sun where Home shows it, between the birds' branch and the monkey's: a picture by day; the moon stays a
+     plain disc. Without the picture the kit's own disc is in the sky and this part is empty */
+  const [sx, sy, sw, sh] = SUN, moon = `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .38}" fill="${V.disc[0]}"/>`;
+  const sun = !picked.background ? "" : `<g${on("lc-sun")}>${pic("sun") && time !== "night" ? picture(PIC.sun, sx, sy, sw, sh) : time === "night" ? moon : `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .45}" fill="${V.disc[0]}"/>`}</g>`;
   const branch = (d, w = 9.500) => q.s(d, INK, w) + q.s(d, bark, w - (w > 7 ? 3 : 2.400));
   return [
+    { id: "sun", box: SUN, hold: "middle", svg: sun },
     /* three branches of the left tree, top to bottom (a twig for the third bird, the two birds' branch, the sitting
        monkey's branch), and the hanging monkey's branch from the right tree */
     { id: "branches", svg: branch("M16 104Q42 102 72 92", 6) + leaf(q, 70, 93, -24, .42, G[2])
       + branch("M14 144Q66 138 108 122") + leaf(q, 104, 123, -30, .5, G[2])
       + branch("M22 224Q54 222 86 210") + leaf(q, 84, 211, -26, .5, G[1])
       + branch("M392 156Q364 154 334 147") + leaf(q, 336, 147, 196, .5, G[2]) },
-    { id: "bird-1", box: [18, 106, 54, 32], hold: "bottom", svg: bird(q, on, { x: 48, y: 134, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1 }) },
-    { id: "bird-2", box: [60, 98, 54, 32], hold: "bottom", svg: bird(q, on, { x: 84, y: 126, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2 }) },
-    { id: "bird-3", box: [25, 66, 52, 31], hold: "bottom", svg: bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3 }) },
-    { id: "monkey-sit", box: [40, 167, 40, 73], hold: "bottom", svg: sitting(q, on, 62, 212) },
-    { id: "monkey-hang", box: [329, 149, 41, 78], hold: "top", svg: hanging(q, on, 344, 151, 16, G) },
+    { id: "bird-1", box: [20, 94, 48, 44], hold: "bottom", svg: bird(q, on, { x: 44, y: 135, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1, pic: pic("bird-1") }) },
+    { id: "bird-2", box: [64, 83, 48, 44], hold: "bottom", svg: bird(q, on, { x: 88, y: 124, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2, pic: pic("bird-2") }) },
+    { id: "bird-3", box: [31, 54, 46, 42], hold: "bottom", svg: bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3, pic: pic("bird-3") }) },
+    { id: "monkey-sit", box: [40, 167, 40, 73], hold: "bottom", svg: sitting(q, on, 62, 212, pic("monkey-sit")) },
+    { id: "monkey-hang", box: [329, 149, 41, 78], hold: "top", svg: hanging(q, on, 344, 151, 16, G, pic("monkey-hang")) },
     { id: "fireflies", svg: V.glow ? rep(5, i => `<circle${on("lc-twinkle")} cx="${[28, 100, 26, 374, 310][i]}" cy="${[66, 178, 190, 236, 200][i]}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`) : "" },
   ];
 }
-export const jungleParts = (time = "morning") => parts(VIEW[time], pen(VIEW[time].line), time, () => "");
+/* the pieces as they are in the game, or with `picked` given (an empty object: none) as they were drawn first */
+export const jungleParts = (time = "morning", picked = PICKED) => parts(VIEW[time], pen(VIEW[time].line), time, () => "", picked);
 
-export const jungle = makePlace({
+/* The scenery as a picture: one tall painting (400 x 711 in the print's units) of trunks, a roof of leaves, far hills
+   and mist, with nothing in it where Home's buttons and the judge are. Home shows all of it (`tall`); the print
+   shows its top 4:5. It was painted as morning: the other two times of day are the same picture moved to their
+   light, a first pass done with a colour matrix and not yet painted for themselves. */
+const TALL = [400, 711];
+const LIGHT = { golden: ".86 .06 0 0 .12  .02 .76 0 0 .07  0 .04 .62 0 .03  0 0 0 1 0", night: ".30 .02 0 0 .02  .02 .36 .02 0 .05  .03 .06 .52 0 .11  0 0 0 1 0" };
+const scenery = (time, x, y, w, h, fit) => (LIGHT[time] ? `<filter id="lc-jungle-${time}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${LIGHT[time]}"/></filter>` : "")
+  + `<g${LIGHT[time] ? ` filter="url(#lc-jungle-${time})"` : ""}>${picture(PIC.back, x, y, w, h, fit)}</g>`;
+/* what moves in front of the painting: leaves that come down the two strips beside the judge's head, one at a
+   time, from under the roof of leaves. Only when the picture is animated: a still shows none in mid air */
+const LEAF = "M0 0Q5 -7 15 -5Q21 -2 23 0Q20 4 14 5Q5 6 0 0Z";
+function airOf(V, q, time, on, [w, h]) {
+  if (!live(on)) return "";
+  const G = greens(time);
+  return [[40, 0, 17], [84, 7, 21], [330, 11, 19], [372, 3, 23]].map(([x, d, dur], i) => `<g transform="translate(${x * w / 400} ${70 * h / 711})"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${dur}s`)}>${q.p(LEAF, G[2 + (i % 2)], 1.1)}</g></g>`).join("");
+}
+/* the sun's box in the print, in the left strip */
+const SUN = [78, 154, 34, 34];
+
+const build = (picked = PICKED) => makePlace({
   name: "雨之森", grounds: { morning: "#cfd8a6", golden: "#dc9a62", night: "#2c3a40" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 480,
   tones: { a: "#8a6a48", b: "#6b4f34", l: "#7fa06a" }, floor: ["#6f9160", "#4b7250"], ownColours: true,
   /* what the judge has here instead of the yuzu, and what it holds (scene.js hands these to the judge) */
   judge: { item: "acorn", hold: "heart" },
   view(V, q, time, on) {
+    if (picked.background) return scenery(time, 0, 0, 400, 500, "xMidYMin slice") + airOf(V, q, time, on, [400, 500]);
     const d = V.d, G = greens(time), bark = tint("#8a6a48", time), barkDk = tint("#6b4f34", time);
     const hills = "M-10 300Q30 250 78 262Q112 214 160 240Q204 196 250 236Q292 208 330 244Q372 226 410 262V360H-10Z";
     /* the roof of leaves along the top, in two rows, scalloped underneath */
@@ -110,7 +151,9 @@ export const jungle = makePlace({
   },
   /* the animals, each with the branch it sits on or hangs from, and the fireflies: not scenery, so they are their
      own layer and can stand in front of another background (kit.js, spec.things) */
-  things: (V, q, time, on) => parts(V, q, time, on).map(p => p.svg).join(""),
+  things: (V, q, time, on) => parts(V, q, time, on, picked).map(p => p.svg).join(""),
+  /* the whole painting for Home, which fills the phone with it (ui/home-art.js) */
+  tall: picked.background ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: scenery(time, 0, 0, TALL[0], TALL[1], "xMidYMid slice") + airOf(V, q, time, on, TALL) }) : null,
   /* a mossy log behind the judge's feet: bark, a ring at one end, moss along the top */
   seat: (c, q) => q.r(16, 446, 368, 28, c.a, 2.2, 13) + q.e(372, 460, 9, 12.500, mix(c.a, "#ffffff", .25), 1.6) + q.e(372, 460, 4, 6, "none", 1.1)
     + q.p("M40 447Q70 438 104 446Q150 438 188 447Q240 440 292 447Q320 441 348 447V452H40Z", c.l, 1.5) + q.s("M60 462h36M150 466h50M250 461h40", c.b, 1.4, .7),
@@ -118,3 +161,6 @@ export const jungle = makePlace({
   fx: (c, q, time, on) => { const G = greens(time); return { back: vine(q, on, 150, -4, 52, G, 5.2) + vine(q, on, 232, -4, 34, G, 4.4) + vine(q, on, 290, -4, 66, G, 6) }; },
   band: (c, y0, q) => floorBand(y0, c.fill, c.k, q.s(rep(14, i => `M${i * 30 + 8} ${y0 + 15}q-7 -9 -11 -3M${i * 30 + 8} ${y0 + 15}q0 -11 3 -12M${i * 30 + 8} ${y0 + 15}q7 -9 12 -4`), c.mark, 1.5)),
 });
+export const jungle = build();
+/* the jungle as it was drawn before any picture was chosen */
+export const jungleDrawn = build({});

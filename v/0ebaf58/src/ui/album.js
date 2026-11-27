@@ -72,6 +72,20 @@ function download(blob, name) {
 /* Rasterise the postcard SVG to a PNG and download it. */
 export function savePng(card) { pngBlob(card, (blob) => download(blob, `longcat-${card.place}-${card.date}.png`)); }
 
+/* A picture that is a file (art/pictures.js) does not load from inside an SVG that is drawn to a canvas: each one
+   is read here, from the game's own files, and put into the SVG as data. One that cannot be read is left as it is. */
+async function withPictures(svg) {
+  const hrefs = [...new Set([...svg.matchAll(/<image[^>]*\shref="([^"]+)"/g)].map((m) => m[1]).filter((h) => !h.startsWith("data:")))];
+  const data = await Promise.all(hrefs.map(async (h) => {
+    try {
+      const blob = await (await fetch(h)).blob();
+      return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+    } catch { return h; }
+  }));
+  hrefs.forEach((h, i) => { svg = svg.split(`href="${h}"`).join(`href="${data[i]}"`); });
+  return svg;
+}
+
 function pngBlob(card, done) {
   const svg = cardSvg(card).replace(/^\s*<svg([^>]*)>/, (m, a) => {
     let attrs = a.replace(/\s(width|height)="[^"]*"/g, "");
@@ -92,7 +106,7 @@ function pngBlob(card, done) {
     }, "image/png");
   };
   img.onerror = () => toast("Couldn’t save it. Try again.");
-  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  withPictures(svg).then((whole) => { img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(whole); });
 }
 
 
