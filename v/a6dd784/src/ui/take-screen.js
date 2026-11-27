@@ -124,9 +124,10 @@ function focusRound(k) {
     document.getElementById(`gll-${m}`)?.classList.toggle("away", !mine.has(m));
   }
 }
-/* The rest before a round, as Vocalista does it (the designer, 2026-11-24): on the first beat of the rest the chord of the
-   round just sung, with its fifth underneath, then two beats before the round the chord of the round to come, which
-   rings until just before it. Piano notes rendered by the audio engine (synth.js `pianoChord`), since 2026-11-27;
+/* The rest before a round (the designer, 2026-11-27: "just play the chord one time and show GO right at the next beat"):
+   two beats before the round the chord of the round to come, once, which rings until just before it; on the beat
+   between, the screen says Go (`frame`). Until then a rest had two chords, as in Vocalista's recording: first the
+   chord of the round just sung. Piano notes rendered by the audio engine (synth.js `pianoChord`), since 2026-11-27;
    the chords made in the page had sounded odd and for two days the cat sang the next round's first note in the
    second chord's place instead. That sung note is still here: it is what a take gives when its piano notes did not
    arrive in time, and the Dev panel can choose it, or both (`S.dev.between`). Both kinds of sound are written down
@@ -138,7 +139,7 @@ function playCues() {
     /* The chord of the round to come is let go a quarter of a beat before the round. The pitch tracker reads a chord
        as one low note that is none of its own (for F sharp major a pitch near G2), which the self-hearing filter
        cannot know as the game's; what is left of the chord in the room must be gone when the first note is read. */
-    const ring = (c.home ? c.dur : c.dur - 0.25 * P.beat) - Math.max(0, T.t - c.t);
+    const ring = c.dur - 0.25 * P.beat - Math.max(0, T.t - c.t);
     if (R.chords && T.t < c.t + c.dur * 0.5) R.nodes.push(pianoChord(c.midis, at, ring));
     if (R.sungCue && c.midi != null && T.t < c.t + c.sung * 0.5) R.nodes.push(demoNote(R.demoKind, at, c.midi, c.sung, P.syl));
   }
@@ -718,6 +719,9 @@ export function frame(dt) {
     /* a rest between rounds is not the singer being silent: without this, "Sing out" flashed as every round began */
     if (T.t > rep.e || T.t < rep.s) R.silentFor = 0;
     if (many) { focusRound(k); playCues(); }
+    /* Go on the last beat of a rest, as in the count before the take: the chord, Go, and the round on the next beat */
+    const go = resting && T.t >= rep.s - P.beat;
+    if (go !== !!R.goOn) { R.goOn = go; countdown(go ? "Go" : "", go); }
     /* one thing at a time: a note's verdict, or where the next round starts, or that nothing is heard. "Sing" is
        said as the singing begins and then goes; it used to sit there for the whole take */
     if (R.flash && T.t < R.flash.until) hint(R.flash.text, "", R.flash.level);
