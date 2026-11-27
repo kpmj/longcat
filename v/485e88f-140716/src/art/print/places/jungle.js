@@ -78,22 +78,27 @@ export const jungle = makePlace({
     return q.p(hills, d[3], 1.4, .9) + mist(V, 60, 286, 200, 13) + q.p("M-10 352Q100 318 200 336Q300 318 410 350V500H-10Z", G[1], 1.6) + mist(V, 180, 330, 170, 12)
       + q.p("M-10 438Q200 424 410 438V500H-10Z", G[2], 1.6)
       + trunk(-14, 34, 8) + trunk(378, 30, -8)
-      /* three branches of the left tree, top to bottom: a twig for the third bird, the two birds' branch, and the
-         sitting monkey's branch */
-      + q.s("M16 104Q42 102 72 92", INK, 6) + q.s("M16 104Q42 102 72 92", bark, 3.600) + leaf(q, 70, 93, -24, .42, G[2])
+      + roof(34, 46, G[0], 1.6) + roof(16, 38, G[1], 1.4)
+      + split(q, 60, 34, 12, .8, G[2]) + split(q, 300, 30, -14, .72, G[2]) + split(q, 196, 20, 4, .56, G[1])
+      + vine(q, on, 128, 30, 34, G, 5.5) + vine(q, on, 268, 32, 26, G, 4.6) + vine(q, on, 20, 36, 60, G, 6.2)
+      /* big leaves at the foot of the trees, in front of the roots */
+      + leaf(q, 4, 436, -52, 1.25, G[1]) + leaf(q, 10, 446, -18, 1.1, G[2]) + leaf(q, 396, 440, -128, 1.25, G[1]) + leaf(q, 392, 448, -162, 1.1, G[2]);
+  },
+  /* the animals, each with the branch it sits on or hangs from, and the fireflies: not scenery, so they are their
+     own layer and can stand in front of another background (kit.js, spec.things) */
+  things(V, q, time, on) {
+    const G = greens(time), bark = tint("#8a6a48", time);
+    /* three branches of the left tree, top to bottom: a twig for the third bird, the two birds' branch, and the
+       sitting monkey's branch */
+    return q.s("M16 104Q42 102 72 92", INK, 6) + q.s("M16 104Q42 102 72 92", bark, 3.600) + leaf(q, 70, 93, -24, .42, G[2])
       + q.s("M14 144Q66 138 108 122", INK, 9.500) + q.s("M14 144Q66 138 108 122", bark, 6.500) + leaf(q, 104, 123, -30, .5, G[2])
       + q.s("M22 224Q54 222 86 210", INK, 9.500) + q.s("M22 224Q54 222 86 210", bark, 6.500) + leaf(q, 84, 211, -26, .5, G[1])
       /* the hanging monkey's branch, from the right tree */
       + q.s("M392 156Q364 154 334 147", INK, 9.500) + q.s("M392 156Q364 154 334 147", bark, 6.500) + leaf(q, 336, 147, 196, .5, G[2])
-      + roof(34, 46, G[0], 1.6) + roof(16, 38, G[1], 1.4)
-      + split(q, 60, 34, 12, .8, G[2]) + split(q, 300, 30, -14, .72, G[2]) + split(q, 196, 20, 4, .56, G[1])
-      + vine(q, on, 128, 30, 34, G, 5.5) + vine(q, on, 268, 32, 26, G, 4.6) + vine(q, on, 20, 36, 60, G, 6.2)
       + bird(q, on, { x: 48, y: 134, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1 })
       + bird(q, on, { x: 84, y: 126, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2 })
       + bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3 })
       + sitting(q, on, 62, 212) + hanging(q, on, 344, 151, 16, G)
-      /* big leaves at the foot of the trees, in front of the roots */
-      + leaf(q, 4, 436, -52, 1.25, G[1]) + leaf(q, 10, 446, -18, 1.1, G[2]) + leaf(q, 396, 440, -128, 1.25, G[1]) + leaf(q, 392, 448, -162, 1.1, G[2])
       + (V.glow ? rep(5, i => `<circle${on("lc-twinkle")} cx="${[28, 100, 26, 374, 310][i]}" cy="${[66, 178, 190, 236, 200][i]}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`) : "");
   },
   /* a mossy log behind the judge's feet: bark, a ring at one end, moss along the top */

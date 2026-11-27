@@ -76,7 +76,11 @@ const paperEdge = (m, line) => `<path d="M0 0H400V500H0ZM${m} ${m}V${500 - m}H${
 export function makePlace(spec) {
   /* `on(name, style)` gives a class only when the picture is animated; a view uses it on its own moving things */
   const onOf = animate => (name, style = "") => (animate ? ` class="${name}"${style ? ` style="${style}"` : ""}` : "");
-  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, onOf(animate));
+  /* spec.things: what stands in the view and is not scenery (animals, what is pressed, and the branch each one sits
+     on), drawn over the view. Kept apart so the same things can be laid over another background (the landscape
+     hands them back as `things`); a place without any draws exactly as before */
+  const thingsOf = (time, animate) => (spec.things ? spec.things(VIEW[time], pen(VIEW[time].line), time, onOf(animate)) : "");
+  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, onOf(animate)) + thingsOf(time, animate);
   const bandY = spec.bandY || 474;
   function scene(time, R, animate) {
     const ground = spec.grounds[time], night = time === "night", ink = night ? PAPER : KEY, q = pen(KEY);
@@ -109,6 +113,7 @@ export function makePlace(spec) {
     const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
     const view = full(time, animate) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
     return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
+      things: thingsOf(time, animate),
       frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: floor, line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY, judge: spec.judge || null };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));
