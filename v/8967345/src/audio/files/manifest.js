@@ -35,6 +35,37 @@ export const FILES = {
       0.0
     ]
   },
+  "music.home.yuzu": {
+    "path": "music/home-yuzu.m4a",
+    "family": "music_long",
+    "kind": "loop",
+    "piece": "home_yuzu",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "sneakybass"
+    ],
+    "loopStart": 0.125,
+    "loopEnd": 152.85227083333334,
+    "loopSeconds": 152.72727083333334,
+    "bpm": 88,
+    "bars": 56,
+    "beatsPerBar": 4,
+    "bytes": 2482310,
+    "sha256": "c61e8ab9d339a02955ee163d2742069ac352ac86b3f38c7092c6d45545bbc945",
+    "seconds": 153.2573,
+    "channels": 2,
+    "lufs": -18.0,
+    "measure": "I",
+    "peak": -3.7,
+    "lead": 0.0,
+    "below300": 0.372,
+    "monoLoss": 1.16,
+    "tags": [],
+    "joinJump": 0.15,
+    "loopResidual": -27.2,
+    "clicks": 0
+  },
   "music.trial.loop": {
     "path": "music/trial-loop.m4a",
     "family": "music",
