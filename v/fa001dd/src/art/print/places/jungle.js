@@ -12,7 +12,7 @@
    tests/content.test.mjs checks each of them on both measured phones). The left strip is the big one: three birds
    and the sitting monkey, each on its own branch of the left tree. The right strip is small and under the title
    block: the hanging monkey, from a branch of the right tree. The fireflies keep to the same strips. */
-import { makePlace, mist, floorBand, tint, mix, RED } from "./kit.js";
+import { makePlace, mist, floorBand, tint, mix, RED, VIEW, pen } from "./kit.js";
 
 const rep = (n, fn) => Array.from({ length: n }, (_, i) => fn(i)).join("");
 const YUZU = "#ebb229", INK = "#262122";
@@ -64,6 +64,30 @@ function sitting(q, on, x, y) {
   return `<g transform="translate(${x} ${y})">${live(on) ? `<g data-tap="monkey">${inner}</g>` : inner}</g>`;
 }
 
+/* The place's things one by one, back to front: `id`, the drawing, and for what can be replaced by another picture
+   its `box` in the print's 400 x 500 ([x, y, width, height], measured off the drawing) and where it holds on to the
+   picture (`hold`: "bottom" stands on its branch, "top" hangs from it). The art tools read this list to show each
+   thing alone and to lay other versions in the same boxes (tools/art/set.mjs). */
+function parts(V, q, time, on) {
+  const G = greens(time), bark = tint("#8a6a48", time);
+  const branch = (d, w = 9.500) => q.s(d, INK, w) + q.s(d, bark, w - (w > 7 ? 3 : 2.400));
+  return [
+    /* three branches of the left tree, top to bottom (a twig for the third bird, the two birds' branch, the sitting
+       monkey's branch), and the hanging monkey's branch from the right tree */
+    { id: "branches", svg: branch("M16 104Q42 102 72 92", 6) + leaf(q, 70, 93, -24, .42, G[2])
+      + branch("M14 144Q66 138 108 122") + leaf(q, 104, 123, -30, .5, G[2])
+      + branch("M22 224Q54 222 86 210") + leaf(q, 84, 211, -26, .5, G[1])
+      + branch("M392 156Q364 154 334 147") + leaf(q, 336, 147, 196, .5, G[2]) },
+    { id: "bird-1", box: [18, 106, 54, 32], hold: "bottom", svg: bird(q, on, { x: 48, y: 134, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1 }) },
+    { id: "bird-2", box: [60, 98, 54, 32], hold: "bottom", svg: bird(q, on, { x: 84, y: 126, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2 }) },
+    { id: "bird-3", box: [25, 66, 52, 31], hold: "bottom", svg: bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3 }) },
+    { id: "monkey-sit", box: [40, 167, 40, 73], hold: "bottom", svg: sitting(q, on, 62, 212) },
+    { id: "monkey-hang", box: [329, 149, 41, 78], hold: "top", svg: hanging(q, on, 344, 151, 16, G) },
+    { id: "fireflies", svg: V.glow ? rep(5, i => `<circle${on("lc-twinkle")} cx="${[28, 100, 26, 374, 310][i]}" cy="${[66, 178, 190, 236, 200][i]}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`) : "" },
+  ];
+}
+export const jungleParts = (time = "morning") => parts(VIEW[time], pen(VIEW[time].line), time, () => "");
+
 export const jungle = makePlace({
   name: "雨之森", grounds: { morning: "#cfd8a6", golden: "#dc9a62", night: "#2c3a40" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 480,
   tones: { a: "#8a6a48", b: "#6b4f34", l: "#7fa06a" }, floor: ["#6f9160", "#4b7250"], ownColours: true,
@@ -86,21 +110,7 @@ export const jungle = makePlace({
   },
   /* the animals, each with the branch it sits on or hangs from, and the fireflies: not scenery, so they are their
      own layer and can stand in front of another background (kit.js, spec.things) */
-  things(V, q, time, on) {
-    const G = greens(time), bark = tint("#8a6a48", time);
-    /* three branches of the left tree, top to bottom: a twig for the third bird, the two birds' branch, and the
-       sitting monkey's branch */
-    return q.s("M16 104Q42 102 72 92", INK, 6) + q.s("M16 104Q42 102 72 92", bark, 3.600) + leaf(q, 70, 93, -24, .42, G[2])
-      + q.s("M14 144Q66 138 108 122", INK, 9.500) + q.s("M14 144Q66 138 108 122", bark, 6.500) + leaf(q, 104, 123, -30, .5, G[2])
-      + q.s("M22 224Q54 222 86 210", INK, 9.500) + q.s("M22 224Q54 222 86 210", bark, 6.500) + leaf(q, 84, 211, -26, .5, G[1])
-      /* the hanging monkey's branch, from the right tree */
-      + q.s("M392 156Q364 154 334 147", INK, 9.500) + q.s("M392 156Q364 154 334 147", bark, 6.500) + leaf(q, 336, 147, 196, .5, G[2])
-      + bird(q, on, { x: 48, y: 134, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1 })
-      + bird(q, on, { x: 84, y: 126, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2 })
-      + bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3 })
-      + sitting(q, on, 62, 212) + hanging(q, on, 344, 151, 16, G)
-      + (V.glow ? rep(5, i => `<circle${on("lc-twinkle")} cx="${[28, 100, 26, 374, 310][i]}" cy="${[66, 178, 190, 236, 200][i]}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`) : "");
-  },
+  things: (V, q, time, on) => parts(V, q, time, on).map(p => p.svg).join(""),
   /* a mossy log behind the judge's feet: bark, a ring at one end, moss along the top */
   seat: (c, q) => q.r(16, 446, 368, 28, c.a, 2.2, 13) + q.e(372, 460, 9, 12.500, mix(c.a, "#ffffff", .25), 1.6) + q.e(372, 460, 4, 6, "none", 1.1)
     + q.p("M40 447Q70 438 104 446Q150 438 188 447Q240 440 292 447Q320 441 348 447V452H40Z", c.l, 1.5) + q.s("M60 462h36M150 466h50M250 461h40", c.b, 1.4, .7),
