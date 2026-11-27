@@ -7,7 +7,8 @@ import { drawZone } from "../art/index.js";
 import { hideTip } from "./tips.js";
 import { readMic, openMic, micReady, setMicMode } from "../audio/mic.js";
 import { setMuted } from "../audio/synth.js";
-import { VOICES } from "../drill/take.js";
+import { VOICES, late } from "../drill/take.js";
+const LATE_VOICE = late(VOICES.good, 0.12); // in tune, heard 0.12 s after the beat, as a phone's microphone does
 import { applyDrillEdits, drillEditCount } from "../content.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -181,6 +182,7 @@ export const VOICE_MODES = [
   { id: "mic", name: "Microphone" },
   { id: "god", name: "Auto-singer, in tune" },
   { id: "human", name: "Auto-singer, a little flat" },
+  { id: "late", name: "Auto-singer, in tune, heard 0.12 s late" },
   { id: "slide", name: "Auto-singer, slides between notes" },
   { id: "wobbly", name: "Auto-singer, drifting (close)" },
   { id: "tufty", name: "Auto-singer, one wrong note" },
@@ -200,6 +202,7 @@ export function readVoice(t, note, T) {
     case "god": return VOICES.good(t, note, T);
     case "tufty": return VOICES.tufty(t, note, T);
     case "human": return VOICES.human(t, note, T);
+    case "late": return LATE_VOICE(t, note, T);
     case "slide": return VOICES.slide(t, note, T);
     case "wobbly": return VOICES.wobbly(t, note, T);
     case "half": return VOICES.half(t, note, T);

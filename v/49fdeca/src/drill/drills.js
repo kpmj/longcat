@@ -17,8 +17,13 @@ export const BEAT_AIM = 0.66; // seconds: notes up to about a second apart get o
    marks where it starts; nothing there has to be held to the next one.
    The first numbers (35 % of the place, 0.2 to 0.6 s) were the agent's; the designer played them the same day: "gap between
    notes are way too long". Now about half: 18 %, 0.12 to 0.25 s. On the recording's screen a pill covers about
-   86 % of the way to the next one, which is near this; still the agent's numbers, to be played. */
-export const GAP_SHARE = 0.18, GAP_MIN = 0.12, GAP_MAX = 0.25;
+   86 % of the way to the next one, which is near this; still the agent's numbers, to be played.
+   the designer, 2026-11-27, after playing those: "i feel like the notes are still too close to each other. when i sing the
+   drill i feel rushed". A step back towards the first numbers, not all the way: 25 %, 0.16 to 0.32 s. Part of the
+   rush was the picture and not the gap: the sung line was drawn late by the microphone's delay, so it ran about a
+   tenth of a second past the end of each note into the gap (ui/lane-body.js, fixed the same day). A drill's `dur`
+   is still a note's whole place, so the takes are as long as they were. */
+export const GAP_SHARE = 0.25, GAP_MIN = 0.16, GAP_MAX = 0.32;
 export const gapOf = (slot) => Math.min(GAP_MAX, Math.max(GAP_MIN, slot * GAP_SHARE));
 
 /* Where in the singer's range a time of day puts a drill sung once: morning in the middle, the others a little

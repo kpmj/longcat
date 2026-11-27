@@ -14,7 +14,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD } from
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
+import { laneShape, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
 import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
@@ -165,6 +165,9 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
   const withCard = card || (!St.heardDrill(S, plan.drill.id) && !carded && !retake);
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   R = { ctx, retake, outcome, plan, T: createTake(plan), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
+  /* how far back the sung line is drawn (lane-body.js): what earlier takes with the microphone found, until this one knows */
+  R.lagKnown = S.dev.voice === "mic" ? St.knownLag(S) ?? LAG_GUESS : null;
+  R.lag = lagToDraw(null, R.lagKnown);
   R.wearing = ["scarf", "top", "bottom"].map((z) => St.garmentSpec(S, ctx.place, ctx.time, z));
   const name = garmentName(ctx.time, ctx.zone);
   /* Twelve segments under the garment's name: the steps sung, and the one being sung (the designer, 2026-11-24, after
@@ -765,7 +768,11 @@ function draw(v, dt = 1 / 60) {
   if (notes) notes.setAttribute("transform", `translate(${shift.toFixed(1)} 0)`);
   /* the whole sung line is a thread; the parts that sit on a note are the fat body (see lane-body.js) */
   const voiced = T.frames.map((f) => (f.midi == null || f.conf < 0.5 ? { t: f.t, midi: null } : f));
-  const shape = laneShape({ frames: voiced, notes: P.notes, lat: T.matcher.latency, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t) * PXS, yOf });
+  /* the line is drawn where it was sung, not where it was heard: back by the delay the matcher measures */
+  const measured = T.matcher.offsets.length ? T.matcher.latency : null;
+  R.lag = easeLag(R.lag, lagToDraw(measured, R.lagKnown), dt);
+  const lag = R.lag;
+  const shape = laneShape({ frames: voiced, notes: P.notes, lat: measured ?? lag, now: T.t, mode: app.S.dev.shortBody, xOf: (t) => PLAY_X - (T.t - t + lag) * PXS, yOf });
   if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
     const hv = steadyVoice(v, T.t, P.notes, T.matcher.latency);
@@ -776,7 +783,7 @@ function draw(v, dt = 1 / 60) {
   markGrid(v ? v.midi : null);
   /* join the newest end of the line to the head, which eases after the voice */
   const sung = voiced.length && voiced[voiced.length - 1].midi != null;
-  const joinTo = (list) => { const l = list[list.length - 1]; if (v && sung && l && PLAY_X - l[l.length - 1].x < 4) l.push({ x: PLAY_X, y: R.headY }); };
+  const joinTo = (list) => { const l = list[list.length - 1]; if (v && sung && l && PLAY_X - l[l.length - 1].x < 4 + lag * PXS) l.push({ x: PLAY_X, y: R.headY }); };
   joinTo(shape.threads);
   if (shape.headJoins) joinTo(shape.subs);
   let mood = R.mood;
@@ -823,6 +830,8 @@ function finish(grade) {
   let steady = "";
   try { steady = steadyLine(steadiness(R.T.frames, plan, R.T.matcher.latency)); } catch { /* the result does without it */ }
   const S = app.S, real = app.real();
+  /* what this take found about the delay, for the first notes of the next one (saved below with the take) */
+  if (S.dev.voice === "mic" && grade.counted && R.T.matcher.offsets.length) St.keepLag(S, R.T.matcher.latency);
   const learnedAll = St.tutorialDone(S);
   cancelAnimationFrame(R.raf);
   hideTip();

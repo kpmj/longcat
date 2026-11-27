@@ -24,6 +24,25 @@ export const MIN_RUN = 0.06; // seconds
 export const JUMP = 1.5; // semitones from one frame to the next: the voice leapt, so the fat body breaks there
 export const leapt = (a, b) => Math.abs(a - b) > JUMP;
 
+/* WHERE the sung line is drawn (the designer, 2026-11-27: "when i sing the note the cat head is already at the 1/6 of the
+   note. it should be at the start of the note"). A voice is heard a little after it is sung: the microphone, the
+   pitch tracker's window, and a singer who comes in just behind the tick. The matcher has always measured that
+   delay and forgiven it in the grade; the picture did not: it drew each frame under the head at the moment it was
+   heard, so a note sung on the beat began about a tenth of a second (9 px, a sixth of a quick note) inside its
+   block and ran as far past its end, into the gap before the next one. Now the line is drawn that much further
+   back, where it was sung, and the last stretch is joined to the head.
+   The delay to draw with is the one measured in this take, once the matcher has one; until then (the first note
+   or two) it is the one earlier takes found on this phone (state.js keepLag), so the line does not jump when the
+   measurement arrives, and it is eased when it changes. Never negative, never more than LAG_MAX: a singer who
+   really comes in a quarter of a second late still sees it. */
+export const LAG_MAX = 0.25; // seconds
+export const LAG_EASE = 0.3; // seconds: how quickly the drawing moves to a new measurement
+export const LAG_GUESS = 0.1; // seconds: for a microphone nothing has been measured on yet (the designer's "1/6 of the note" on a quick note; the agent's reading)
+const clampLag = (x) => Math.min(LAG_MAX, Math.max(0, Number.isFinite(x) ? x : 0));
+/* measured: this take's delay, or null while there is none; known: what earlier takes found, or null */
+export const lagToDraw = (measured, known) => clampLag(measured ?? known ?? 0);
+export const easeLag = (from, to, dt) => (dt > 0 ? from + (to - from) * Math.min(1, dt / LAG_EASE) : from);
+
 const median = (a) => {
   const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;

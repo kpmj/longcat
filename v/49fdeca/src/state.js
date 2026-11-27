@@ -50,6 +50,7 @@ export function freshSave(real = new Date()) {
     tips: [],                        // one-time tips already shown
     said: [],                        // syllables the cat has already said once on its own
     heard: [],                       // drills the player has met (ids): their card does not come up by itself again; see heardDrill
+    lag: null,                       // seconds this phone and singer run behind the beat, as the last takes measured it; see keepLag
     marks: { album: 0, wardrobe: 0 }, // how much the album and wardrobe held when last opened (the dock's dots)
     cats: [...FREE_CATS],            // the singers that are the player's for good: cat kinds and animal ids
     catNames: {},                    // the names the player gave them
@@ -84,6 +85,7 @@ export function migrate(o, real = new Date()) {
   if (!PLACE_IDS.includes(S.here)) S.here = "onsen";
   if (!Array.isArray(S.tips)) S.tips = [];
   if (!Array.isArray(S.said)) S.said = [];
+  S.lag = Number.isFinite(o.lag) ? Math.min(LAG_KEEP_MAX, Math.max(0, o.lag)) : null;
   /* 2026-11-24: the drills the player has met. A save from before has met the drill of every step it has sung */
   if (!Array.isArray(o.heard)) {
     S.heard = [];
@@ -201,6 +203,20 @@ export function nextTake(S, place = S.here) {
   if (!time || !zone) return null;
   const step = progress(S, place, time, zone) + 1;
   return { place, time, zone, step, drill: drillForStep(step, zone, time), seed: `${place}.${time}.${zone}` };
+}
+
+/* ---------- how far behind the beat the voice is heard ----------
+   Every take measures it (match.js: the median of the first sung notes) and forgives it in the grade. The save
+   keeps a running value so that the next take can draw its first notes in the right place before it has measured
+   anything (ui/lane-body.js). Only takes sung into the microphone count. It is a number about timing, kept on this
+   phone like the rest of the save; no sound is kept. */
+const LAG_KEEP_MAX = 0.3;
+export const knownLag = (S) => (Number.isFinite(S.lag) ? S.lag : null);
+export function keepLag(S, lat) {
+  if (!Number.isFinite(lat)) return knownLag(S);
+  const x = Math.min(LAG_KEEP_MAX, Math.max(0, lat));
+  S.lag = Math.round((S.lag == null ? x : S.lag + (x - S.lag) * 0.4) * 1000) / 1000;
+  return S.lag;
 }
 
 /* ---------- the drills the player has met ----------
