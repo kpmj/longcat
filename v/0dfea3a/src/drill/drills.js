@@ -111,7 +111,15 @@ export function rootFor(range, span, { centred = false, nudge = 0 } = {}) {
    come, two beats before it as before; on the next beat the screen says Go (`cue.go`), as the count before the
    take does, and the round starts on the beat after that. The chord of the round just sung, which stood on the
    first beat of the rest, is gone from the plan; the rest is as long as it was, with the metronome alone until
-   the chord. `chordOf(...).home` is still here for whoever wants that chord back. */
+   the chord. `chordOf(...).home` is still here for whoever wants that chord back.
+
+   the designer, later the same day, after playing the one chord: "when the cue happens, can you play the current chord then
+   the updated chord to indicated the next starting point just like vocalista? tow chords should be played fairly
+   quickly like within one beat so the next beat shows go". So the beat two beats before the round has BOTH chords
+   again, half a beat each: on the beat the chord of the round just sung (with its fifth underneath, as in the
+   recording), on its half the chord of the round to come, which rings on under Go; Go on the next beat; the round
+   on the beat after. In the recording each chord has a beat of its own; here they share one, at the designer's word. */
+export const CHORD_SPLIT = 0.5; // of a beat: where in the cue's beat the second chord comes
 export const REST_BEATS = 3; // the rest is this long at least; it fills the bar (see planTake)
 export const BAR = 4; // beats: a round and its rest are whole bars
 export const CUE_BEATS = 2; // the cue's own beat and one to think: the round starts this many beats after the cue
@@ -170,7 +178,7 @@ export const takeSeconds = (P) => Math.ceil(((P.demoTotal ?? P.total) + DEMO_TAI
 
 /* The full plan of one take: notes with start/end in seconds from the first downbeat. From step 5 on
    it has several rounds (plan.reps; plan.way says how they move: "up", "down", "wave", or "same" where the singer
-   has no room), a rest between them, and one cue in each rest (plan.cues: a chord, then Go); the demo is the first
+   has no room), a rest between them, and a cue in each rest (plan.cues: two chords in one beat, then Go); the demo is the first
    round only (plan.demoCount notes, plan.demoTotal seconds). Every round knows its chord (rep.chord).
    `rounds` is for the tests: sing it this many times whatever the step says. */
 /* The count-in: 3, 2, 1, Go, four beats on the demo's own beat, and the first note is the beat after Go (the designer,
@@ -216,9 +224,16 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
     const before = reps[k - 1];
     const chord = chordOf(root + shift + lift, rel);
     reps.push({ i0, n: rel.length, shift, s: first, e: notes[notes.length - 1].e, dir: !before ? "" : shift > before.shift ? "up" : shift < before.shift ? "down" : "same", chord: chord.next });
-    /* the rest before this round: this round's chord once, two beats before it, and Go on the beat between
-       (`go`). `midi` and `sung` are this round's first note, for a take that sings the cue instead of the chord */
-    if (before) cues.push({ t: first - CUE_BEATS * beat, dur: CUE_BEATS * beat * 0.95, midis: chord.next, rep: k, midi: notes[i0].midi, sung: Math.min(CUE_LONG, beat * 0.9), go: first - beat });
+    /* the rest before this round: two beats before it the chord of the round just sung and, half a beat later,
+       this round's; Go on the beat between (`go`). `midi` and `sung` are this round's first note, on the cue's
+       beat, for a take that sings the cue instead of the chords */
+    if (before) {
+      const at = first - CUE_BEATS * beat, next = at + CHORD_SPLIT * beat;
+      cues.push(
+        { t: at, dur: CHORD_SPLIT * beat * 0.95, midis: chordOf(root + before.shift + lift, rel).home, rep: k, home: true, midi: notes[i0].midi, sung: Math.min(CUE_LONG, beat * 0.9) },
+        { t: next, dur: (first - next) * 0.95, midis: chord.next, rep: k, go: first - beat },
+      );
+    }
   });
   const total = notes[notes.length - 1].e;
   const accents = new Set(notes.map((n) => Math.round(n.s / beat)));

@@ -6,7 +6,7 @@ import { app, show, sheet, closeSheet, esc, $, $$, toast, VOICE_MODES, LANE_MODE
 import { lastTakeText } from "../drill/pitchlog.js";
 import * as St from "../state.js";
 import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
-import { DEFAULT_RANGE, planTake, chordOf } from "../drill/drills.js";
+import { DEFAULT_RANGE, planTake, chordOf, CHORD_SPLIT } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
 import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano } from "../audio/synth.js";
 import { loadFile } from "../audio/files.js";
@@ -114,7 +114,7 @@ function confirmReset() {
 /* ---------- dev tools ---------- */
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
 const BETWEEN = [
-  { id: "chords", name: "A piano chord (the next round’s), then Go" },
+  { id: "chords", name: "Two quick piano chords (this round’s, the next one’s), then Go" },
   { id: "sung", name: "The cat sings the next first note (as before)" },
   { id: "both", name: "Both" },
 ];
@@ -139,9 +139,9 @@ export function openDev() {
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
     <h4>Between rounds</h4>
-    <p class="muted small">What sounds in the rest before the next round of a drill. The chord is piano notes rendered from a sampled upright: the chord of the round to come, once, two beats before it; the screen says Go on the beat between.</p>
+    <p class="muted small">What sounds in the rest before the next round of a drill. The chords are piano notes rendered from a sampled upright: two beats before the round the chord of the round just sung and, half a beat later, the chord of the round to come; the screen says Go on the next beat.</p>
     <div class="radio">${BETWEEN.map((v) => `<label><input type="radio" name="between" value="${v.id}" ${(S.dev.between || "chords") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
-    <button class="btn small" data-a="hear-rest">▶ Hear one rest (the chord of D)</button>
+    <button class="btn small" data-a="hear-rest">▶ Hear one rest (C, then up to D)</button>
     <h4>Home music</h4>
     <p class="muted small">F is Home's tune: rendered from sampled instruments, one file for each time of day. A to D are the earlier tunes, made in the page; E is four bars that tried the path. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
     <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "yuzu") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
@@ -187,9 +187,10 @@ export function openDev() {
   el.querySelector("[data-a=hear-rest]").onclick = async () => {
     if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
     audioContext();
-    const next = chordOf(62).next, beat = 0.6;
-    if (!(await preparePiano(next))) return toast("The piano notes did not load.");
-    pianoChord(next, now() + 0.1, 2 * beat * 0.95 - 0.25 * beat);
+    const home = chordOf(60).home, next = chordOf(62).next, beat = 0.6, t = now() + 0.1;
+    if (!(await preparePiano([...home, ...next]))) return toast("The piano notes did not load.");
+    pianoChord(home, t, CHORD_SPLIT * beat * 0.95);
+    pianoChord(next, t + CHORD_SPLIT * beat, (2 - CHORD_SPLIT) * beat * 0.95 - 0.25 * beat);
   };
   /* the trial chord: 0.8 puts it about where the recorded voice sits (both measured, neither heard: a draft) */
   el.querySelector("[data-a=hear-chord]").onclick = () => {
