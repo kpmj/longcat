@@ -8,7 +8,8 @@ import * as St from "../state.js";
 import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
 import { DEFAULT_RANGE, planTake } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
-import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState } from "../audio/synth.js";
+import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer } from "../audio/synth.js";
+import { loadFile } from "../audio/files.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
 import { MUSIC, setTune, startMusic, stopMusic } from "../audio/ambient.js";
 import { openMic, closeMic, readMic, micReady, MIC_MODES, setMicMode, micMode } from "../audio/mic.js";
@@ -132,8 +133,11 @@ export function openDev() {
     <div class="radio">${DEMO_VOICES.map((v) => `<label><input type="radio" name="demo" value="${v.id}" ${(S.dev.demoVoice || "rec") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
     <button class="btn small" data-a="hear-demo">▶ Hear five notes</button>
     <h4>Home music</h4>
-    <p class="muted small">Four tunes to compare. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
+    <p class="muted small">Tunes to compare. A to D are made in the page; E is a short trial loop of sampled instruments. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
     <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "box") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Trial sounds</h4>
+    <p class="muted small">Rendered from sampled instruments by the audio engine, not made in the page. Here to be listened to on a phone; nothing in a take uses them yet.</p>
+    <button class="btn small" data-a="hear-chord">▶ Hear the chord (piano, C)</button>
     <h4>Progress (${esc(place)} · ${time ? timeById(time).name : "all nine"}${nt ? ` · ${garmentName(nt.time, nt.zone)}, step ${nt.step}` : ""})</h4>
     <div class="grid2">
       <button class="btn small" data-a="one" ${nt ? "" : "disabled"}>Count this step</button>
@@ -167,6 +171,12 @@ export function openDev() {
   $$("input[name=demo]", el).forEach((i) => (i.onchange = () => { S.dev.demoVoice = i.value; app.save(); hearDemo(); }));
   const hearDemo = async () => { audioContext(); const m = firstNote(S).midi, hs = sylFor("bottom", St.currentTime(S, place) || "morning"), kind = await prepareDemo(S.dev.demoVoice, hs, [0, 2, 4].map((d) => m + d)); [0, 2, 4, 2, 0].forEach((d, k) => demoNote(kind, now() + 0.08 + k * 0.6, m + d, 0.52, hs)); };
   el.querySelector("[data-a=hear-demo]").onclick = hearDemo;
+  /* the trial chord: 0.8 puts it about where the recorded voice sits (both measured, neither heard: a draft) */
+  el.querySelector("[data-a=hear-chord]").onclick = () => {
+    if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");
+    const c = audioContext();
+    loadFile(c, "drill.chord.trial").then((e) => playBuffer(e.buf, { t: now() + 0.05, lead: e.lead, vol: 0.8 }), () => toast("The chord's file did not load."));
+  };
   $$("input[name=music]", el).forEach((i) => (i.onchange = () => { S.dev.homeMusic = i.value; app.save(); setTune(i.value);
     /* away from Home the music is not playing: start it so the tune can be heard here; it stops when the panel closes */
     if (S.settings.sound === false) return toast("All game sound is off. Turn it on in Settings first.");

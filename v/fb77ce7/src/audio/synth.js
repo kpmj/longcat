@@ -248,6 +248,16 @@ export function tick(t = null, accent = false) {
   s.connect(b); b.connect(g); g.connect(fx);
   s.start(t0); s.stop(t0 + 0.08);
 }
+/* A sound file (files.js) through the game's master, like everything else the game plays. `lead`: where the sound
+   really starts in its file. Returns the source, so it can be stopped. */
+export function playBuffer(buf, { t = null, lead = 0, vol = 1 } = {}) {
+  if (muted || !audioContext()) return null;
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = buf; g.gain.value = vol;
+  s.connect(g); g.connect(master);
+  s.start(Math.max(ac.currentTime, t ?? 0), lead);
+  return s;
+}
 export function click(t, accent = false) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, accent ? 0.1 : 0.07, accent ? 0.3 : 0.2, t); }
 export function chime(notes = [523, 659, 784]) {
   if (!audioContext()) return;

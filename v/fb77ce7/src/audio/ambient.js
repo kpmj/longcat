@@ -4,6 +4,7 @@
    Its sounds go to their own two buses and a limiter of their own, at a low level, so the game's limiter and the log
    of "sounds the game made itself" (synth.js) are left alone. */
 import { audioContext } from "./synth.js";
+import { loadFile } from "./files.js";
 
 let ac = null, bus = null, musicBus = null, noiseBuf = null;
 function ctx() {
@@ -17,6 +18,7 @@ function ctx() {
          on it, so a swap is a short fade and not a cut */
       try { const t = ac.currentTime, g = musicBus.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.4); } catch { /* already closed */ }
       playing = false; clearInterval(timer); timer = null; clearTimeout(haltTimer); haltTimer = null; armed = false;
+      loopSrc = null; loopWait = false; // the loop of a file tune lived on the old context
     }
     ac = c;
     /* a limiter of its own, like the one on the game's master: music, a tap and one of the game's chimes can land at
@@ -324,7 +326,15 @@ const TUNES = {
   koto: { name: "B · Koto, slow and open", bpm: 63, per: 8, step: kotoStep },
   waltz: { name: "C · Flute waltz, in three", bpm: 84, per: 6, step: waltzStep },
   kalimba: { name: "D · Kalimba, light and quick", bpm: 86, per: 8, step: kalimbaStep },
+  /* A tune with `file` is not booked note by note: it is one sound file, rendered by the audio engine from sampled
+     instruments (docs/audio/playbook.md), looped between the two points its manifest gives. This one is four bars
+     to try the path, for the designer to hear on a phone (2026-11-26); it has one mood, whatever the time of day. */
+  trial: { name: "E · Trial loop (sampled instruments, four bars)", bpm: 72, per: 8, file: "music.trial.loop" },
 };
+/* How loud a file tune sits on the music bus. The files are all at one loudness (-18 LUFS); the tunes made in the
+   page are far below full scale. Set so the trial loop reads the same on the bus as tune A does at golden hour
+   (-33 dB, measured on the bus in a desktop browser on 2026-11-26; not heard): a draft until the designer has listened. */
+const FILE_LEVEL = 0.33;
 export const MUSIC = Object.entries(TUNES).map(([id, t]) => ({ id, name: t.name }));
 const BARS = 16;
 
@@ -333,10 +343,34 @@ const BARS = 16;
    it stops. Nothing here stops a note that is sounding; the bus is simply closed over it. */
 const FADE_OUT = 0.35; // seconds: fast enough that a take can wait for it, slow enough not to be a cut
 let tune = TUNES.box, wanted = false, playing = false, step = 0, nextAt = 0, timer = null, haltTimer = null, armed = false, quietAt = 0, startTimer = null, fadeIn = 1.5;
+let loopSrc = null, loopWait = false; // a file tune's looping source, and whether its file is on the way
+
+/* Start a file tune's loop at `at` (once its file is here; the first time that is a moment later). */
+function startLoop(at) {
+  if (loopSrc || loopWait) return;
+  const c = ac, want = tune;
+  loopWait = true;
+  loadFile(c, want.file).then((e) => {
+    loopWait = false;
+    if (ac !== c || !playing || tune !== want || loopSrc) return;
+    const s = c.createBufferSource(), g = c.createGain();
+    s.buffer = e.buf; s.loop = true; s.loopStart = e.info.loopStart; s.loopEnd = e.info.loopEnd;
+    g.gain.value = FILE_LEVEL * LEVEL;
+    s.connect(g); g.connect(musicBus);
+    s.start(Math.max(at, c.currentTime + 0.02), e.info.loopStart);
+    loopSrc = s;
+  }, () => { loopWait = false; });
+}
+function stopLoop(at = 0) {
+  if (!loopSrc) return;
+  try { loopSrc.stop(at); } catch { /* already stopped */ }
+  loopSrc = null;
+}
 
 const unitNow = () => 60 / (tune.bpm * mood.speed) / 2;
 function schedule() {
   if (!playing || !ac) return;
+  if (tune.file) return startLoop(nextAt);
   const unit = unitNow();
   while (nextAt < ac.currentTime + 0.5) {
     tune.step(Math.floor(step / tune.per) % BARS, step % tune.per, nextAt, unit);
@@ -403,7 +437,7 @@ function fadeOut(keep, seconds = FADE_OUT) {
   g.linearRampToValueAtTime(0, t + seconds);
   quietAt = Date.now() + seconds * 1000;
   clearTimeout(haltTimer);
-  haltTimer = setTimeout(() => { if (wanted && !keep) return; playing = false; clearInterval(timer); timer = null; }, seconds * 1000 + 80);
+  haltTimer = setTimeout(() => { if (wanted && !keep) return; playing = false; clearInterval(timer); timer = null; stopLoop(); }, seconds * 1000 + 80);
 }
 /* fade the music out and stop; a start that comes straight after keeps it playing */
 export function stopMusic() { wanted = false; fadeOut(false); }
@@ -424,6 +458,7 @@ export function setTune(id) {
   const c = ac, t = c.currentTime, g = musicBus.gain;
   tune = next; step = 0;
   nextAt = t + 0.75;
+  stopLoop(t + 0.3); // a file tune that was playing ends once the bus has closed over it
   g.cancelScheduledValues(t);
   g.setValueAtTime(g.value, t);
   g.setTargetAtTime(0, t, 0.06);
