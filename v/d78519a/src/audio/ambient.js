@@ -332,7 +332,8 @@ const TUNES = {
   trial: { name: "E · Trial loop (sampled instruments, four bars)", bpm: 72, per: 8, file: "music.trial.loop" },
   /* "Yuzu Bath": 56 bars, two and a half minutes, written after the designer named the kind of music the game should have
      (2026-11-27: quiet life-sim game music; its manner, none of its tunes). Ocarina, vibraphone, folk harp, piano,
-     glockenspiel, double bass, hand drums. One mood for now. Here for the designer to hear; Home's own tune is still A. */
+     glockenspiel, double bass, hand drums. One mood for now. Here for the designer to hear; Home's own tune is still A.
+     Second version the same day, after the designer's notes: the beat made plain, and one hook the tune keeps coming back to. */
   yuzu: { name: "F · Yuzu Bath (sampled instruments, 2:33)", bpm: 88, per: 8, file: "music.home.yuzu" },
 };
 /* How loud a file tune sits on the music bus. The files are all at one loudness (-18 LUFS); the tunes made in the
