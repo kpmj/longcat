@@ -15,7 +15,7 @@ import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
 import { laneShape, FAR_DRAW, OUTLIER_SECONDS } from "./lane-body.js";
-import { demoNote, prepareDemo, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
+import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
 import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
@@ -124,16 +124,23 @@ function focusRound(k) {
     document.getElementById(`gll-${m}`)?.classList.toggle("away", !mine.has(m));
   }
 }
-/* In the rest before a round, the cat gives its first note, in the demo's own voice, two beats before the round:
-   the note, a beat to think, sing (demoNote also writes the sound down for the self-hearing filter, so the phone's own cue is never taken
-   for the singer). The plan has two chords in every rest (drills.js `restBeats`, after Vocalista); the chords made
-   in the page sounded odd (the designer, 2026-11-25), so until recordings made in Logic Pro replace them, the sung note
-   stands where the next round's chord belongs and the home chord's beat has only the metronome. */
+/* The rest before a round, as Vocalista does it (the designer, 2026-11-24): on the first beat of the rest the chord of the
+   round just sung, with its fifth underneath, then two beats before the round the chord of the round to come, which
+   rings until just before it. Piano notes rendered by the audio engine (synth.js `pianoChord`), since 2026-11-27;
+   the chords made in the page had sounded odd and for two days the cat sang the next round's first note in the
+   second chord's place instead. That sung note is still here: it is what a take gives when its piano notes did not
+   arrive in time, and the Dev panel can choose it, or both (`S.dev.between`). Both kinds of sound are written down
+   for the self-hearing filter, so the phone's own cue is never taken for the singer. */
 function playCues() {
   const P = R.plan, T = R.T;
   while (R.cue < P.cues.length && T.t >= P.cues[R.cue].t - 0.1) {
-    const c = P.cues[R.cue++];
-    if (c.midi != null && T.t < c.t + c.sung * 0.5) R.nodes.push(demoNote(R.demoKind, clock() + Math.max(0, c.t - T.t), c.midi, c.sung, P.syl));
+    const c = P.cues[R.cue++], at = clock() + Math.max(0, c.t - T.t);
+    /* The chord of the round to come is let go a quarter of a beat before the round. The pitch tracker reads a chord
+       as one low note that is none of its own (for F sharp major a pitch near G2), which the self-hearing filter
+       cannot know as the game's; what is left of the chord in the room must be gone when the first note is read. */
+    const ring = (c.home ? c.dur : c.dur - 0.25 * P.beat) - Math.max(0, T.t - c.t);
+    if (R.chords && T.t < c.t + c.dur * 0.5) R.nodes.push(pianoChord(c.midis, at, ring));
+    if (R.sungCue && c.midi != null && T.t < c.t + c.sung * 0.5) R.nodes.push(demoNote(R.demoKind, at, c.midi, c.sung, P.syl));
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
@@ -314,8 +321,13 @@ async function start() {
      of rounds, so they are among them); if they do not all arrive, the whole take uses the synthesised voice */
   const fetching = setTimeout(() => R && !R.started && hint(LISTEN(), "getting the voice…"), 700);
   R.demoKind = await prepareDemo(app.S.dev.demoVoice, R.plan.syl, R.plan.notes.map((n) => n.midi));
-  clearTimeout(fetching);
   if (!R) return;
+  /* the piano notes of the chords between rounds: all of them or none (then the cat sings the first note) */
+  const between = app.S.dev.between || "chords";
+  R.chords = between !== "sung" && (await preparePiano(R.plan.cues.flatMap((c) => c.midis)));
+  if (!R) return;
+  R.sungCue = between !== "chords" || !R.chords;
+  clearTimeout(fetching);
   hint(LISTEN(), "");
   await sayOnce();
   if (!R) return;

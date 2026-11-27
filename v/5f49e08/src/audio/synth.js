@@ -4,6 +4,7 @@ import { midiToHz, hzToMidi } from "./pitch.js";
 import { selfLog, noteSound, fromSelf } from "./self.js";
 import { catVoiceNodes, CAT_PEAK, humNodes, demoVoice } from "./demo-voices.js";
 import { loadRec, loadRecAll, recReady, recHas, recNodes, REC_PARTIALS } from "./recorded.js";
+import { loadFiles, fileReady, fileInfo } from "./files.js";
 export { catVoiceNodes, CAT_PEAK };
 
 /* every pitched sound played, so the tracker can ignore the game's own voice (see self.js) */
@@ -257,6 +258,44 @@ export function playBuffer(buf, { t = null, lead = 0, vol = 1 } = {}) {
   s.connect(g); g.connect(master);
   s.start(Math.max(ac.currentTime, t ?? 0), lead);
   return s;
+}
+/* ---------- the chords between the rounds of a take ----------
+   Piano notes rendered by the audio engine from a sampled upright (tools/audio/pieces/piano_note.py), one file a
+   note; a chord is its notes played together, each at the pitch its file was made for. the designer, 2026-11-24, after the
+   singing app Vocalista: "it plays the whole chord for the next set and it's on beat so the player doesn't get
+   confused when to start"; the chords made in the page from oscillators "sound odd" (2026-11-25), so they waited
+   for these. Which chords, and when, is the plan's (drills.js: chordOf, cues). */
+const PIANO = (m) => `drill.piano.${Math.round(m)}`;
+/* Fetch a take's piano notes before it starts. True when every one is here in time; false if a note has no file
+   or they are late: the take then gives the sung first note as before, never some chords and not others. */
+export const preparePiano = (midis, ms = 6000) =>
+  (audioContext() && midis.length && midis.every((m) => fileInfo(PIANO(m))) ? loadFiles(ac, [...new Set(midis.map(PIANO))], ms) : Promise.resolve(false));
+/* How loud a chord is. The note files are all at one loudness (-20 LUFS over their loudest 0.4 s); notes played
+   together add up by the square root of how many there are, so each is turned down by that and a chord of three
+   is as loud as a chord of four. 1.27 puts a chord where the trial chord sat at 0.8 (-16 LUFS), about where the
+   recorded voice sits: measured, not heard on a phone. A DRAFT. */
+const CHORD_LEVEL = 1.27;
+const CHORD_FADE = 0.12; // seconds: a chord is let go inside its own time, so it is gone when the round begins
+/* A chord from t0 for `dur` seconds. Each note is written down for the self-hearing filter with the partials
+   measured on its file: with the microphone open, the phone's own piano is not to be taken for the singer. */
+export function pianoChord(midis, t0, dur, vol = 1) {
+  if (muted || !audioContext()) return { stop() {} };
+  const t = Math.max(ac.currentTime, t0), end = t + Math.max(0.2, dur), each = (CHORD_LEVEL * vol) / Math.sqrt(midis.length), srcs = [];
+  for (const m of midis) {
+    const e = fileReady(PIANO(m));
+    if (!e) continue;
+    const s = ac.createBufferSource(), g = ac.createGain();
+    s.buffer = e.buf;
+    g.gain.setValueAtTime(each, t);
+    g.gain.setValueAtTime(each, end - CHORD_FADE);
+    g.gain.linearRampToValueAtTime(0, end);
+    s.connect(g); g.connect(master);
+    s.start(t, e.lead); s.stop(end + 0.02);
+    const f = midiToHz(Math.round(m));
+    logSound(t, end - t, f, f, 0, e.info.partials || [1, 2, 3, 4]);
+    srcs.push(s);
+  }
+  return { stop() { for (const s of srcs) try { s.stop(); } catch { /* already over */ } } };
 }
 export function click(t, accent = false) { tone("sine", accent ? 1400 : 1000, accent ? 1400 : 1000, accent ? 0.1 : 0.07, accent ? 0.3 : 0.2, t); }
 export function chime(notes = [523, 659, 784]) {
