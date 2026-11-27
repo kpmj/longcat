@@ -14,6 +14,9 @@ const of = (name, w, h) => ({ href: at(name), w, h });
 export const PICTURES = {
   jungle: {
     back: of("jungle/back.jpg", 800, 1422),
+    /* the same scenery painted again at golden hour and at night, from the morning picture (the designer's picks, GPT 甲) */
+    "back-golden": of("jungle/back-golden.jpg", 800, 1422),
+    "back-night": of("jungle/back-night.jpg", 800, 1422),
     sun: of("jungle/sun.png", 176, 175),
     "bird-1": of("jungle/bird-1.png", 240, 222),
     "bird-2": of("jungle/bird-2.png", 215, 240),
