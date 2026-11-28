@@ -199,7 +199,7 @@ const LEAF = "M0 0Q5 -7 15 -5Q21 -2 23 0Q20 4 14 5Q5 6 0 0Z";
 function airOf(V, q, time, on, [w, h]) {
   if (!live(on)) return "";
   const G = greens(time);
-  return [[40, 0, 17], [84, 7, 21], [330, 11, 19], [372, 3, 23]].map(([x, d, dur], i) => `<g transform="translate(${x * w / 400} ${70 * h / 711})"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${dur}s`)}>${q.p(LEAF, G[2 + (i % 2)], 1.1)}</g></g>`).join("");
+  return [[40, 0, 17], [84, 7, 21], [330, 11, 19], [372, 3, 23]].map(([x, d, dur], i) => `<g transform="translate(${x * w / 400} ${70 * h / 711})"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${dur}s`)} data-tap="leaf"><circle cx="11.5" r="15" fill="${INK}" fill-opacity="0"/>${q.p(LEAF, G[2 + (i % 2)], 1.1)}</g></g>`).join("");
 }
 /* THE WATERFALL (2026-11-28, the designer: "Can you make the waterfall animation? When the waterfall is clicked. Now the
    monkey moves when the waterfall is clicked"). The water is part of the picture (back*.jpg, GPT's waterfall);

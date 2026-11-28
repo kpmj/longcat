@@ -229,6 +229,19 @@ export function hopCat(el, zone) {
   }
 }
 
+/* A falling leaf pressed (the designer, 2026-11-28: "Make the leaves clickable. When it's clicked it falls down even quicker.
+   User can only click it once"): its fall runs three and a half times as fast to the ground, and a second press
+   does nothing; once it has landed and comes down again from the top it is a new leaf, and answers again. A leaf
+   on Home's effects layer is answered there (home-fx.js). No sound; nothing with less motion (no fall to hurry). */
+function leafTap(t) {
+  if (t._lcFast) return;
+  const a = t.getAnimations ? t.getAnimations().find((x) => x.animationName === "lc-leaf") : null;
+  if (!a) return;
+  t._lcFast = true;
+  a.playbackRate = 3.5;
+  t.addEventListener("animationiteration", () => { a.playbackRate = 1; t._lcFast = false; }, { once: true });
+}
+
 /* A drawing answers a touch: pat a cat or the judge, tap the yuzu, the lamp, the sun. The art marks what can be tapped
    with data-tap and does the rest in CSS (ART_CSS); data-group makes several pieces answer as one. */
 export function wireTaps(el) {
@@ -236,6 +249,7 @@ export function wireTaps(el) {
   el.onclick = (e) => {
     const t = e.target.closest ? e.target.closest("[data-tap]") : null;
     if (!t || !el.contains(t)) return;
+    if (t.dataset.tap === "leaf") return leafTap(t);
     const group = t.dataset.group, els = group ? [...el.querySelectorAll(`[data-group="${group}"]`)] : [t];
     if (app.S.settings.sound !== false) tapSound(t.dataset.tap, app.S.here);
     /* a thing that stays changed when pressed (the jungle's heart, red or pink): the art names a class with

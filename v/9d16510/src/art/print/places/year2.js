@@ -175,7 +175,7 @@ const mapletemple = makePlace({
       + [[30, 62, 10, 1.6], [70, 86, 40, 1.4], [108, 70, -20, 1.5], [140, 96, 60, 1.2], [56, 120, 0, 1.3], [128, 124, 30, 1.2], [20, 100, -40, 1.2], [160, 60, 20, 1.3]].map(([x, y, r, s], i) => `<g${on("lc-sway", `animation-duration:${4 + (i % 3)}s`)}>${maple(x, y, r, s, V.line)}</g>`).join("")
       + q.r(48, 380, 16, 34, d[4], 1.6) + q.r(42, 350, 28, 30, d[4], 1.6) + q.p("M32 352Q56 328 80 352Z", d[4], 1.6) + (V.lit ? `<circle${on("lc-flicker")} cx="56" cy="364" r="20" fill="${V.warm}" opacity="${V.glow * .8}"/>` : "") + q.r(50, 358, 12, 12, V.lit ? V.warm : V.paper, 1.2);
   },
-  fx: (c, q, time, on) => ({ back: [[112, 0], [300, 5], [250, 10], [40, 3], [190, 8]].map(([x, d], i) => `<g transform="translate(${x} 20)"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${15 + i * 2}s`)}>${maple(0, 0, 0, 1.1, c.k)}</g></g>`).join("") }),
+  fx: (c, q, time, on) => ({ back: [[112, 0], [300, 5], [250, 10], [40, 3], [190, 8]].map(([x, d], i) => `<g transform="translate(${x} 20)"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${15 + i * 2}s`)}${on("x") ? ` data-tap="leaf"` : ""}>${on("x") ? `<circle r="15" fill="${c.k}" fill-opacity="0"/>` : ""}${maple(0, 0, 0, 1.1, c.k)}</g></g>`).join("") }),
   seat: cushion, band: (c, y0) => floorBand(y0, c.fill, c.k, lines(y0, c.mark, 40, 1.4)),
 });
 

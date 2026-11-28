@@ -119,7 +119,7 @@ function drawWater(ctx, list, pale) {
    start at; to: y to be gone by */
 export function fallingLeaves({ strips, from, to, greens, every = [2.6, 4.6], scale = 1 }) {
   const P = particles(); let due = .4, side = 0;
-  const LEAF = new Path2D("M0 0Q5 -7 15 -5Q21 -2 23 0Q20 4 14 5Q5 6 0 0Z");
+  let LEAF = null; // made when first drawn (a page has Path2D, the tests do not)
   const spawn = () => {
     const [x0, x1] = strips[side++ % strips.length];
     P.list.push({ x: rnd(x0, x1), y: from, vx: 0, vy: rnd(20, 27) * scale, wob: rnd(26, 40) * scale, wobW: rnd(1.1, 1.6), ph: rnd(0, 6.3), rot: rnd(-.6, .6), spin: 0, flip: rnd(0, 6.3), flipW: rnd(1.8, 3.2), s: rnd(.85, 1.15) * scale, age: 0, life: 99, fadeIn: 0, colour: Math.random() < .5 ? 2 : 3 });
@@ -130,7 +130,24 @@ export function fallingLeaves({ strips, from, to, greens, every = [2.6, 4.6], sc
       P.step(dt);
       for (const p of P.list) if (p.y > to) p.age = p.life;
     },
+    /* a press at x y (the canvas's px): the nearest leaf within reach that has not been pressed falls three and a
+       half times as fast, swaying less and turning over quicker; a leaf answers once (the designer, 2026-11-28). True when
+       one did */
+    hit(x, y, reach = 20 * scale) {
+      let best = null, d0 = reach;
+      for (const p of P.list) {
+        if (p.tapped) continue;
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d < d0 && p.y > from + 8) { d0 = d; best = p; }
+      }
+      if (!best) return false;
+      best.tapped = true; best.vy *= 3.5; best.wob *= .5; best.flipW *= 1.8;
+      return true;
+    },
+    /* where the leaves are now (for the tests) */
+    get positions() { return P.list.map(p => ({ x: p.x, y: p.y, vy: p.vy, tapped: !!p.tapped })); },
     draw(ctx) {
+      LEAF = LEAF || new Path2D("M0 0Q5 -7 15 -5Q21 -2 23 0Q20 4 14 5Q5 6 0 0Z");
       for (const p of P.list) {
         const tilt = Math.cos(p.age * p.wobW + p.ph) * .7, turn = Math.cos(p.flip);
         const fade = Math.min(1, (to - p.y) / 40, (p.y - from + 12) / 24);

@@ -37,10 +37,11 @@ function waves(P, animate, y0 = 474) {
   }
   return s + `</g><path d="M0 ${y0 - 6}H400" ${key(1.6)}/>`;
 }
-/* maple leaves: falling one after another when animated, three resting ones when still */
+/* maple leaves: falling one after another when animated, three resting ones when still. A falling one is a thing to
+   press (the designer, 2026-11-28: "Make the leaves clickable"): pressed, it falls quicker, once (ui/app.js leafTap) */
 const LEAF = "M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z";
 const leaves = (animate) => [[112, 150, 20, 0], [300, 214, -40, 5.2], [262, 96, 60, 10.4], [150, 60, 10, 13]].map(([x, y, rot, d], i) => (animate
-  ? `<g transform="translate(${x} 20)"><g class="lc-leaf" style="animation-delay:${-d}s;animation-duration:${15 + i * 2}s"><path d="${LEAF}" fill="${RED}" ${key(1.2)}/></g></g>`
+  ? `<g transform="translate(${x} 20)"><g class="lc-leaf" data-tap="leaf" style="animation-delay:${-d}s;animation-duration:${15 + i * 2}s"><circle r="15" fill="${KEY}" fill-opacity="0"/><path d="${LEAF}" fill="${RED}" ${key(1.2)}/></g></g>`
   : i < 3 ? `<path transform="translate(${x} ${y}) rotate(${rot})" d="${LEAF}" fill="${RED}" ${key(1.2)}/>` : "")).join("");
 const steam = (x, y, s, P, animate) => `<g${animate ? ` class="lc-steam"` : ""} transform="translate(${x} ${y}) scale(${s})"><path d="M0 0c-10 -10 8 -17 0 -27c-8 -9 7 -15 1 -24M12 -3c-7 -8 6 -13 0 -21" fill="none" stroke="${P.steam}" stroke-width="${f(3.4 / s)}" stroke-linecap="round" opacity="${P.steamO}"/></g>`;
 const floatYuzu = (x, y, r, animate) => `<g transform="translate(${x} ${y})"${animate ? ` data-tap="dunk"` : ""}><g class="lc-dunk"><g${animate ? ` class="lc-bob" style="animation-delay:${-(x % 7) / 2}s"` : ""}><circle r="${r}" fill="#ebb229" ${key(1.4)}/><path d="M1 ${-r}q${f(r * .8)} ${f(-r * .8)} ${f(r * 1.5)} ${f(-r * .2)}q${f(-r * .8)} ${f(r * .6)} ${f(-r * 1.5)} ${f(r * .2)}z" fill="#5d8a63" ${key(1.1)}/></g></g></g>`;

@@ -21,7 +21,7 @@ export function startHomeFx(el, art, W, H) {
   if (M.falls) state.water = fx.add(waterSpray({ at: L.tallPx, falls: M.falls, pale: M.falls.pale }));
   if (M.leaves) {
     const { strips, from, to, greens } = M.leaves;
-    fx.add(fallingLeaves({ strips: strips.map(([a, b]) => [L.tallPx(a, 0).x, L.tallPx(b, 0).x]), from: L.tallPx(0, from).y, to: L.tallPx(0, to).y, greens }));
+    state.leaves = fx.add(fallingLeaves({ strips: strips.map(([a, b]) => [L.tallPx(a, 0).x, L.tallPx(b, 0).x]), from: L.tallPx(0, from).y, to: L.tallPx(0, to).y, greens }));
   }
   el.classList.add("lc-fx-on");
   if (M.tail) {
@@ -40,10 +40,22 @@ export function startHomeFx(el, art, W, H) {
       if (t.dataset.tap === "waterfall" && state.water) state.water.splash();
       if (t.dataset.tap === "monkey" && state.tail && t.querySelector(".lc-fx-sit")) state.tail.hop();
     },
+    /* a leaf on the canvas is a thing to press too (the designer, 2026-11-28): it falls quicker, once */
+    leafAt: (x, y) => !!(state.leaves && state.leaves.hit(x, y)),
+    leafSpots: () => (state.leaves ? state.leaves.positions : []),
   };
   if (!el._lcFxWired) {
     el._lcFxWired = true;
     el.addEventListener("click", (e) => { const t = e.target.closest ? e.target.closest("[data-tap]") : null; if (t && el._lcFx) el._lcFx.tap(t); });
+    /* first, before anything behind it answers: a press on a leaf is the leaf's. The leaves fall between the
+       scenery and the judge, so what the judge's layer covers is the judge's */
+    el.addEventListener("click", (e) => {
+      if (!el._lcFx || !el._lcFx.leafAt) return;
+      const t = e.target.closest ? e.target.closest("[data-tap]") : null;
+      if (t && t.closest(".lc-front")) return;
+      const r = el.getBoundingClientRect();
+      if (el._lcFx.leafAt(e.clientX - r.left, e.clientY - r.top)) e.stopPropagation();
+    }, true);
   }
 }
 
