@@ -8,13 +8,14 @@
    - the birds and the monkeys are characters, so they keep their own colours at every time of day, like the cats.
    The title uses characters the lettering already has: 雨之森, "the rain's forest".
    What can be pressed is marked with data-tap only when the picture is animated: bird-1, bird-2, bird-3, monkey.
-   Where they are (2026-11-27, the designer's choice): the birds and the monkeys stand only where Home shows the picture, in
-   the two strips beside the judge's head that no button, title block or judge covers (tools/art/ui-zones.json;
-   tests/content.test.mjs checks each of them on both measured phones). The left strip is the big one: three birds
-   and the sitting monkey, each on its own branch of the left tree. The right strip is small and under the title
-   block: the hanging monkey, from a branch of the right tree. The fireflies keep to the same strips.
+   Where they are: the birds and the monkeys stand only where Home shows the picture, in the places no button,
+   title block or judge covers (tools/art/ui-zones.json; tests/home-zones.test.mjs checks each of them at every time
+   of day on both measured phones). From 2026-11-27 they were all in the two strips beside the judge's head, five
+   things in the left one; since 2026-11-28 (the designer: 「動物有點擁擠」) they move with the day and use the sides low
+   beside the body and the ends of the log too (ARRANGE and LAYOUTS below).
    Which version of each piece (2026-11-27, the designer's picks on the piece-by-piece page, docs/art-generation.md): the
-   scenery, the sun, the three birds and the two monkeys are pictures (PICKED below, art/pictures.js); the branches,
+   scenery (since 2026-11-28 the waterfall), the sun, the three birds and the two monkeys are pictures (PICKED
+   below, art/pictures.js); the branches,
    the fireflies and everything that moves them are drawn here. The first drawings are still in this file, and
    `jungleDrawn` is the place with none of the pictures: the art tools show it as "what was in the game before". */
 import { makePlace, mist, floorBand, tint, mix, RED, VIEW, pen } from "./kit.js"; // mist: the first drawing's
@@ -94,7 +95,7 @@ function sitting(q, on, x, y, pic) {
    beside the body, low down (the body narrows to x 75 at its waist), and the two ends of the log, which the judge's
    feet leave free; a long top covers the log's middle, so each end holds one (x 16 to 70 and 330 to 384; the log's
    top is y 447).
-   A layout says which arrangement each time of day shows. Until the designer picks one, the game keeps the first. */
+   A layout says which arrangement each time of day shows. The game shows LAYOUT. */
 const ARRANGE = {
   /* as it was from 2026-11-27: everything in the left strip but the hanging monkey */
   first: {
@@ -137,7 +138,8 @@ const ARRANGE = {
 /* 甲, 乙 the same all day; 丙 moves with the day: the birds up singing in the morning, down low at golden hour,
    asleep together up on a branch at night while the monkeys come down */
 export const LAYOUTS = { first: {}, spread: { all: "spread" }, log: { all: "log" }, day: { morning: "spread", golden: "log", night: "night" } };
-export const LAYOUT = "first";
+/* the designer's pick (2026-11-28, on the page of tools/art/sets/jungle-new.json): 丙, the animals move with the day */
+export const LAYOUT = "day";
 const arrangementOf = (layout, time) => ARRANGE[(LAYOUTS[layout] || {})[time] || (LAYOUTS[layout] || {}).all || "first"];
 /* a thing's box in the print, for the art tools: a bird stands in a box on its feet, the monkeys round their own */
 const birdBox = ([x, y, , s]) => [Math.round(x - 22 * s), Math.round(y - 37.5 * s), Math.round(44 * s), Math.round(40 * s)];

@@ -13,8 +13,10 @@ const of = (name, w, h) => ({ href: at(name), w, h });
 
 export const PICTURES = {
   jungle: {
+    /* the scenery: since 2026-11-28 the waterfall (the designer's pick of three ideas, GPT 甲 瀑布, after 「背景沒有什麼特色」),
+       painted again at golden hour and at night from the morning picture, each with something of its own (rays
+       through the leaves; glowing mushrooms and stars). The first scenery, two trunks and hills, is in git history */
     back: of("jungle/back.jpg", 800, 1422),
-    /* the same scenery painted again at golden hour and at night, from the morning picture (the designer's picks, GPT 甲) */
     "back-golden": of("jungle/back-golden.jpg", 800, 1422),
     "back-night": of("jungle/back-night.jpg", 800, 1422),
     sun: of("jungle/sun.png", 176, 175),
