@@ -11,6 +11,9 @@ import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
 import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
 const CAT_MOTION = { tail: true, face: true };
+/* the finer capybara's groups (a glance, a sniff, the head following the breath, ears that know their side): the designer's
+   picks on the capybara page, 2026-11-28 */
+const JUDGE_MOTION = { face: true };
 import { onsen, onsenLandscape } from "./places/onsen.js";
 import { PLACES as YEAR } from "./places/all.js";
 import { jungle } from "./places/jungle.js";
@@ -128,7 +131,7 @@ export function sceneParts(o = {}) {
      o.hold === false: the paws are down and empty (wrapping by hand: the heart would lie on the turns being laid).
      o.holdUp: the heart is lifted beside the head (the bust, which ends at the chest) */
   const things = L.judge || {};
-  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: o.hold === false ? null : things.hold, holdUp: !!o.holdUp, motion: o.judgeMotion || null });
+  const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: o.hold === false ? null : things.hold, holdUp: !!o.holdUp, motion: o.judgeMotion || JUDGE_MOTION });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
   const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${J.arms || ""}${cushion}${J.held || ""}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;

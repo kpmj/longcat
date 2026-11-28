@@ -40,7 +40,11 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-tapped .lc-ear { animation: lc-ear-now .45s ease-in-out 0s 2 !important; }
   [data-tap="cat"].lc-tapped .lc-ear { animation: lc-ear-flat 1s ease-in-out 0s 1 !important; }
   [data-tap="cat"].lc-tapped .lc-tseg { animation: lc-tseg-swish .5s ease-in-out 3; animation-delay: calc(var(--lc-lag, 0s) * .4); }
-  .lc-tapped .lc-bobble { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-bobble .5s ease-out; }
+  /* the capybara patted (the designer's pick on the capybara page, 2026-11-28): pressed flat, up, settling; its ears laid back
+     outwards and springing up; the fruit on its head bouncing a moment after */
+  .lc-tapped .lc-bobble { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-bobble 1s ease-in-out 1; }
+  [data-tap="judge"].lc-tapped .lc-ear:not(.lc-rider .lc-ear) { animation: lc-jear-flat 1s ease-in-out 0s 1 !important; }
+  [data-tap="judge"].lc-tapped .lc-hop { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-jitem .9s ease-in-out .12s 1 both; }
   .lc-tapped .lc-hop { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-hop .7s ease-out; }
   .lc-tapped .lc-dunk { animation: lc-dunk .8s ease-out; }
   /* the jungle's birds and its sitting monkey hop when they themselves are pressed (not when the picture behind
@@ -64,6 +68,14 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-tapped .lc-flicker { animation: lc-flash .8s ease-out 0s 1 !important; }
   .lc-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-breathe 4.6s ease-in-out infinite; }
   .lc-blink { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-blink 6s ease-in-out infinite; }
+  /* the finer capybara (the designer's picks, 2026-11-28; tools/art/judge-motion.mjs): blinks on an uneven beat with a double
+     and a slow blink, and glances to each side; each ear's flick bounces back and sometimes comes again; the head
+     follows the breath a moment later; now and then the nostrils sniff */
+  [data-tap="judge"] .lc-blink { animation: lc-jblink 10.3s linear infinite; }
+  .lc-jlook { animation: lc-jlook 14.1s ease-in-out infinite; }
+  [data-tap="judge"] .lc-ear:not(.lc-rider .lc-ear) { animation-name: lc-jear; }
+  .lc-jbreath { animation: lc-jbreath 4.6s ease-in-out .35s infinite; }
+  .lc-sniff { transform-box: view-box; animation: lc-sniff 11s ease-in-out infinite; }
   .lc-tail { transform-box: fill-box; animation: lc-tail 3.4s ease-in-out infinite; }
   .lc-tail-l { transform-origin: 100% 100%; }
   .lc-tail-r { transform-origin: 0% 100%; }
@@ -140,7 +152,14 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-cat-yawn-tilt { 0%, 86% { transform: rotate(0deg); } 89% { transform: rotate(-7deg) translateY(-1px); } 93.5% { transform: rotate(-7deg) translateY(-1px); } 96% { transform: rotate(1.5deg); } 98%, 100% { transform: rotate(0deg); } }
 @keyframes lc-heart { 0% { transform: translate(0, 6px) scale(.4); opacity: 0; } 20% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { transform: translate(var(--lc-x, 0px), -30px) scale(1.1); opacity: 0; } }
 @keyframes lc-ear-now { 0%, 100% { transform: rotate(0deg); } 40% { transform: rotate(-18deg); } 70% { transform: rotate(8deg); } }
-@keyframes lc-bobble { 0%, 100% { transform: scale(1, 1); } 30% { transform: scale(1.04, .94); } 60% { transform: scale(.98, 1.03); } }
+@keyframes lc-bobble { 0%, 100% { transform: none; } 12% { transform: translateY(3px) scale(1.06, .9); } 30% { transform: translateY(-3px) scale(.97, 1.05); } 50% { transform: scale(1.02, .98); } 70% { transform: scale(.99, 1.01); } }
+@keyframes lc-jblink { 0%, 18.8%, 21%, 54%, 56%, 56.8%, 58.8%, 84%, 92%, 100% { transform: scaleY(1); } 20%, 55.2%, 57.8% { transform: scaleY(.15); } 87%, 89.5% { transform: scaleY(.3); } }
+@keyframes lc-jlook { 0%, 30%, 48%, 66%, 86%, 100% { transform: translate(0, 0); } 34%, 44% { transform: translate(-4px, .5px); } 70%, 82% { transform: translate(4px, -1px); } }
+@keyframes lc-jear { 0%, 82%, 100% { transform: rotate(0deg); } 84.5% { transform: rotate(calc(var(--lc-d, -1) * 18deg)); } 87% { transform: rotate(calc(var(--lc-d, -1) * -6deg)); } 89% { transform: rotate(calc(var(--lc-d, -1) * 2deg)); } 91% { transform: rotate(0deg); } 93.5% { transform: rotate(calc(var(--lc-d, -1) * 10deg)); } 95.5% { transform: rotate(calc(var(--lc-d, -1) * -2deg)); } 97% { transform: rotate(0deg); } }
+@keyframes lc-jear-flat { 0%, 100% { transform: rotate(0deg); } 12%, 50% { transform: rotate(calc(var(--lc-d, -1) * 28deg)); } 68% { transform: rotate(calc(var(--lc-d, -1) * -9deg)); } 84% { transform: rotate(calc(var(--lc-d, -1) * 3deg)); } }
+@keyframes lc-jitem { 0%, 100% { transform: translateY(0) rotate(0deg); } 20% { transform: translateY(2px) rotate(4deg); } 45% { transform: translateY(-11px) rotate(-12deg); } 70% { transform: translateY(0) rotate(6deg); } 85% { transform: translateY(-1px) rotate(-3deg); } }
+@keyframes lc-jbreath { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes lc-sniff { 0%, 60%, 66%, 100% { transform: scale(1, 1); } 61.5% { transform: scale(1.28, .82); } 63% { transform: scale(.95, 1.06); } 64.5% { transform: scale(1.22, .86); } }
 @keyframes lc-hop { 0%, 100% { transform: translateY(0) rotate(0deg); } 35% { transform: translateY(-16px) rotate(-10deg); } 70% { transform: translateY(0) rotate(4deg); } 85% { transform: translateY(-4px); } }
 @keyframes lc-dunk { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(7px); } 60% { transform: translateY(-3px); } }
 @keyframes lc-swing { 0%, 100% { transform: rotate(0deg); } 20% { transform: rotate(-16deg); } 45% { transform: rotate(12deg); } 70% { transform: rotate(-6deg); } }
@@ -156,7 +175,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-shiver { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-2.5px); } 40% { transform: translateX(2.5px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
 @keyframes lc-breeze { 0% { transform: translateX(-120px); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(460px); opacity: 0; } }
 @keyframes lc-tummy { 0% { transform: translateY(46px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-@keyframes lc-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.003, 1.008); } }
+@keyframes lc-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.006, 1.016); } }
 @keyframes lc-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
 @keyframes lc-tail { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
 @keyframes lc-steam { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-7px) scale(1.06, 1.1); } }
@@ -167,9 +186,9 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-glow { 0%, 100% { opacity: .75; } 50% { opacity: .35; } }
 @keyframes lc-ear { 0%, 84%, 100% { transform: rotate(0deg); } 87% { transform: rotate(-16deg); } 90% { transform: rotate(7deg); } 93% { transform: rotate(-8deg); } 96% { transform: rotate(0deg); } }
 @keyframes lc-shake { 0%, 70%, 82%, 100% { transform: rotate(0deg); } 73% { transform: rotate(-3.5deg); } 76% { transform: rotate(3.5deg); } 79% { transform: rotate(-2deg); } }
-@keyframes lc-yawn-head { 0%, 38%, 50%, 100% { transform: translateY(0) rotate(0deg); } 41%, 46% { transform: translateY(-4px) rotate(-2.5deg); } }
-@keyframes lc-yawn-on { 0%, 39.4% { opacity: 0; } 40%, 46.6% { opacity: 1; } 47.2%, 100% { opacity: 0; } }
-@keyframes lc-yawn-off { 0%, 39.4% { opacity: 1; } 40%, 46.6% { opacity: 0; } 47.2%, 100% { opacity: 1; } }
+@keyframes lc-yawn-head { 0%, 34%, 52%, 100% { transform: translateY(0) rotate(0deg); } 37% { transform: translateY(2.5px) rotate(1deg); } 41%, 46% { transform: translateY(-5px) rotate(-3.5deg); } 48% { transform: rotate(1.6deg); } 49.2% { transform: rotate(-1.2deg); } 50.4% { transform: rotate(.6deg); } }
+@keyframes lc-yawn-on { 0%, 38.4% { opacity: 0; } 39%, 46.6% { opacity: 1; } 47.2%, 100% { opacity: 0; } }
+@keyframes lc-yawn-off { 0%, 38.4% { opacity: 1; } 39%, 46.6% { opacity: 0; } 47.2%, 100% { opacity: 1; } }
 @keyframes lc-stretch { 0%, 78%, 96%, 100% { transform: translate(0, 0) scale(1, 1); } 84% { transform: translate(calc(var(--lc-d, 1) * 6px), -2px) scale(1.08, .94); } 90% { transform: translate(calc(var(--lc-d, 1) * -1px), 0) scale(.97, 1.03); } }
 @keyframes lc-snooze { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.02, 1.04); } }
 @keyframes lc-sun { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
@@ -194,7 +213,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-ride { from { transform: translate(0, 0); } to { transform: translate(var(--lc-x, 200px), var(--lc-y, 34px)); } }
 @keyframes lc-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--lc-x, 6px), var(--lc-y, -3px)); } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-tseg, .lc-blink2, .lc-look, .lc-awake, .lc-face-yawn, .lc-yawn-tilt, .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave, .lc-fall, .lc-foam { animation: none !important; }
+  .lc-jlook, .lc-jbreath, .lc-sniff, .lc-tseg, .lc-blink2, .lc-look, .lc-awake, .lc-face-yawn, .lc-yawn-tilt, .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave, .lc-fall, .lc-foam { animation: none !important; }
   [data-tap|="bird"].lc-tapped .lc-note { opacity: 1; }
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }
