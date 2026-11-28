@@ -1679,6 +1679,29 @@ export const FILES = {
       2
     ]
   },
+  "fx.place.camping.hit": {
+    "path": "fx/camping/hit.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "camping_fire@hit",
+    "version": 1,
+    "libraries": [
+      "freesound-414767"
+    ],
+    "bytes": 12415,
+    "sha256": "474bc8f65946b9a2b4588a7bf56890fbbcf0fc6d5757706833b01bcaf1abb6ed",
+    "seconds": 0.916,
+    "channels": 1,
+    "lufs": -6.5,
+    "measure": "TP",
+    "peak": -6.5,
+    "lead": 0.0011,
+    "below300": 0.002,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.2865,
+    "clicks": 0
+  },
   "fx.place.jungle.hit": {
     "path": "fx/jungle/chirp.m4a",
     "family": "fx",
@@ -1930,6 +1953,30 @@ export const FILES = {
     "monoLoss": 0.0,
     "tags": [],
     "attack": 0.0075,
+    "clicks": 0
+  },
+  "fx.tap.fire": {
+    "path": "fx/camping/fire.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "camping_fire@fire",
+    "version": 1,
+    "libraries": [
+      "freesound-475879",
+      "freesound-414767"
+    ],
+    "bytes": 16055,
+    "sha256": "7117cd1fc1d9c9925f25bc87be096680e5354770595e6ef94d330ecae79606c8",
+    "seconds": 1.2147,
+    "channels": 1,
+    "lufs": -5.7,
+    "measure": "TP",
+    "peak": -5.7,
+    "lead": 0.0027,
+    "below300": 0.03,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.4401,
     "clicks": 0
   },
   "fx.tap.heart": {

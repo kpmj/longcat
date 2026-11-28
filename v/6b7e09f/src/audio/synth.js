@@ -396,7 +396,9 @@ const SFX = {
   train: { hit: () => tone("sine", 1760, 1760, 0.35, 0.1), miss: () => { tone("sawtooth", 440, 430, 0.5, 0.04, null, { type: "lowpass", f: 1200 }); tone("sawtooth", 554, 545, 0.5, 0.03, null, { type: "lowpass", f: 1200 }); } },
   beach: { hit: () => noise(0.6, 0.07, "lowpass", 900, 0.7, null, 300), miss: () => [0, 0.12, 0.22].forEach((d) => tone("triangle", 1800, 1200, 0.08, 0.05, now() + d)) },
   library: { hit: () => noise(0.12, 0.08, "highpass", 2500, 0.8), miss: () => noise(0.7, 0.05, "highpass", 4000, 0.5) },
-  camping: { hit: () => [0, 0.05, 0.13].forEach((d) => noise(0.03, 0.1, "bandpass", 2000 + d * 4000, 3, now() + d)), miss: () => tone("sawtooth", 620, 660, 0.5, 0.015, null, { type: "bandpass", f: 650, q: 8 }) },
+  /* the fire crackling: since 2026-11-28 (the designer: 「接下來做營火的音效」) a crackle of wood from a CC0 recording
+     (tools/audio/pieces/camping_fire.py) */
+  camping: { hit: () => { if (!fxFile("fx.place.camping.hit", CAMP_HIT)) [0, 0.05, 0.13].forEach((d) => noise(0.03, 0.1, "bandpass", 2000 + d * 4000, 3, now() + d)); }, miss: () => tone("sawtooth", 620, 660, 0.5, 0.015, null, { type: "bandpass", f: 650, q: 8 }) },
   cinema: { hit: () => noise(0.05, 0.14, "bandpass", 1500, 2), miss: () => [0, 0.2].forEach((d) => tone("square", 1200, 1200, 0.12, 0.03, now() + d)) },
   bus: { hit: () => tone("sine", 1568, 1568, 0.25, 0.1), miss: () => tone("sawtooth", 2400, 1900, 0.4, 0.02, null, { type: "bandpass", f: 2200, q: 5 }) },
   museum: { hit: () => { noise(0.04, 0.12, "highpass", 3000); noise(0.04, 0.1, "highpass", 3000, 1, now() + 0.07); }, miss: () => noise(0.18, 0.08, "bandpass", 400, 1.5) },
@@ -409,6 +411,9 @@ const TIME_COLOUR = { morning: { f: 2600, gain: 5 }, golden: { f: 1200, gain: 0 
    is not here (the caller then makes its sound in the page) or files are switched off in the Dev panel. */
 let fxFiles = true;
 export function setFxFiles(on) { fxFiles = on !== false; }
+/* the campsite's crackle file on the effects bus (a DRAFT): peak -15 dB at the output in the browser, the page's
+   crackles -24; the page's were barely there */
+const CAMP_HIT = 0.2;
 function fxFile(id, vol) {
   const e = fxFiles ? fileReady(id) : null;
   if (!e) return false;
