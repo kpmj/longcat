@@ -172,16 +172,14 @@ function whistle(notes, t, step) {
    own "mm", as the monkey is made), and a cat (a cat's own purr-and-chirp, from a CC0 recording). */
 const TAP_FILES = { "bird-1": "fx.tap.bird-1", "bird-2": "fx.tap.bird-2", "bird-3": "fx.tap.bird-3", acorn: "fx.tap.acorn", heart: "fx.tap.heart",
   monkey: "fx.tap.monkey", "cat@jungle": "fx.tap.cat@jungle",
-  window: "fx.tap.window", lamp: "fx.tap.lamp", dunk: "fx.tap.dunk", yuzu: "fx.tap.yuzu", judge: "fx.tap.judge", cat: "fx.tap.cat",
-  waterfall: "fx.tap.waterfall" };
+  window: "fx.tap.window", lamp: "fx.tap.lamp", dunk: "fx.tap.dunk", yuzu: "fx.tap.yuzu", judge: "fx.tap.judge", cat: "fx.tap.cat" };
 /* fetched with them: the result sounds that are files, which synth.js plays (placeSfx) */
 const ALSO = ["fx.place.jungle.miss", "fx.place.jungle.hit", "fx.place.onsen.hit", "fx.place.onsen.miss"];
 /* How loud a tap's file sits on the bus, so that it is about as loud as the sound it replaces (the files are at
    one loudness, the page's sounds each at their own). Measured on the bus in a desktop browser; a DRAFT. */
 const TAP_LEVEL = { "bird-1": 0.2, "bird-2": 0.2, "bird-3": 0.2, acorn: 0.4, heart: 0.21, // peaks on the bus within 1 dB of the page's (-25, -22.5, -24 dB)
   monkey: 0.17, "cat@jungle": 0.3, // (the same way: -26 and -23 dB)
-  window: 0.25, lamp: 0.27, dunk: 0.56, yuzu: 0.21, judge: 0.25, cat: 0.16, // (the same way: -24, -23, -24, -19, -21, -24.5 dB)
-  waterfall: 0.42 }; // no page sound of its own to match: its loudest 0.4 s near the other taps' on the bus
+  window: 0.25, lamp: 0.27, dunk: 0.56, yuzu: 0.21, judge: 0.25, cat: 0.16 }; // (the same way: -24, -23, -24, -19, -21, -24.5 dB)
 /* The jungle's cat never meowed twice alike: the page's sound was moved up or down by as much as two semitones
    at each press. The recording is played a little faster or slower for the same reason. */
 const TAP_WANDER = { "cat@jungle": 2, cat: 2 };
@@ -191,16 +189,14 @@ export function setTapSource(v) { tapSource = v === "page" ? "page" : "files"; }
 export function prepareTaps() {
   if (tapSource === "files" && ctx()) loadFiles(ac, [...Object.values(TAP_FILES), ...ALSO]).catch(() => {});
 }
-/* a thing the page has no sound for plays, made in the page, what it sounds like: the jungle's waterfall the water
-   drops of a yuzu in the hot spring. Its own file is a splash and the water rushing (2026-11-28, the designer: "can you
-   create the water splash sound for the waterfall with the engine?"; tools/audio/pieces/jungle_water.py). */
+/* a thing that sounds like another, until it has a sound of its own: the jungle's waterfall (2026-11-28) the water
+   drops of a yuzu in the hot spring */
 const TAP_AS = { waterfall: "dunk" };
 export function tapSound(kind, place = null) {
-  const own = TAP_FILES[kind] && !TAP[kind] ? kind : null; // a file of its own and no page sound
   kind = TAP_AS[kind] || kind;
   const play = (place && TAP[`${kind}@${place}`]) || TAP[kind];
   if (!play || !ctx() || ac.state !== "running") return;
-  const key = own || (place && TAP[`${kind}@${place}`] ? `${kind}@${place}` : kind);
+  const key = place && TAP[`${kind}@${place}`] ? `${kind}@${place}` : kind;
   const id = tapSource === "files" ? TAP_FILES[key] : null, e = id ? fileReady(id) : null;
   if (e) {
     const s = ac.createBufferSource(), g = ac.createGain();
