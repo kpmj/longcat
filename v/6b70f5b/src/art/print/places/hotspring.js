@@ -37,8 +37,12 @@ export const ARRANGE = {
      the same places all day, and each thing standing on the picture's own snowy rocks, so they are placed in the
      tall picture's units (`onPicture`, measured on the picture: the flat top of the big rock low on the left, the
      rock at the foot of the shelter's posts on the right) and keep to those rocks on every phone; the monkey in the
-     water in front, on the right */
-  snow: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [46, 567], shishi: [366, 506], bucket: null, monkey: [364, 476] },
+     water in front, on the right. The shishi-odoshi stood on the right, at [366, 506] in the tall picture's units,
+     until the designer, 2026-11-28: "Can we remove the bamboo thing from the hot spring location? Main reason is i feel it's too
+     crowded but I like it a lot. So please use it in the future location". It
+     is taken out of the hot spring and kept, drawing, pictures (PICKED.pics.shishi), tap and sound, for a place to
+     come (docs/later.md, "For later") */
+  snow: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern"], lantern: [46, 567], shishi: null, bucket: null, monkey: [364, 476] },
 };
 /* 甲 and 乙 the same all day; 丙 turns with the day; `snow`: the snowy spring's own rocks, the same all day */
 export const LAYOUTS = { edges: { all: "edges" }, flip: { all: "flip" }, day: { morning: "edges", golden: "flip", night: "night" }, snow: { all: "snow" } };
@@ -201,14 +205,16 @@ export function hotspringPlace(o = {}) {
     /* on Home the pool stays in front of the judge over the tall picture, and its deep colour goes on to the bottom */
     frontOnTall: true, water: true, down: time => ({ fill: poolOf(time).dk }),
     /* what the effects layer moves on Home: steam rising from the pool beside the judge (the print's units), leaves
-       coming down the strips beside its head (the tall picture's; `leafColours`, or none), and drops off the
-       shishi-odoshi's stone when it is pressed */
+       coming down the strips beside its head (the tall picture's; `leafColours`, or none), drops off the
+       shishi-odoshi's stone when it is pressed, and snow coming down from the sky (`snow`, down to the pool's
+       edge in the print's units, behind the judge) */
     motion: opts.back ? time => {
       const A = arrangementOf(opts.layout, time);
       return {
         tall: TALL,
         steam: { sources: [[44, 466], [112, 474], [288, 474], [356, 466]], pale: time === "night" ? "#c3d1df" : time === "golden" ? "#fbefdc" : "#f8f7f2" },
         leaves: opts.leafColours === null ? null : { strips: [[18, 100], [300, 384]], from: 90, to: 560, greens: (opts.leafColours || ["#2f5a45", "#4b7d5c", "#79a574", "#b1cb98"]).map(c => tint(c, time)) },
+        snow: opts.snow ? { to: 470, night: time === "night" } : null,
         shishi: A.shishi && (opts.pics || {}).shishi !== false ? { at: ((tall, [x, y]) => [x, y - (tall ? lift : 0)])((A.onPicture || []).includes("shishi"), shishiSplash(A.shishi, (opts.pics || {}).shishi, time)), tall: (A.onPicture || []).includes("shishi") } : null,
       };
     } : null,
@@ -221,12 +227,14 @@ export const hotspringParts = (time = "morning", o = {}, animate = false) => par
 /* ---------- the hot spring the game draws: the designer's picks on the board (2026-11-28) ----------
    丙 雪山溫泉 by GPT for each time of day; layout 丙, turning with the day, on the picture's own rocks (`snow`);
    GPT's stone lantern, shishi-odoshi and snow monkey; no bucket; the steam; an onsen egg on the judge's head; no
-   falling leaves in the snow. The shishi-odoshi's numbers are measured on GPT's 512 px pictures and scaled to the
+   falling leaves in the snow. Since later that day no shishi-odoshi here (kept for a place to come, see `snow` in
+   ARRANGE above), and snow falling, a little (the designer, the same day: "can you add snow particles in the spring location falling from the sky. Not too much of them").
+   The shishi-odoshi's numbers below stay for that place. The shishi-odoshi's numbers are measured on GPT's 512 px pictures and scaled to the
    320 px ones in the game: the stand's drawing, its peg, the tube's hole, where the pipe's water falls (its pipe comes
    in from the left over the posts and pours on their right) */
 const ON = PICTURES.onsen, k320 = 320 / 512, at320 = a => a.map(v => v * k320);
 export const PICKED = {
-  layout: "snow", item: "egg", leafColours: null, lift: 60,
+  layout: "snow", item: "egg", leafColours: null, lift: 60, snow: true,
   back: { morning: ON.back, golden: ON["back-golden"], night: ON["back-night"] },
   pics: {
     lantern: ON.lantern, monkey: ON.monkey, bucket: false,

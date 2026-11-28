@@ -137,6 +137,33 @@ export function steamWisps({ sources, pale = "#f8f7f2", rate = 2.2, scale = 1 })
   };
 }
 
+/* SNOW that comes down from the sky (the hot spring, 2026-11-28; the designer, the same day: "can you add snow particles in the spring location falling from the sky. Not too much of them"): a
+   few flat flakes at a time over the whole width, each drifting down slowly and swaying, the bigger ones nearer and a
+   little quicker, gone at the pool's edge; already falling when the layer starts. A thin blue-grey edge keeps a
+   flake seen against the snowy sky. width: the canvas's px across; from, to: y in px; rate: flakes a second */
+export function snowfall({ width, from = -8, to, rate = .9, scale = 1, night = false }) {
+  const P = particles(); let due = 0;
+  const spawn = () => {
+    const near = Math.random(), r = (1.8 + near * 1.8) * scale;
+    P.list.push({ x: rnd(-10, width + 10), y: from, vx: rnd(-3, 3) * scale, vy: (24 + near * 18) * scale, wob: rnd(8, 16) * scale, wobW: rnd(.5, 1.1), ph: rnd(0, 6.3), r, age: 0, life: 99, fadeIn: 0 });
+  };
+  const step = dt => { due += dt * rate; while (due >= 1) { due -= 1; spawn(); } P.step(dt); for (const p of P.list) if (p.y > to) p.age = p.life; };
+  for (let t = 0; t < 16; t += .1) step(.1);
+  return {
+    step,
+    /* how many are falling (for the tests) */
+    get count() { return P.list.length; },
+    draw(ctx) {
+      ctx.fillStyle = night ? "#e9eff6" : "#ffffff"; ctx.strokeStyle = night ? "rgba(233,239,246,.35)" : "rgba(108,136,160,.45)"; ctx.lineWidth = .7;
+      for (const p of P.list) {
+        const a = Math.min(1, (to - p.y) / 30, (p.y - from + 6) / 20); if (a <= 0) continue;
+        ctx.globalAlpha = a * .92; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
 /* LEAVES that come down the two strips beside the judge's head, one at a time: each sways, tilts with its sway and
    turns over (its underside a darker green) as a real leaf does. strips: [[x0, x1], ...] in phone px; from: y to
    start at; to: y to be gone by */

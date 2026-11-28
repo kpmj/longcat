@@ -7,7 +7,7 @@
    Home is drawn again on a resize and under an open sheet: each time the old canvas leaves the page and its loop
    stops (art/fx.js), and a new one starts here. Nothing runs when the player asks for less motion; the picture then
    keeps its own still monkey, drops and leaves. */
-import { makeFx, waterSpray, fallingLeaves, bendingTail, steamWisps, puff, steamPuffs, timetable, lessMotion } from "../art/fx.js";
+import { makeFx, waterSpray, fallingLeaves, bendingTail, steamWisps, snowfall, puff, steamPuffs, timetable, lessMotion } from "../art/fx.js";
 
 export const fxWanted = (art) => !!(art && art.motion && art.layers) && !lessMotion();
 
@@ -22,6 +22,9 @@ export function startHomeFx(el, art, W, H, opts = {}) {
   if (M.falls) state.water = fx.add(waterSpray({ at: L.tallPx, falls: M.falls, pale: M.falls.pale }));
   /* the hot spring's steam, rising off the pool beside the judge (the print's units) */
   if (M.steam) fx.add(steamWisps({ sources: M.steam.sources.map(([x, y]) => { const p = L.toPx(x, y); return [p.x, p.y]; }), pale: M.steam.pale, scale: L.s }));
+  /* the hot spring's snow, from the top of the screen down to the pool's edge, behind the judge (the designer, 2026-11-28:
+     "Not too much of them") */
+  if (M.snow) state.snow = fx.add(snowfall({ width: W, to: L.toPx(0, M.snow.to).y, scale: L.s, night: M.snow.night }));
   if (M.leaves) {
     const { strips, from, to, greens } = M.leaves;
     state.leaves = fx.add(fallingLeaves({ strips: strips.map(([a, b]) => [L.tallPx(a, 0).x, L.tallPx(b, 0).x]), from: L.tallPx(0, from).y, to: L.tallPx(0, to).y, greens }));
