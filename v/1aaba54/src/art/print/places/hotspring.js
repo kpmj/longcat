@@ -36,16 +36,18 @@ export const ARRANGE = {
      placed in the tall picture's units (`onPicture`) and keep to those rocks on every phone: the big rock at the
      foot of the pine on the left, the rocks at the foot of the shelter's posts on the right; in from the edges far
      enough that a taller phone, which crops the picture's sides, still shows them whole */
-  snowM: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [40, 514], shishi: [362, 505], bucket: [44, 447], monkey: [368, 474] },
-  snowG: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [356, 505], shishi: [42, 514], bucket: [356, 447], monkey: [34, 474] },
-  snowN: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [40, 514], shishi: [362, 505], bucket: null, monkey: [368, 474] },
+  snowM: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [48, 514], shishi: [356, 505], bucket: [44, 447], monkey: [364, 476] },
+  snowG: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [350, 505], shishi: [50, 514], bucket: [356, 447], monkey: [38, 476] },
+  snowN: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [48, 514], shishi: [356, 505], bucket: null, monkey: [364, 476] },
 };
 /* 甲 and 乙 the same all day; 丙 turns with the day; `snow` is 丙 on the snowy spring's own rocks */
 export const LAYOUTS = { edges: { all: "edges" }, flip: { all: "flip" }, day: { morning: "edges", golden: "flip", night: "night" }, snow: { morning: "snowM", golden: "snowG", night: "snowN" } };
 const arrangementOf = (layout, time) => ARRANGE[(LAYOUTS[layout] || {})[time] || (LAYOUTS[layout] || {}).all || "edges"];
 /* the boxes things are drawn in (the board lays other versions in the same boxes) */
-/* the monkey a quarter bigger since the designer's picks (「猴子跟capybara比有點太小」) */
-export const SIZE = { lantern: [44, 66], shishi: [66, 54], bucket: [34, 30], monkey: [58, 50] };
+/* the monkey a quarter bigger since the designer's picks (「猴子跟capybara比有點太小」), then the lantern, the shishi-odoshi and the
+   monkey bigger again (the designer, the same day: "make the objects bigger since they look extremely small next to the
+   capybara") */
+export const SIZE = { lantern: [60, 90], shishi: [90, 74], bucket: [34, 30], monkey: [68, 58] };
 const boxOf = (id, [x, y]) => { const [w, h] = SIZE[id]; return id === "monkey" ? [x - w / 2, y - h * .72, w, h] : id === "shishi" ? [x - w / 2, y - h, w, h] : [x - w / 2, y - h, w, h]; };
 
 /* ---------- the things as drawings (Claude's versions) ---------- */
@@ -165,7 +167,11 @@ function plainView(V, q, time) {
 
 export function hotspringPlace(o = {}) {
   const opts = { layout: "day", pics: {}, back: null, item: "yuzu", ...o };
-  const onPicture = (V, q, time, on) => parts(V, q, time, on, opts).filter(p => p.picture).map(p => p.svg).join("");
+  /* `lift`: the picture drawn that much higher, with what stands on it (the designer, 2026-11-28: "move everything up a bit
+     like the background and all stuff in the hot spring"), so its rocks, the lantern and the shishi-odoshi come up
+     beside the judge's body instead of at its feet; the pool in front covers what that opens at the bottom */
+  const lift = opts.lift || 0;
+  const onPicture = (V, q, time, on) => { const m = parts(V, q, time, on, opts).filter(p => p.picture).map(p => p.svg).join(""); return m && lift ? `<g transform="translate(0 ${-lift})">${m}</g>` : m; };
   return makePlace({
     name: "湯之里", grounds: { morning: "#e3c98a", golden: "#dc8d5b", night: "#39404d" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 474,
     tones: { a: "#cfc7b6", b: "#aca391", l: "#7fa06a" }, floor: ["#5d8ba3", "#eef1e6"], ownColours: true,
@@ -174,12 +180,12 @@ export function hotspringPlace(o = {}) {
        stands there in the print too) */
     view(V, q, time, on) {
       const back = opts.back && opts.back[time];
-      return back ? picture(back, 0, 0, 400, 500, "xMidYMin slice") + onPicture(V, q, time, on) : plainView(V, q, time);
+      return back ? picture(back, 0, -lift, 400, 711, "xMidYMin slice") + onPicture(V, q, time, on) : plainView(V, q, time);
     },
     things: (V, q, time, on) => parts(V, q, time, on, opts).filter(p => !p.front && !p.picture).map(p => p.svg).join(""),
     /* (the board lays these itself: frontThings false) */
     frontThings: opts.frontThings === false ? null : (V, q, time, on) => parts(V, q, time, on, opts).filter(p => p.front).map(p => p.svg).join(""),
-    tall: opts.back ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: opts.back[time] ? picture(opts.back[time], 0, 0, TALL[0], TALL[1], "xMidYMid slice") + onPicture(V, q, time, on) : "" }) : null,
+    tall: opts.back ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: opts.back[time] ? `<rect width="${TALL[0]}" height="${TALL[1]}" fill="${poolOf(time).dk}"/>` + picture(opts.back[time], 0, -lift, TALL[0], TALL[1], "xMidYMid slice") + onPicture(V, q, time, on) : "" }) : null,
     /* the stones of the rim the judge sits on, its feet in the water */
     seat: (c, q) => `<g fill="${c.a}" stroke="${INK}" stroke-width="1.6">${[[14, 452, 30, 20], [384, 456, 30, 18], [62, 462, 34, 16], [338, 464, 34, 15]].map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`).join("")}</g>`,
     /* the pool in front: water, ripples, two yuzu that dunk when pressed, wisps of steam */
@@ -203,7 +209,7 @@ export function hotspringPlace(o = {}) {
         tall: TALL,
         steam: { sources: [[44, 466], [112, 474], [288, 474], [356, 466]], pale: time === "night" ? "#c3d1df" : time === "golden" ? "#fbefdc" : "#f8f7f2" },
         leaves: opts.leafColours === null ? null : { strips: [[18, 100], [300, 384]], from: 90, to: 560, greens: (opts.leafColours || ["#2f5a45", "#4b7d5c", "#79a574", "#b1cb98"]).map(c => tint(c, time)) },
-        shishi: A.shishi && (opts.pics || {}).shishi !== false ? { at: shishiSplash(A.shishi, (opts.pics || {}).shishi, time), tall: (A.onPicture || []).includes("shishi") } : null,
+        shishi: A.shishi && (opts.pics || {}).shishi !== false ? { at: ((tall, [x, y]) => [x, y - (tall ? lift : 0)])((A.onPicture || []).includes("shishi"), shishiSplash(A.shishi, (opts.pics || {}).shishi, time)), tall: (A.onPicture || []).includes("shishi") } : null,
       };
     } : null,
   });
@@ -220,7 +226,7 @@ export const hotspringParts = (time = "morning", o = {}, animate = false) => par
    in from the left over the posts and pours on their right) */
 const ON = PICTURES.onsen, k320 = 320 / 512, at320 = a => a.map(v => v * k320);
 export const PICKED = {
-  layout: "snow", item: "egg", leafColours: null,
+  layout: "snow", item: "egg", leafColours: null, lift: 60,
   back: { morning: ON.back, golden: ON["back-golden"], night: ON["back-night"] },
   pics: {
     lantern: ON.lantern, monkey: ON.monkey, bucket: false,

@@ -3,6 +3,7 @@
    A yarn is { type, a, b, c }: a pattern and up to three colour ids from YARN_COLORS (a = ground, b = second colour,
    c = a thin third line). Flat colours only, like the rest of the print: a third tone is mixed, never transparent.
    Which yarn a garment has is the game's business (content.js yarnFor); this module only draws one. */
+import { pillOther } from "./pill.js";
 import { f, num, clamp, svgDoc } from "../util.js";
 import { KEY, LWC } from "./cat.js";
 
@@ -190,6 +191,9 @@ export function cuff(Ln, s, w, y) {
 /* what an off note leaves on knitting: a small ball of the yarn with a loose loop. Never a hole. sc scales it */
 export function yarnPill(q, w, y, sc = 1) {
   const x = num(q.x), yy = num(q.y), r = Math.min(6, w * .26) * sc, k = `stroke="${KEY}" stroke-linecap="round" stroke-linejoin="round"`;
+  /* (another way of showing it, on trial: ./pill.js) */
+  const other = pillOther(x, yy, r, lit(y.a), sc);
+  if (other != null) return other;
   return `<g class="lc-pill"><path d="M${f(x + r * .3)} ${f(yy - r * .6)}q${f(r * 1.6)} ${f(-r * 2.4)} ${f(r * 2.3)} ${f(-r * .5)}q${f(r * .3)} ${f(r * 1.5)} ${f(-r * 1.2)} ${f(r)}" fill="none" ${k} stroke-width="${f(1.5 * sc)}"/><circle cx="${f(x)}" cy="${f(yy)}" r="${f(r)}" fill="${lit(y.a)}" ${k} stroke-width="${f(1.7 * sc)}"/><path d="M${f(x - r * .5)} ${f(yy - r * .1)}q${f(r * .5)} ${f(-r * .55)} ${f(r)} 0" fill="none" ${k} stroke-width="${f(sc)}"/></g>`;
 }
 

@@ -1,6 +1,7 @@
 /* The cat in the woodblock style (docs/art-style.md). Same exports and signatures as ../cat.js, so the garment,
    loaf and lane code can switch to it by changing one import. Every shape gets the key line; the body is a
    key-lined tube whose edge turns into round tufts as the fur grows (short, mid, long). */
+import { pillOther } from "./pill.js";
 import { f, num } from "../util.js";
 import { coatMarkup, foldSpots, straight } from "../cat.js";
 import { kindParts } from "../palettes.js";
@@ -225,6 +226,9 @@ export function bodyMarkup(subs, w = 22, pal = C, o = {}) {
    q = { x, y } on the body's middle line; sc scales it */
 export function foldMarkup(q, w, pal = C, sc = 1) {
   const x = num(q.x), y = num(q.y), r = Math.min(6.2, w * .27) * sc;
+  /* (another way of showing it, on trial: ./pill.js) */
+  const other = pillOther(x, y, r, pal.furDk, sc);
+  if (other != null) return other;
   return `<g class="lc-pill"><path d="M${f(x + r * .3)} ${f(y - r * .6)}q${f(r * 1.6)} ${f(-r * 2.4)} ${f(r * 2.3)} ${f(-r * .5)}q${f(r * .3)} ${f(r * 1.5)} ${f(-r * 1.2)} ${f(r)}" fill="none" ${key(LWC * .62 * sc)}/>`
     + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${pal.furDk}" ${key(LWC * .7 * sc)}/><path d="M${f(x - r * .5)} ${f(y - r * .1)}q${f(r * .5)} ${f(-r * .55)} ${f(r)} 0" fill="none" ${key(LWC * .4 * sc)}/></g>`;
 }

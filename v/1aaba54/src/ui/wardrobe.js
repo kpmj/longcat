@@ -23,7 +23,7 @@
    Places opens from the chip at the top left of Home (ui/places.js); the cats are in the Store (ui/cats.js). */
 import { app, esc, $, $$, wireTaps, paintDock, hopCat, toast } from "./app.js";
 import * as St from "../state.js";
-import { sceneParts, wardrobeThumbSvg, placeThumbSvg } from "../art/index.js";
+import { sceneParts, wardrobeThumbSvg, placeThumbSvg, drawZone } from "../art/index.js";
 import { ZONES, TIMES, STEPS, placeById, timeById } from "../content.js";
 import { paintDress } from "./cats.js";
 import { canWrap, wrappedByHand, openWrap } from "./wrap.js";
@@ -56,7 +56,7 @@ function picked(S, place) {
 }
 /* the tab whose choices are in the page: a garment, or "sky"; whether its wrap choices are open; and the garment
    to hop once when the page is next drawn */
-let sel = ZONES[0].id, menu = false, flash = null;
+let sel = ZONES[0].id, menu = false, flash = null, rewrap = null;
 /* a camera, for the button that takes the postcard */
 const CAM_ICO = `<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 9.5a2 2 0 0 1 2 -2h2.6l1.7 -2.6h6.4l1.7 2.6h2.6a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-15a2 2 0 0 1 -2 -2z"/><circle cx="13" cy="13.8" r="3.9"/></svg>`;
 /* The postcard is taken: the picture flashes white, and a small copy of it, a card with a paper edge, tilts and
@@ -106,7 +106,7 @@ function dressUp(root) {
   const zi = ZONES.findIndex((z) => z.id === sel), open = menu && zi >= 0 && canWrap(p.set[sel], sel);
   const wrapMenu = !open ? "" : `<div class="dress-menu" role="group" aria-label="How the ${esc(ZONES[zi].name.toLowerCase())} is wrapped" style="--at:${((zi + 0.5) / 4) * 100}%">
         <button class="btn" data-a="wrap">${WRAP_ICO}Wrap it yourself</button>
-        <button class="btn" data-a="unwrap" ${wrappedByHand(p.set[sel], sel) ? "" : "disabled"}>Wrap it for me</button>
+        <button class="btn" data-a="unwrap">Wrap it for me</button>
       </div>`;
   root.innerHTML = `
     ${topbar(S)}
@@ -143,13 +143,18 @@ function dressUp(root) {
     again();
   }));
   if (flash) { hopCat($(".dress-pic", root), flash); flash = null; }
+  /* the game wraps it round the judge again, across from one side, before the eyes */
+  if (rewrap) { const z = drawZone(rewrap); for (const g of $$(`.dress-pic [data-zone="${z}"]`, root)) g.classList.add("lc-rewrap"); rewrap = null; }
   const wb = $(".dress-menu [data-a=wrap]", root), ub = $(".dress-menu [data-a=unwrap]", root);
   if (wb) wb.onclick = () => { menu = false; openWrap(p.set[sel], sel); };
+  /* "Wrap it for me" can always be pressed (the designer, 2026-11-28: "Wrap it for me is greyed out what's going on? Can you
+     revive it"; it was pressable only after a wrap by hand, to go back to the game's own): the game wraps the garment
+     its own way again, and the picture shows it being wound on */
   if (ub) ub.onclick = () => {
-    St.setWrap(S, place, p.set[sel], sel, null);
-    app.save();
-    toast(`The ${ZONES[zi].name.toLowerCase()} is wrapped the way it was.`);
-    menu = false; flash = sel;
+    const byHand = wrappedByHand(p.set[sel], sel);
+    if (byHand) { St.setWrap(S, place, p.set[sel], sel, null); app.save(); }
+    toast(byHand ? `The ${ZONES[zi].name.toLowerCase()} is wrapped the game's way again.` : `Wrapped for you.`);
+    menu = false; rewrap = sel;
     again();
   };
   $("[data-a=shoot]", root).onclick = () => {
