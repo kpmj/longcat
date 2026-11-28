@@ -31,23 +31,23 @@ export const ARRANGE = {
   flip: { sun: [62, 46, 36, 36], piles: [[-6, 66, 304], [334, 406, 334]], lantern: [368, 334], shishi: [32, 304], bucket: [356, 447], monkey: [36, 474] },
   /* night of 丙: the lantern lit up on the left, the bucket put away, the monkey dozing on the right */
   night: { sun: [62, 46, 36, 36], piles: [[-6, 66, 334], [334, 406, 304]], lantern: [32, 334], shishi: [368, 304], bucket: null, monkey: [364, 474] },
-  /* 丙 on GPT's snowy mountain spring, the designer's picks (2026-11-28: 「燈籠和竹筒需要再重新擺放位置 他現在的位子和背景不搭」):
-     no stones of our own; the lantern and the shishi-odoshi stand on the picture's own snowy rocks, so they are
-     placed in the tall picture's units (`onPicture`) and keep to those rocks on every phone: the big rock at the
-     foot of the pine on the left, the rocks at the foot of the shelter's posts on the right; in from the edges far
-     enough that a taller phone, which crops the picture's sides, still shows them whole */
-  snowM: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [48, 514], shishi: [356, 505], bucket: [44, 447], monkey: [364, 476] },
-  snowG: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [350, 505], shishi: [50, 514], bucket: [356, 447], monkey: [38, 476] },
-  snowN: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [48, 514], shishi: [356, 505], bucket: null, monkey: [364, 476] },
+  /* 丙 on GPT's snowy mountain spring, the designer's picks (2026-11-28). After the designer's notes the same day (「燈籠和竹筒需要再重新擺放
+     位置 他現在的位子和背景不搭」, then "the lamp and the bamboo should stay where they are. swapping location feels very
+     weird ... the lamp looks like floating above the ground, bamboo is also not on a ground"): no stones of our own,
+     the same places all day, and each thing standing on the picture's own snowy rocks, so they are placed in the
+     tall picture's units (`onPicture`, measured on the picture: the flat top of the big rock low on the left, the
+     rock at the foot of the shelter's posts on the right) and keep to those rocks on every phone; the monkey in the
+     water in front, on the right */
+  snow: { sun: [62, 46, 36, 36], piles: [], onPicture: ["lantern", "shishi"], lantern: [46, 567], shishi: [366, 506], bucket: null, monkey: [364, 476] },
 };
-/* 甲 and 乙 the same all day; 丙 turns with the day; `snow` is 丙 on the snowy spring's own rocks */
-export const LAYOUTS = { edges: { all: "edges" }, flip: { all: "flip" }, day: { morning: "edges", golden: "flip", night: "night" }, snow: { morning: "snowM", golden: "snowG", night: "snowN" } };
+/* 甲 and 乙 the same all day; 丙 turns with the day; `snow`: the snowy spring's own rocks, the same all day */
+export const LAYOUTS = { edges: { all: "edges" }, flip: { all: "flip" }, day: { morning: "edges", golden: "flip", night: "night" }, snow: { all: "snow" } };
 const arrangementOf = (layout, time) => ARRANGE[(LAYOUTS[layout] || {})[time] || (LAYOUTS[layout] || {}).all || "edges"];
 /* the boxes things are drawn in (the board lays other versions in the same boxes) */
 /* the monkey a quarter bigger since the designer's picks (「猴子跟capybara比有點太小」), then the lantern, the shishi-odoshi and the
    monkey bigger again (the designer, the same day: "make the objects bigger since they look extremely small next to the
    capybara") */
-export const SIZE = { lantern: [60, 90], shishi: [90, 74], bucket: [34, 30], monkey: [68, 58] };
+export const SIZE = { lantern: [60, 90], shishi: [84, 68], bucket: [34, 30], monkey: [68, 58] };
 const boxOf = (id, [x, y]) => { const [w, h] = SIZE[id]; return id === "monkey" ? [x - w / 2, y - h * .72, w, h] : id === "shishi" ? [x - w / 2, y - h, w, h] : [x - w / 2, y - h, w, h]; };
 
 /* ---------- the things as drawings (Claude's versions) ---------- */
