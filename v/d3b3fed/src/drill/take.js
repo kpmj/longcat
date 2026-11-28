@@ -23,7 +23,51 @@ export const SING_TAIL = 0.55; // keep listening after the last note so a late s
 export function createTake(plan, { delay = 0 } = {}) {
   const d = Number.isFinite(delay) && delay > 0 ? delay : 0;
   const targets = d ? plan.notes.map((n) => ({ ...n, s: n.s + d, e: n.e + d })) : plan.notes;
-  return { plan, delay: d, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(targets), octave: createOctaveGuard(), live: [], grade: null };
+  return { plan, delay: d, phase: "demo", t: -DEMO_LEAD, frames: [], demoIdx: -1, beatIdx: -1, singIdx: -1, matcher: new NoteMatcher(targets), octave: createOctaveGuard(), live: [], held: [], grade: null };
+}
+
+/* GREEN ONLY PAST HALF WAY (the designer, 2026-11-27: "For the note to turn green, always only turn green if the user sing
+   past half way of the note"). The matcher (match.js, untouched) can say a note is on the note as soon as its
+   start has been heard in tune, while the head is still in the first part of it. Now a note it calls on the note
+   is held back until the head is half way along the note, and it stays on the note only if the voice was on
+   that pitch (within a semitone) for at least half the note's length, anywhere in the note's place give or take
+   the timing leeway, so an early or late singer is measured against what they sang. A voice that only touched
+   the start is close instead (`short`). Close and off notes are shown as the matcher gives them, in order. */
+export const GREEN_SHARE = 0.5;
+const GREEN_NEAR = 1.0;
+const GREEN_REACH = 0.5; // the matcher's timing leeway (MATCH_WINDOW_SECONDS)
+function greenWindow(T, i) {
+  const n = T.plan.notes, lat = latOf(T), note = n[i];
+  const from = Math.max(note.s + lat - GREEN_REACH, i > 0 ? n[i - 1].e + lat : -Infinity);
+  const to = Math.min(note.e + lat + GREEN_REACH, i + 1 < n.length ? n[i + 1].s + lat : Infinity);
+  return { from, to, need: GREEN_SHARE * (note.e - note.s) };
+}
+/* seconds of voice on this note's pitch, in its place */
+export function heldOn(T, i) {
+  const { from, to } = greenWindow(T, i), midi = T.plan.notes[i].midi, f = T.frames;
+  let s = 0;
+  for (let k = 1; k < f.length; k++) {
+    const x = f[k];
+    if (x.t < from || x.t > to) continue;
+    if (x.midi !== null && x.conf >= 0.5 && Math.abs(x.midi - midi) <= GREEN_NEAR) s += Math.min(0.1, x.t - f[k - 1].t);
+  }
+  return s;
+}
+/* the next held result to show, or null while it must wait */
+function releaseHeld(T, final) {
+  const out = [];
+  while (T.held.length) {
+    const { index, result } = T.held[0], n = T.plan.notes[index];
+    let r = result;
+    if (r.verdict === "good") {
+      const past = sungTime(T) >= (n.s + n.e) / 2, { to, need } = greenWindow(T, index), held = heldOn(T, index);
+      if (!final && !(past && held >= need - 1e-6) && T.t <= to) break; // not yet
+      if (held < need - 1e-6) r = { ...r, verdict: "mid", short: true };
+    }
+    T.held.shift();
+    out.push({ index, result: r });
+  }
+  return out;
 }
 export const latOf = (T) => T.matcher.latency + T.delay;
 /* the take's clock as the singer sees it while singing: the note under the playhead is the one at this time */
@@ -93,8 +137,9 @@ export function stepTake(T, dt, frame = null) {
   if (midi !== null && conf >= 0.5) midi = guardOctave(T.octave, midi, T.t, P.notes, latOf(T));
   T.frames.push({ t: T.t, midi, conf });
   for (let i = T.singIdx + 1; i < P.notes.length && T.t >= P.notes[i].s + T.delay; i++) { T.singIdx = i; ev.push({ type: "note-start", i }); }
-  const ended = (list) => {
-    for (const { index, result } of list) {
+  const ended = (list, final = false) => {
+    T.held.push(...list);
+    for (const { index, result } of releaseHeld(T, final)) {
       const r = { ...result, heard: heardShare(T.frames, P.notes[index], latOf(T)) };
       T.live[index] = r;
       ev.push({ type: "note-end", i: index, result: r });
@@ -103,7 +148,7 @@ export function stepTake(T, dt, frame = null) {
   /* the matcher sees what the old drill saw: a pitch, or nothing when the tracker heard none */
   ended(T.matcher.feed({ time: T.t, midi: midi !== null && conf >= 0.5 ? midi : null, rms: frame?.rms ?? 0.1 }));
   if (T.t >= P.total + T.delay + SING_TAIL) {
-    ended(T.matcher.finish());
+    ended(T.matcher.finish(), true);
     T.phase = "done";
     T.grade = gradeTake(T.frames, P, T.live, latOf(T));
     ev.push({ type: "done", grade: T.grade });

@@ -644,7 +644,9 @@ function onNoteEnd(i, r) {
   R.moodUntil = R.T.t + 0.75;
   R.marks.push({ t: (n.s + n.e) / 2, midi: n.midi, type: v === "good" ? "ok" : v === "off" ? "?" : "~" });
   noteCue(v, n.midi, last ? 1 : 0.6); // quieter while more notes are still to be sung
-  R.flash = { text: `${NOTE_GLYPH[v]} ${v === "off" && r.heard < 0.2 ? "Didn’t hear it" : NOTE_WORD[v]}`, level: v, until: R.T.t + 0.8 };
+  /* in tune but let go before half way (take.js, GREEN_SHARE) */
+  const word = v === "off" && r.heard < 0.2 ? "Didn’t hear it" : r.short ? "Hold it longer" : NOTE_WORD[v];
+  R.flash = { text: `${NOTE_GLYPH[v]} ${word}`, level: v, until: R.T.t + 0.8 };
   const nb = document.getElementById(`nb-${i}`);
   if (nb) nb.classList.add(v);
   document.getElementById(`nl-${i}`)?.classList.add("done"); // the mark is drawn above the cat instead
