@@ -119,8 +119,9 @@ export function sceneParts(o = {}) {
   /* the cats that are waiting lie on the judge, each where its garment will go (the designer, 2026-11-28, of the three in a
      pile on the lap: 「還是他們分別在水豚身上的部分位置 點他們就開始唱」): the scarf's across the neck, the top's across
      the waist, the hat's on top of the head, beside the thing there (it rides the head, see hatOnHead below).
-     `arriving`: they pop on one after another. Each is marked data-wait with its garment: on Home a tap on it starts
-     that garment (ui/home.js). Before 2026-11-28 they lay in a pile on the lap (pile, 200 437) */
+     `arriving`: they pop on one after another. Each is marked data-wait with its garment; a tap pats it as any cat
+     is patted, and nothing more (for a few hours it started that garment's take, with a tip; the designer took it back:
+     「如果點最一開始的三隻貓咪 還是地方原本的動畫就好 不要馬上開始唱 也不用提示詞」). Before 2026-11-28 they lay in a pile on the lap (pile, 200 437) */
   const WAIT_AT = { scarf: [200, 292, 1], top: [200, 432, -1], hat: [176, 73, 1] };
   const waitOne = (w, i) => {
     const z = drawZone(w.zone), [x, y, dir] = WAIT_AT[z] || WAIT_AT.top;
