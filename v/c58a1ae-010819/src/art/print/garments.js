@@ -21,7 +21,7 @@ import { f, num, int, clamp, quad, sample, dPath, rng, hash } from "../util.js";
 import { FUR, lookOf, animalId, kindId, zoneId, timeId } from "../palettes.js";
 import { ZONES as OLD, moodOf } from "../garments.js";
 import { headFor, tailFor, palFor } from "./guests.js";
-import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
+import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailChain, catTailTucked, petHearts } from "./cat.js";
 import { zzPrint, bodyLeftAt } from "./judge.js";
 import { NEW_JUDGE, ARMS } from "../style.js";
 import { yarnOf, sleeveMarkup, yarnPill, KNIT, CAT_W } from "./yarn.js";
@@ -267,10 +267,13 @@ export function garmentLayers(g, ctx = {}) {
   if (zone !== "scarf" && !S) { const S0 = rows[0].pts; for (let i = 3; i < S0.length; i += 4) rib += `M${f(S0[i].x)} ${f(S0[i].y + w * .1)}v${f(w * .36)}`; }
   /* on a sleeve the ribbed hem runs along the lower edge of the knitting's first row */
   if (zone !== "scarf" && S && S.piece) { const A = S.piece[0]; for (let s = A.s0 + 7; s < A.s1 - 3; s += 5.2) { const sd = custom ? (A.Ln.at(s).tx < 0 ? -1 : 1) : hd, a = A.Ln.at(s, sd * S.ws * .16), b = A.Ln.at(s, sd * S.ws * .46); rib += `M${f(a.x)} ${f(a.y)}L${f(b.x)} ${f(b.y)}`; } }
-  const tail = cat ? (tucked ? catTailTucked : catTail)(kind, first.x - hdT * 2, first.y + 2, hdT, w * .38, pal) : tailFor(animal, kind, first.x - hdT * 2, first.y + 2, hdT, w * .38, pal, tucked);
+  const beat = { hat: 1.5, top: 7, scarf: 12.5 }[zone];
+  /* the finer cat (catMotion, trial 2026-11-28): the tail in three pieces that swing one after another */
+  const chain = cat && !tucked && ctx.animate && ctx.catMotion && ctx.catMotion.tail;
+  const tail = cat ? (tucked ? catTailTucked : chain ? catTailChain : catTail)(kind, first.x - hdT * 2, first.y + 2, hdT, w * .38, pal, beat) : tailFor(animal, kind, first.x - hdT * 2, first.y + 2, hdT, w * .38, pal, tucked);
   const hind = zone === "hat" ? "" : pawPair(first.x + hdT * 12, first.y + w * .5, hdT, .9, pal);
   const hx = end.x + hdH * Math.abs(Z.headDx), hy = end.y + Z.headDy - num(ctx.headLift);
-  const tailG = ctx.animate && !tucked ? `<g class="lc-tail ${hdT > 0 ? "lc-tail-l" : "lc-tail-r"}">${tail}</g>` : tail;
+  const tailG = ctx.animate && !tucked && !chain ? `<g class="lc-tail ${hdT > 0 ? "lc-tail-l" : "lc-tail-r"}">${tail}</g>` : tail;
   /* The step just sung. the designer, 2026-11-14: the wide cream light under the piece "seems a little distracting"; of five
      options (docs/design/longcat-cat-highlight-options.html) the designer chose B with a little of A.
      B: the whole cat hops once and three print sparkles twinkle for two seconds, then they are gone (only when
@@ -283,8 +286,7 @@ export function garmentLayers(g, ctx = {}) {
     if (ctx.animate) mark = star(hx + (b.x - a.x) / T * 29, hy - 15, 1, 0) + star(a.x - hd * 6, a.y - w * .5 - 14, .8, 1) + star(mid.x, mid.y - w * .5 - 20, 1.15, 2);
   }
   const hop = s => (newSeg && ctx.animate ? `<g class="lc-new-hop">${s}</g>` : s);
-  const beat = { hat: 1.5, top: 7, scarf: 12.5 }[zone];
-  const headM = cat ? catHead(hx, hy, hdH, face, .95, pal, kind, ctx.animate ? beat : null) : headFor(animal, kind, hx, hy, hdH, face, .95, pal, ctx.animate ? beat : null);
+  const headM = cat ? catHead(hx, hy, hdH, face, .95, pal, kind, ctx.animate ? beat : null, null, !!(ctx.animate && ctx.catMotion && ctx.catMotion.face)) : headFor(animal, kind, hx, hy, hdH, face, .95, pal, ctx.animate ? beat : null);
   const head0 = pawPair(end.x + hdH * 3, end.y + 12, hdH, 1, pal) + headM;
   /* animated: an awake cat stretches now and then (each garment at its own moment); a sleeping one breathes */
   /* animated: the head can be patted (data-tap; the whole garment answers through data-group): it nuzzles and hearts rise */

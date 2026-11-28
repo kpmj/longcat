@@ -63,7 +63,8 @@ export function sceneParts(o = {}) {
     if (int(g.steps, 0, 12, 0) > 0) worn.push(g); else waiting.push(g);
   }
   for (const w of list(o.waiting)) { const z = zoneId(w.zone); if (z && !seen.has(z)) { seen.add(z); waiting.push(w); } }
-  const ctx = { time, animate, seed, ink: L.ink };
+  /* catMotion: the finer cat's pieces, asked for by the trial page only (tools/art/cats-motion.mjs) */
+  const ctx = { time, animate, seed, ink: L.ink, catMotion: o.catMotion || null };
   const order = ["bottom", "top", "scarf"];
   worn.sort((a, b) => order.indexOf(a.zone) - order.indexOf(b.zone));
   const layers = worn.map(g => garmentLayers(g, ctx));

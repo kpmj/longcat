@@ -90,12 +90,21 @@ export const charmMarkup = kind => { const c = kindParts(kind).charm; return c &
 /* the cat's head at (x, y), facing dir (1 = right), scale sc */
 /* anim (optional, seconds): the ears twitch and the open eyes blink, out of step by that much. Leave it out for the
    lane cat, which is redrawn every frame. mouth (optional): the shape of a sung sound, see catFace */
-export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim = null, mouth = null) {
+export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim = null, mouth = null, rich = false) {
   const s = f(dir * sc * 100) / 100 || .01, t = f(sc * 100) / 100 || .01;
   const marks = `<path d="M-5 -16.2v5.6M0 -17.4v7M5 -16.2v5.6" stroke="${pal.stripe}" stroke-width="2.6" stroke-linecap="round"/>`;
   const whisk = `<path d="M-13.5 4l-11 -1.8M-13.5 7l-10.4 1.8M13.5 4l11 -1.8M13.5 7l10.4 1.8" ${key(LWC * .38)} opacity=".75"/>`;
   /* animated and awake: the face blinks, and a second, happy face waits for a pat (shown while lc-tapped) */
   const blinks = anim != null && (mood === "normal" || mood === "wide");
+  /* rich (the finer cat, asked for with `catMotion.face`): the face glances aside (lc-look), blinks on a longer, uneven
+     beat (lc-blink2), and a yawning face waits for its moment (lc-awake gives way to lc-face-yawn, the head tipping up
+     with lc-yawn-tilt). The CSS that moves them is the trial page's until the designer picks (tools/art/cats-motion.mjs) */
+  if (rich && anim != null && mood !== "sleep") {
+    const d = k => f(-anim * k);
+    const open = blinks ? `<g class="lc-blink2" style="animation-delay:${d(1.7)}s">${catFace(mood, pal, 0, mouth)}</g>` : catFace(mood, pal, 0, mouth);
+    const face = `<g class="lc-face"><g class="lc-awake" style="animation-delay:${d(2.3)}s"><g class="lc-look" style="animation-delay:${d(1.3)}s">${open}</g></g><g class="lc-face-yawn" style="animation-delay:${d(2.3)}s">${catFace("squint", pal, 0, "ah")}</g></g><g class="lc-face-pet">${catFace("smug", pal)}</g>`;
+    return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})"><g class="lc-yawn-tilt" style="transform-origin:0px 15px;animation-delay:${d(2.3)}s">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="8.4" rx="10.6" ry="7" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}${charmMarkup(kind)}</g></g>`;
+  }
   const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal, 0, mouth)}</g>` : catFace(mood, pal, 0, mouth);
   const face = anim != null && mood !== "sleep" ? `<g class="lc-face">${face0}</g><g class="lc-face-pet">${catFace("smug", pal)}</g>` : face0;
   return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="8.4" rx="10.6" ry="7" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}${charmMarkup(kind)}</g>`;
@@ -121,6 +130,54 @@ export function catTail(kindIn, x, y, dir, w = 8, pal = C) {
   if (kind === "round") return pipe(d, pal.fur, w * .85) + `<path d="M${P(-15.6, -15.5)}h${f(4.6 * dir)}M${P(-13.4, -21.6)}l${f(3.6 * dir)} 2.6" stroke="${pal.stripe}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
   return pipe(d, pal.fur, w * 1.05);
 }
+/* THE TAIL IN THREE PIECES (the finer cat, asked for with `catMotion.tail`; trial 2026-11-28). The same tail as
+   catTail, cut along its length into pieces that each turn at their joint, the next one inside the last, a little
+   later and a little further, so it swings like a whip and not like a stick. It is drawn twice, the key line first
+   and the fur over it, both with the same turning groups, so no line shows at a joint. phase: seconds that put this
+   cat out of step with the others. The CSS that turns them is the trial page's until the designer picks: each piece carries
+   its turn (--lc-a, degrees), the way the cat faces (--lc-d), how much later than the last piece it turns (--lc-lag)
+   and this cat's phase (--lc-ph), so a swish on a pat can keep the lag and drop the phase. */
+const TAIL_PATHS = {
+  point: [[[-14, -1], [-15, -13]], [[-16, -22], [-8, -24]]],
+  big: [[[-17, 0], [-17, -15]], [[-17, -28], [-8, -29]]],
+  fold: [[[-12, -1], [-13, -12]]],
+  curl: [[[-16, 0], [-16, -14]], [[-16, -25], [-7, -23]], [[-1.5, -21], [-5.5, -15.5]]],
+};
+const TAIL_W = { point: 1.05, tuft: 1.35, round: .85, big: .68, fold: 1.15, curl: .8 };
+export function catTailChain(kindIn, x, y, dir, w = 8, pal = C, phase = 0) {
+  const kind = kindParts(kindIn).shape;
+  if (kind === "small") return `<g class="lc-tseg" style="transform-origin:${f(x)}px ${f(y)}px;--lc-a:9;--lc-d:${dir};--lc-ph:${f(phase)}s">${catTail(kindIn, x, y, dir, w, pal)}</g>`;
+  const segs = TAIL_PATHS[kind] || TAIL_PATHS.point, sw = w * (TAIL_W[kind] || 1.05), lw = LWC * .9;
+  /* points along the tail, 12 to each curve, in the drawing's own units */
+  const pts = [[0, 0]];
+  let a = [0, 0];
+  for (const [c, b] of segs) { for (let i = 1; i <= 12; i++) { const t = i / 12, u = 1 - t; pts.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]); } a = b; }
+  const len = [0]; for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = len[len.length - 1], cuts = kind === "fold" ? [0, .5, 1] : [0, .38, .7, 1];
+  const at = q => len.findIndex(v => v >= q * L);
+  const pieces = cuts.slice(0, -1).map((q, k) => pts.slice(at(q), at(cuts[k + 1]) + 1));
+  const P = ([dx, dy]) => `${f(x + dx * dir)} ${f(y + dy)}`;
+  const d = piece => piece.map((p, i) => `${i ? "L" : "M"}${P(p)}`).join("");
+  /* what is drawn at the tip: the tuft's brush, the rings of the round tail (in the piece they sit on) */
+  const last = pieces.length - 1;
+  const extra = k => {
+    let m = "";
+    if (kind === "tuft" && k === last) m += blob(x - 8 * dir, y - 25, w * 1.1, pal.fur) + `<path d="M${P([-13, -27])} q${f(4 * dir)} -5 ${f(9 * dir)} -1" stroke="${pal.stripe}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+    if (kind === "round" && k === last) m += `<path d="M${P([-15.6, -15.5])}h${f(4.6 * dir)}M${P([-13.4, -21.6])}l${f(3.6 * dir)} 2.6" stroke="${pal.stripe}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    return m;
+  };
+  const AMP = [5, 7, 10];
+  const nest = fur => {
+    let inner = "";
+    for (let k = last; k >= 0; k--) {
+      const [jx, jy] = pieces[k][0], stroke = fur ? `stroke="${pal.fur}" stroke-width="${f(sw)}"` : `stroke="${KEY}" stroke-width="${f(sw + 2 * lw)}"`;
+      inner = `<g class="lc-tseg" style="transform-origin:${f(x + jx * dir)}px ${f(y + jy)}px;--lc-a:${AMP[k]};--lc-d:${dir};--lc-lag:${f(k * .22)}s;--lc-ph:${f(phase)}s"><path d="${d(pieces[k])}" fill="none" ${stroke} stroke-linecap="round" stroke-linejoin="round"/>${fur ? extra(k) : ""}${inner}</g>`;
+    }
+    return inner;
+  };
+  return nest(false) + nest(true);
+}
+
 /* the tail tucked along the body (asleep) */
 export function catTailTucked(kindIn, x, y, dir, w = 8, pal = C) {
   const kind = kindParts(kindIn).shape;

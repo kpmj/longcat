@@ -2025,6 +2025,32 @@ export const FILES = {
     "attack": 0.3155,
     "clicks": 0
   },
+  "fx.tap.waterfall": {
+    "path": "fx/jungle/waterfall.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "jungle_water",
+    "version": 1,
+    "libraries": [
+      "freesound-364700",
+      "freesound-454340",
+      "freesound-660259",
+      "freesound-771257"
+    ],
+    "bytes": 20995,
+    "sha256": "be03488a6d92056cdb3b3ad004c8d11440010de8911f87b727a778a8e4cc013f",
+    "seconds": 1.62,
+    "channels": 1,
+    "lufs": -6.1,
+    "measure": "TP",
+    "peak": -6.1,
+    "lead": 0.003,
+    "below300": 0.048,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0274,
+    "clicks": 0
+  },
   "fx.tap.window": {
     "path": "fx/onsen/window.m4a",
     "family": "fx",
