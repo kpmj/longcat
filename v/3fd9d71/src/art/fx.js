@@ -176,6 +176,70 @@ export function paperBurst({ x, y, scale = 1, count = 44 }) {
   };
 }
 
+/* A PUFF: a few small things thrown up from x y that fall and fade in under a second: dots of yarn fluff with the key
+   line, and `stars` small four-point stars. For a note that lands (the yarn's colours, stars) and for one that gets
+   away (grey fluff, slower, no stars) on the singing screen. One shot */
+export function puff({ x, y, colours, count = 9, stars = 0, speed = 1, spread = .9, scale = 1, life = [.55, .85] }) {
+  const P = particles();
+  for (let i = 0; i < count + stars; i++) {
+    const ang = -Math.PI / 2 + rnd(-spread, spread), v = rnd(70, 150) * speed * scale;
+    P.list.push({ x: x + rnd(-6, 6) * scale, y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, g: 320 * scale, drag: 1.2, age: 0, life: rnd(life[0], life[1]), fadeOut: .4, r: rnd(1.6, 3) * scale, c: pick(colours), star: i >= count, rot: rnd(0, 6.3), spin: rnd(-6, 6) });
+  }
+  return {
+    done: false,
+    step(dt) { P.step(dt); if (!P.list.length) this.done = true; },
+    draw(ctx) {
+      for (const p of P.list) {
+        const a = alphaOf(p); if (a <= 0) continue;
+        ctx.globalAlpha = a; ctx.strokeStyle = INK; ctx.lineWidth = .9 * scale;
+        if (p.star) { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = PALETTE.yuzu; star4(ctx, 4.6 * scale); ctx.fill(); ctx.stroke(); ctx.restore(); }
+        else { ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+const star4 = (ctx, r) => { ctx.beginPath(); for (let j = 0; j < 8; j++) { const rr = j % 2 ? r * .3 : r, t = -Math.PI / 2 + j * Math.PI / 4; ctx[j ? "lineTo" : "moveTo"](Math.cos(t) * rr, Math.sin(t) * rr); } ctx.closePath(); };
+const noteShape = (ctx, s) => { ctx.beginPath(); ctx.ellipse(-2.6 * s, 0, 3.2 * s, 2.5 * s, -.35, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(.4 * s, 0); ctx.lineTo(.4 * s, -11 * s); ctx.quadraticCurveTo(4.5 * s, -10 * s, 6 * s, -5.5 * s); ctx.stroke(); };
+
+/* A RUN OF GOOD NOTES (the singing screen's combo, in the print's way instead of the bright CSS one): in the box
+   x y w h, stars that pop up and fade one after another (tier 1 and up), notes in ink that rise and sway (2 and up),
+   and paper that falls turning over (4 and up). `tier` can change while it runs; `end()` fades it out */
+export function comboSky({ box, tier = 1, scale = 1 }) {
+  const { x, y, w, h } = box, P = particles(), spots = [];
+  let level = tier, ending = 0, noteDue = 0, paperDue = 0;
+  for (let i = 0; i < 7; i++) spots.push({ x: x + rnd(.04, .96) * w, y: y + rnd(.04, .7) * h, ph: rnd(0, 1), per: rnd(1.3, 2.1), s: rnd(.7, 1.15) * scale });
+  return {
+    done: false,
+    set tier(v) { level = v; if (v > 0) ending = 0; },
+    end() { ending = ending || .001; },
+    step(dt) {
+      if (ending) { ending += dt; if (ending > .6) this.done = true; }
+      noteDue -= dt; paperDue -= dt;
+      if (level >= 2 && noteDue <= 0 && !ending) { noteDue = rnd(.5, .9); P.list.push({ kind: "note", x: x + rnd(.08, .92) * w, y: y + h + 10, vx: 0, vy: -rnd(38, 55) * scale, wob: 18 * scale, wobW: rnd(2, 3), ph: rnd(0, 6), age: 0, life: rnd(2.6, 3.4), fadeIn: .1, fadeOut: .3, s: rnd(.9, 1.2) * scale, rot: 0 }); }
+      if (level >= 4 && paperDue <= 0 && !ending) { paperDue = rnd(.12, .22); P.list.push({ kind: "paper", x: x + rnd(0, 1) * w, y: y - 8, vx: 0, vy: rnd(50, 80) * scale, wob: rnd(20, 40) * scale, wobW: rnd(3, 5), ph: rnd(0, 6), rot: rnd(0, 6), spin: rnd(-3, 3), flip: rnd(0, 6), flipW: rnd(5, 9), age: 0, life: h / (60 * scale) + 1, fadeOut: .15, c: pick([PALETTE.red, PALETTE.yuzu, PALETTE.indigo, PALETTE.green, PALETTE.cream]), s: rnd(.8, 1.1) * scale }); }
+      P.step(dt);
+    },
+    draw(ctx, t) {
+      const fade = ending ? Math.max(0, 1 - ending / .6) : 1;
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.1 * scale;
+      if (level >= 1) for (const sp of spots) {
+        const k = ((t / sp.per + sp.ph) % 1), pop = k < .5 ? Math.sin(k / .5 * Math.PI) : 0;
+        if (pop <= 0) continue;
+        ctx.save(); ctx.globalAlpha = fade; ctx.translate(sp.x, sp.y); ctx.scale(pop * sp.s, pop * sp.s); ctx.fillStyle = PALETTE.yuzu; star4(ctx, 9); ctx.lineWidth = 1.2 / Math.max(.3, pop * sp.s); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      for (const p of P.list) {
+        const a = alphaOf(p) * fade; if (a <= 0) continue;
+        ctx.save(); ctx.globalAlpha = a; ctx.translate(p.x, p.y);
+        if (p.kind === "note") { ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = 1.5 * p.s; noteShape(ctx, p.s * 1.3); }
+        else { ctx.rotate(p.rot); ctx.scale(p.s * Math.cos(p.flip), p.s); ctx.fillStyle = p.c; ctx.strokeStyle = INK; ctx.lineWidth = .9 / p.s; ctx.beginPath(); ctx.rect(-2.2, -4.4, 4.4, 8.8); ctx.fill(); ctx.stroke(); }
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
 /* The paper burst on a canvas of its own over the whole page (class lc-fx-burst, styles.css), at x y in the page's
    px; the canvas goes when the last piece is down. For a good take (take-screen.js) and the sun or moon pressed
    when its time of day is all done (ui/home.js). Nothing with less motion */

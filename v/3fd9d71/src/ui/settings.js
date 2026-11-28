@@ -117,6 +117,13 @@ const TAP_SOURCES = [
   { id: "files", name: "Sound files (instruments, recordings, the designer's voice)" },
   { id: "page", name: "Made in the page (as before)" },
 ];
+/* the singing screen's finer motion, a trial (take-screen.js, 2026-11-28): each piece on or off */
+const DRILL_FX = [
+  { id: "note", name: "A note that lands throws a puff of yarn and stars" },
+  { id: "miss", name: "A note that gets away shakes and loses grey fluff" },
+  { id: "combo", name: "A run of good notes: the print's stars, ink notes and paper" },
+  { id: "head", name: "The cat's head stretches, leans and squashes as it moves" },
+];
 /* what sounds in the rest before the next round (take-screen.js `playCues`) */
 /* Dev: how long after its beat a note reaches the cat's head (drills.js HEAD_DELAY; null = the game's) */
 const HEAD_DELAYS = [null, 0, 0.1, 0.3, 0.5];
@@ -162,6 +169,10 @@ export function openDev() {
     <h4>Home music</h4>
     <p class="muted small">F is Home's tune: rendered from sampled instruments, one file for each time of day. A to D are the earlier tunes, made in the page; E is four bars that tried the path. Pick one and it plays while this panel is open; it is the tune Home plays from then on.</p>
     <div class="radio">${MUSIC.map((v) => `<label><input type="radio" name="music" value="${v.id}" ${(S.dev.homeMusic || "yuzu") === v.id ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <h4>Singing screen motion (trial)</h4>
+    <p class="muted small">Finer motion on the singing screen, each piece on its own. Off for everyone else. Sing a take with some on and some off, and say which to keep.</p>
+    <div class="radio">${DRILL_FX.map((v) => `<label><input type="checkbox" name="drillfx" value="${v.id}" ${S.dev.drillFx && S.dev.drillFx[v.id] ? "checked" : ""}> ${esc(v.name)}</label>`).join("")}</div>
+    <button class="btn small" data-a="drillfx-all">All four on</button>
     <h4>Trial sounds</h4>
     <p class="muted small">The first chord rendered from a sampled piano (2026-11-26), as one file. The chords of a take are now put together from single notes: see "Between rounds" above.</p>
     <button class="btn small" data-a="hear-chord">▶ Hear the chord (piano, C)</button>
@@ -204,6 +215,10 @@ export function openDev() {
     audioContext(); setTapSource(S.dev.tapSounds); prepareTaps();
     tapSound(b.dataset.hearTap, ["monkey"].includes(b.dataset.hearTap) ? "jungle" : null); // the first press may still be the page's sound: its file is on the way
   }));
+  /* the singing screen's finer motion: each piece on or off (take-screen.js reads S.dev.drillFx when a take starts) */
+  const keepDrillFx = () => { S.dev.drillFx = Object.fromEntries($$("input[name=drillfx]", el).map((i) => [i.value, i.checked])); app.save(); };
+  $$("input[name=drillfx]", el).forEach((i) => (i.onchange = () => { keepDrillFx(); toast(`${DRILL_FX.find((v) => v.id === i.value).name}: ${i.checked ? "on" : "off"}`); }));
+  el.querySelector("[data-a=drillfx-all]").onclick = () => { $$("input[name=drillfx]", el).forEach((i) => (i.checked = true)); keepDrillFx(); toast("All four on. Sing a take."); };
   $$("input[name=view]", el).forEach((i) => (i.onchange = () => { S.dev.view = i.value; app.save(); toast(i.value === "scroll" ? "Note area: scroll" : "Note area: sweep"); }));
   $$("input[name=headdelay]", el).forEach((i) => (i.onchange = () => { S.dev.headDelay = i.value === "" ? null : Number(i.value); app.save(); toast(`Head delay: ${i.value === "" ? HEAD_DELAY : i.value} s`); }));
   $$("input[name=between]", el).forEach((i) => (i.onchange = () => { S.dev.between = i.value; app.save(); toast(`Between rounds: ${BETWEEN.find((v) => v.id === i.value).name}`); }));

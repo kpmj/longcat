@@ -80,7 +80,9 @@ export function laneCatSvg(o = {}) {
     if (look.pattern === "twotone") out += stroke(d, pal.furDk, w, ` stroke-dasharray="0 ${f(len / 2)} ${f(len + 1)}"`);
     else if (D) out += `<path d="${d}" stroke="${pal[D[3]]}" stroke-width="${f(w * D[2])}" stroke-dasharray="${f(D[0] * sc)} ${f(D[1] * sc)}" stroke-dashoffset="${f(-D[1] * sc / 2)}"${D[4] ? ` stroke-linecap="round"` : ""} stroke-linejoin="round" fill="none"${animal === "cat" ? "" : ` opacity=".5"`}/>`;
   }
-  if (head) out += `<g transform="translate(${f(head.x)} ${f(head.y)})">${cachedHead(animal, kind, mood, look.palette, dir, Math.round(.85 * sc * 100) / 100, MOUTHS.includes(o.mouth) ? o.mouth : null)}</g>`;
+  /* head.tf (optional): a turn and a stretch round the head's middle, from how fast it moves (the singing screen's
+     finer motion, a trial in Dev tools since 2026-11-28); without it the head is drawn as before */
+  if (head) out += `<g transform="translate(${f(head.x)} ${f(head.y)})${typeof head.tf === "string" ? ` ${head.tf}` : ""}">${cachedHead(animal, kind, mood, look.palette, dir, Math.round(.85 * sc * 100) / 100, MOUTHS.includes(o.mouth) ? o.mouth : null)}</g>`;
   for (const m of Array.isArray(o.marks) ? o.marks : []) {
     if (!m || typeof m !== "object") continue;
     const [t, ink] = MARK[m.type] || MARK["?"];

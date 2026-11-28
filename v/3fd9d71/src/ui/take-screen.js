@@ -14,7 +14,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD, latOf
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { burstOver } from "../art/fx.js";
+import { burstOver, makeFx, puff, comboSky, paperBurst, lessMotion } from "../art/fx.js";
 import { laneShape, laneInside, onChart, sweepSeconds, sweepView, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
 import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
@@ -250,6 +250,21 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
   const pz = $("[data-act=pause]", root);
   if (pz) pz.onclick = () => pause();
   wireTouch(root);
+  /* The singing screen's finer motion, a trial behind Dev tools (2026-11-28; the designer: "can you use the animation and vfx
+     skill to remake animations inside the drills as well?"). Each piece is switched on by itself there and is off
+     for everyone else: a note that lands throws a puff of yarn and stars (note), one that gets away shakes and loses
+     a tuft of grey fluff (miss), a run of good notes is the print's stars, ink notes and paper instead of the bright
+     CSS ones (combo), and the cat's head stretches and leans as it moves and squashes as it lands (head). The effects
+     are drawn on a canvas over the screen (art/fx.js), which goes with the screen. */
+  R.dfx = { ...((S.dev && S.dev.drillFx) || {}) };
+  root.classList.toggle("dfx-miss", !!R.dfx.miss);
+  if ((R.dfx.note || R.dfx.miss || R.dfx.combo) && !lessMotion()) {
+    const c = document.createElement("canvas");
+    c.className = "lc-fx-take";
+    c.setAttribute("aria-hidden", "true");
+    root.append(c);
+    R.fx = makeFx(c, { width: innerWidth, height: innerHeight });
+  }
   R.tier = comboTier(app.combo || 0);
   paintJudge();
   showCombo(app.combo || 0, false);
@@ -582,6 +597,16 @@ const FX = {
 function paintFx(tier) {
   const el = document.getElementById("fx");
   if (!el) return;
+  /* the trial (Dev tools): the run is drawn on the effects layer, in the print's way, over the judge's strip */
+  if (R && R.fx && R.dfx.combo) {
+    el.innerHTML = "";
+    el.dataset.tier = String(tier);
+    if (tier <= 0) { if (R.sky) R.sky.end(); R.sky = null; return; }
+    const b = el.getBoundingClientRect();
+    if (R.sky && !R.sky.done) R.sky.tier = tier;
+    else R.sky = R.fx.add(comboSky({ box: { x: b.left, y: b.top, w: b.width, h: b.height }, tier }));
+    return;
+  }
   let html = "";
   if (tier >= 1) html += FX[1]();
   if (tier >= 2) html += FX[2]();
@@ -604,7 +629,12 @@ function showCombo(n, live = true) {
     if (fx) fx.classList.remove("ending"); // a new run can start while the last one is still fading
     paintFx(tier);
     paintJudge();
-    if (live && fx) {
+    if (live && fx && R.fx && R.dfx.combo) {
+      /* the trial: a small handful of paper from the judge's head instead of the ring */
+      const j = document.getElementById("judge"), r = j && j.getBoundingClientRect();
+      if (r && r.width) R.fx.add(paperBurst({ x: r.left + r.width / 2, y: r.top + r.height * 0.22, count: 22 }));
+      chime(COMBO_TIERS[tier - 1].chime);
+    } else if (live && fx) {
       fx.classList.remove("burst"); void fx.offsetWidth; fx.classList.add("burst");
       chime(COMBO_TIERS[tier - 1].chime); // high, above the pitch tracker's range, so the mic ignores it
     }
@@ -650,6 +680,12 @@ function onNoteEnd(i, r) {
   R.flash = { text: `${NOTE_GLYPH[v]} ${word}`, level: v, until: R.T.t + 0.8 };
   const nb = document.getElementById(`nb-${i}`);
   if (nb) nb.classList.add(v);
+  /* the trial (Dev tools): a puff from the block's end, where the head is */
+  if (nb && R.fx && ((v !== "off" && R.dfx.note) || (v === "off" && R.dfx.miss))) {
+    const r = nb.getBoundingClientRect(), x = r.right - Math.min(14, r.width / 3), y = r.top + r.height * 0.35;
+    if (v === "off") R.fx.add(puff({ x, y, colours: ["#b9b2a6", "#8f877b", "#d8d2c6"], count: 7, speed: .55, spread: .7, life: [.7, 1.1] }));
+    else R.fx.add(puff({ x, y, colours: ["#6fc17c", "#f6efe0", v === "good" ? "#ebb229" : "#f3c95c"], count: v === "good" ? 9 : 5, stars: v === "good" ? 2 : 0 }));
+  }
   document.getElementById(`nl-${i}`)?.classList.add("done"); // the mark is drawn above the cat instead
 }
 
@@ -857,7 +893,17 @@ function draw(v, dt = 1 / 60) {
   const mouth = open || P.mouth === "mm" ? P.mouth : null;
   const line = document.getElementById("lane-line");
   if (line) line.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.slim ? shape.threads : [], slim: shape.slim, thin: true, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal });
-  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: hx, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
+  /* the trial (Dev tools): the head stretches and leans with its speed, and squashes for a moment as it lands */
+  let tf;
+  if (R.dfx && R.dfx.head && !lessMotion()) {
+    const semi = Math.abs(yOf(61) - yOf(60)) || 1, sp = Math.max(-1, Math.min(1, (R.headV || 0) / (semi * 22))), st = Math.abs(sp);
+    if ((R.lastSp || 0) > .45 && st < .12) R.squashT = .2;
+    R.lastSp = st;
+    R.squashT = Math.max(0, (R.squashT || 0) - dt);
+    const sq = R.squashT > 0 ? Math.sin((R.squashT / .2) * Math.PI) : 0;
+    tf = `rotate(${(sp * 9).toFixed(2)}) scale(${(1 - .1 * st + .08 * sq).toFixed(3)} ${(1 + .16 * st - .1 * sq).toFixed(3)})`;
+  }
+  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: hx, y: R.headY + bob, dir: 1, tf }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
 }
 
 function wireTouch(root) {
