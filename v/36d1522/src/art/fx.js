@@ -114,6 +114,29 @@ function drawWater(ctx, list, pale) {
   ctx.globalAlpha = 1;
 }
 
+/* STEAM off the hot spring's pool beside the judge (2026-11-28): soft flat puffs that rise, widen, sway slowly and
+   thin out, a few at a time; already rising when the layer starts. sources: [[x, y], ...] in phone px; rate: puffs a
+   second in all */
+export function steamWisps({ sources, pale = "#f8f7f2", rate = 2.2, scale = 1 }) {
+  const P = particles(); let due = 0;
+  const spawn = () => { const [x, y] = pick(sources); P.list.push({ x: x + rnd(-8, 8) * scale, y, vx: rnd(-3, 3) * scale, vy: rnd(-16, -10) * scale, wob: rnd(5, 9) * scale, wobW: rnd(.6, 1.1), ph: rnd(0, 6.3), r: rnd(6, 10) * scale, grow: rnd(2.2, 3), age: 0, life: rnd(3.4, 5), fadeIn: .25, fadeOut: .55 }); };
+  const step = dt => { due += dt * rate; while (due >= 1) { due -= 1; spawn(); } P.step(dt); };
+  for (let t = 0; t < 4; t += .1) step(.1);
+  return {
+    step,
+    draw(ctx) {
+      ctx.fillStyle = pale;
+      for (const p of P.list) {
+        const a = alphaOf(p); if (a <= 0) continue;
+        const r = p.r * (1 + (p.grow - 1) * ease(p.age / p.life));
+        ctx.globalAlpha = a * .42; ctx.beginPath(); ctx.ellipse(p.x, p.y, r * 1.15, r * .8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = a * .3; ctx.beginPath(); ctx.ellipse(p.x + r * .45, p.y - r * .55, r * .7, r * .55, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
 /* LEAVES that come down the two strips beside the judge's head, one at a time: each sways, tilts with its sway and
    turns over (its underside a darker green) as a real leaf does. strips: [[x0, x1], ...] in phone px; from: y to
    start at; to: y to be gone by */

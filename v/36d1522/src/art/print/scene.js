@@ -14,7 +14,10 @@ const CAT_MOTION = { tail: true, face: true };
 /* the finer capybara's groups (a glance, a sniff, the head following the breath, ears that know their side): the designer's
    picks on the capybara page, 2026-11-28 */
 const JUDGE_MOTION = { face: true };
-import { onsen, onsenLandscape } from "./places/onsen.js";
+import { onsen } from "./places/onsen.js";
+/* the hot spring made again, the designer's picks (2026-11-28): its landscape (Home, the wardrobe, postcards); the first one is
+   in ./places/onsen.js, whose scene (H) is still drawn */
+import { hotspring } from "./places/hotspring.js";
 import { PLACES as YEAR } from "./places/all.js";
 import { jungle } from "./places/jungle.js";
 
@@ -43,7 +46,7 @@ function cushionMarkup(c) {
 }
 /* G landscapes (o.landscape in sceneParts): postcards, and since 2026-11-14 the home page and the wardrobe, which
    show the same background as the postcards. Drawn with `animate` they move and answer a tap like the H scene does */
-const LANDSCAPE = { onsen: onsenLandscape, ...Object.fromEntries(Object.entries(PLACES).map(([k, P]) => [k, P.landscape])) };
+const LANDSCAPE = { onsen: hotspring.landscape, ...Object.fromEntries(Object.entries(PLACES).map(([k, P]) => [k, P.landscape])) };
 /* a place made with places/kit.js can be passed as itself instead of an id (the year-two places, not in the calendar yet) */
 const madePlace = place => (place && typeof place === "object" && typeof place.scene === "function" && typeof place.landscape === "function" ? place : null);
 export function placeLayers(place, time, seed = 0, animate = false, landscape = false) {

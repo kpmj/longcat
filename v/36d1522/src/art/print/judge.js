@@ -5,6 +5,7 @@
 import { f, num, svgDoc } from "../util.js";
 import { FACES } from "../judge.js";
 import { NEW_JUDGE, ARMS } from "../style.js";
+import { moreItems } from "./items.js";
 
 export const J = { fur: "#b3885d", dk: "#916b46", muzzle: "#d3b189", ink: "#2a2223", key: "#262122", yuzu: "#ebb229", yuzuDk: "#cf8f1c", leaf: "#5d8a63", ear: "#c79c84", mouth: "#7a3b33", white: "#f8f2e2", tear: "#8fb8cc", card: "#f3ead6" };
 const LW = 2.7;
@@ -100,7 +101,8 @@ function acorn(hop, lift = 0) {
   const ticks = hop ? ln("M-25 -4q-4 8 -1 16M25 -4q4 8 1 16", .7) : "";
   return `<g transform="translate(24 ${f(ITEM_Y - hop - lift)})">${sh("M-14 -6Q-14 13 0 19Q14 13 14 -6Z", "#c99a62", .9)}${fl("M-13 2Q-10 14 0 18Q10 14 13 2Q4 12 -13 2Z", "#a87a45", .6)}${sh("M-17.500 -6Q-18 -21 0 -22Q18 -21 17.500 -6Z", "#7a5a3a", .9)}${ln("M-10 -11h5M-2 -14h5M7 -11h5M-6 -8h5M3 -8h5M-3 -18h4", .42)}${ln("M0 -22q1 -7 6 -9", .85)}${ticks}</g>`;
 }
-const ITEMS = { yuzu, acorn };
+/* more, in their own module: the hot spring's ideas (a towel, an onsen egg, a tiny bucket; print/items.js) */
+const ITEMS = { yuzu, acorn, ...moreItems((hop, lift) => `translate(24 ${f(ITEM_Y - hop - lift)})`) };
 const zz = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)}) scale(${s})">${ln("M0 0h5l-5 6h5M8.5 -9h3.6l-3.6 4.4h3.6", .7 / s)}</g>`;
 
 /* The anchor on the head. Whatever is worn on the head (the hat cat, its guide) is drawn inside the head's own group,

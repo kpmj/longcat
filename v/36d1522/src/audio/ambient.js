@@ -170,10 +170,11 @@ function whistle(notes, t, step) {
    pressed at every place: the sun or moon (a glockenspiel), the lantern (a hand chime), a yuzu in the water (two
    water drops), the yuzu on the capybara's head (a marimba), the capybara (a pat on a hand drum and the designer's
    own "mm", as the monkey is made), and a cat (a cat's own purr-and-chirp, from a CC0 recording). */
+/* (shishi and onsen-monkey: the hot spring made again, the designer's picks of 2026-11-28) */
 const TAP_FILES = { "bird-1": "fx.tap.bird-1", "bird-2": "fx.tap.bird-2", "bird-3": "fx.tap.bird-3", acorn: "fx.tap.acorn", heart: "fx.tap.heart",
   monkey: "fx.tap.monkey", "cat@jungle": "fx.tap.cat@jungle",
   window: "fx.tap.window", lamp: "fx.tap.lamp", dunk: "fx.tap.dunk", yuzu: "fx.tap.yuzu", judge: "fx.tap.judge", cat: "fx.tap.cat",
-  waterfall: "fx.tap.waterfall", fire: "fx.tap.fire", leaf: "fx.tap.leaf" };
+  waterfall: "fx.tap.waterfall", fire: "fx.tap.fire", leaf: "fx.tap.leaf", shishi: "fx.tap.shishi", "onsen-monkey": "fx.tap.onsen-monkey" };
 /* fetched with them: the result sounds that are files, which synth.js plays (placeSfx) */
 const ALSO = ["fx.place.jungle.miss", "fx.place.jungle.hit", "fx.place.onsen.hit", "fx.place.onsen.miss", "fx.place.camping.hit"];
 /* How loud a tap's file sits on the bus, so that it is about as loud as the sound it replaces (the files are at
@@ -183,7 +184,8 @@ const TAP_LEVEL = { "bird-1": 0.2, "bird-2": 0.2, "bird-3": 0.2, acorn: 0.4, hea
   window: 0.25, lamp: 0.27, dunk: 0.56, yuzu: 0.21, judge: 0.25, cat: 0.16, // (the same way: -24, -23, -24, -19, -21, -24.5 dB)
   waterfall: 0.42, // no page sound of its own to match: its loudest 0.4 s near the other taps' on the bus
   fire: 0.3, // the campfire, pressed (2026-11-28): peak -14 dB at the output, among the other taps'; the page's was -24
-  leaf: 0.18 }; // a falling leaf, pressed (2026-11-28): it had no sound; its loudest moment -28 dB, softest of the jungle's
+  leaf: 0.18, // a falling leaf, pressed (2026-11-28): it had no sound; its loudest moment -28 dB, softest of the jungle's
+  shishi: 0.22, "onsen-monkey": 0.3 }; // the hot spring's, 2026-11-28: a knock among the other taps; the bubbles soft. DRAFT
 /* The jungle's cat never meowed twice alike: the page's sound was moved up or down by as much as two semitones
    at each press. The recording is played a little faster or slower for the same reason. */
 const TAP_WANDER = { "cat@jungle": 2, cat: 2 };
@@ -197,7 +199,7 @@ export function prepareTaps() {
 /* a thing the page has no sound for plays, made in the page, what it sounds like: the jungle's waterfall the water
    drops of a yuzu in the hot spring. Its own file is a splash and the water rushing (2026-11-28, the designer: "can you
    create the water splash sound for the waterfall with the engine?"; tools/audio/pieces/jungle_water.py). */
-const TAP_AS = { waterfall: "dunk" };
+const TAP_AS = { waterfall: "dunk", egg: "yuzu", towel: "yuzu", oke: "yuzu" }; // (the things on the judge's head sound as the yuzu)
 export function tapSound(kind, place = null) {
   const own = TAP_FILES[kind] && !TAP[kind] ? kind : null; // a file of its own and no page sound
   kind = TAP_AS[kind] || kind;

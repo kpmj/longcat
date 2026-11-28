@@ -75,7 +75,10 @@ export function homeArt(o, W, H, top, bottom) {
     const open = (cls) => `<svg xmlns="http://www.w3.org/2000/svg"${cls ? ` class="${cls}"` : ""} viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">`;
     const back = `<rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
 ${scenery}`;
-    const front = `${print(`${p.special}${P.seat}${p.shelves}${smaller(p.character)}`)}
+    /* a place that keeps its band on a tall picture (P.frontOnTall: the hot spring's pool) has it in front of the
+       judge, and its colour carried on under the print to the bottom of the screen */
+    const band = P.frontOnTall ? `${print(P.front || "")}<rect y="${below.toFixed(1)}" width="400" height="${Math.max(0, L.VH - below).toFixed(1)}" fill="${down.fill}"/>${waves}` : "";
+    const front = `${print(`${p.special}${P.seat}${p.shelves}${smaller(p.character)}`)}${band}
 ${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}`;
     /* a point of the tall picture in screen px: it fills the width and is cut at the bottom, or on a long phone grown
        to the height and cut at the sides (xMidYMin slice) */

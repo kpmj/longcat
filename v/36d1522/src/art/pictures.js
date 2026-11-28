@@ -30,6 +30,18 @@ export const PICTURES = {
     "monkey-sit": of("jungle/monkey-sit.png", 166, 288),
     "monkey-hang": of("jungle/monkey-hang.png", 155, 304),
   },
+  /* the hot spring made again (the designer's picks on the board, 2026-11-28): GPT's snowy mountain spring (丙 雪山溫泉) for
+     each time of day, its stone lantern, its snow monkey, and the shishi-odoshi as two pictures, the stand (its painted
+     stream under the tube cut out; the stream is code) and the tube that turns on the peg */
+  onsen: {
+    back: of("onsen/back.jpg", 800, 1422),
+    "back-golden": of("onsen/back-golden.jpg", 800, 1422),
+    "back-night": of("onsen/back-night.jpg", 800, 1422),
+    lantern: of("onsen/lantern.png", 214, 320),
+    monkey: of("onsen/monkey.png", 320, 256),
+    "shishi-stand": of("onsen/shishi-stand.png", 320, 306),
+    "shishi-tube": of("onsen/shishi-tube.png", 320, 86),
+  },
 };
 
 /* the picture in a box of the drawing: x y w h, and how it sits in the box (SVG's preserveAspectRatio) */

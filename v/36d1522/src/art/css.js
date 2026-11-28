@@ -121,6 +121,17 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-ride { animation: lc-ride 16s linear infinite; }
   .lc-float { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-float 6s ease-in-out infinite; }
   .lc-spark { animation: lc-spark 2.8s ease-out infinite; }
+  /* the hot spring made again (2026-11-28): the shishi-odoshi's tube turns round its peg (its group is placed on the
+     peg, so the origin is 0 0): it fills with its open end up, sinking a little, tips, pours and swings back with a
+     clack; pressed, it tips at once. The stream through it shows only while it is down. A snow monkey pressed ducks
+     under and blows bubbles; the lantern pressed in the morning lights up a moment */
+  .lc-shishi { transform-box: view-box; transform-origin: 0 0; animation: lc-shishi 6s ease-in-out infinite; }
+  .lc-shishi-water { transform-box: fill-box; transform-origin: 50% 0%; animation: lc-shishi-water 6s linear infinite; }
+  [data-tap="shishi"].lc-tapped .lc-shishi { animation: lc-shishi-tip 1.1s ease-in-out 0s 1 !important; }
+  [data-tap="shishi"].lc-tapped .lc-shishi-water { animation: lc-shishi-pour 1.1s linear 0s 1 !important; }
+  [data-tap="onsen-monkey"].lc-tapped .lc-duck { animation: lc-duck .9s ease-in-out 1; }
+  [data-tap="onsen-monkey"].lc-tapped .lc-bubbles { animation: lc-bubbles 1.2s ease-out .2s 1 both; }
+  [data-tap="lamp"].lc-tapped .lc-lampflash { animation: lc-lampflash 1.2s ease-out 0s 1 both; }
   /* year-two places: the lighthouse lamp sweeps (its origin is set inline, at the lamp), a firework opens and fades,
      a shooting star crosses, the washing turns */
   .lc-sweep { animation: lc-sweep 9s ease-in-out infinite; }
@@ -212,8 +223,15 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-scroll { from { transform: translateX(0); } to { transform: translateX(var(--lc-w, -200px)); } }
 @keyframes lc-ride { from { transform: translate(0, 0); } to { transform: translate(var(--lc-x, 200px), var(--lc-y, 34px)); } }
 @keyframes lc-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--lc-x, 6px), var(--lc-y, -3px)); } }
+@keyframes lc-shishi { 0% { transform: rotate(18deg); } 60% { transform: rotate(11deg); } 64% { transform: rotate(-26deg); } 72% { transform: rotate(-24deg); } 77% { transform: rotate(21deg); } 81% { transform: rotate(15deg); } 85%, 100% { transform: rotate(18deg); } }
+@keyframes lc-shishi-water { 0%, 62% { opacity: 0; transform: scaleY(.2); } 65%, 73% { opacity: 1; transform: scaleY(1); } 76%, 100% { opacity: 0; transform: scaleY(1); } }
+@keyframes lc-shishi-tip { 0% { transform: rotate(18deg); } 13% { transform: rotate(-26deg); } 42% { transform: rotate(-24deg); } 56% { transform: rotate(21deg); } 68% { transform: rotate(15deg); } 80%, 100% { transform: rotate(18deg); } }
+@keyframes lc-shishi-pour { 0%, 8% { opacity: 0; transform: scaleY(.2); } 14%, 42% { opacity: 1; transform: scaleY(1); } 50%, 100% { opacity: 0; transform: scaleY(1); } }
+@keyframes lc-duck { 0%, 100% { transform: translateY(0); } 18% { transform: translateY(8px); } 40% { transform: translateY(8px); } 68% { transform: translateY(-2px); } 84% { transform: translateY(1px); } }
+@keyframes lc-bubbles { 0% { opacity: 0; transform: translateY(2px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+@keyframes lc-lampflash { 0% { opacity: 0; } 15% { opacity: 1; } 55% { opacity: .85; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-jlook, .lc-jbreath, .lc-sniff, .lc-tseg, .lc-blink2, .lc-look, .lc-awake, .lc-face-yawn, .lc-yawn-tilt, .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave, .lc-fall, .lc-foam { animation: none !important; }
+  .lc-jlook, .lc-jbreath, .lc-sniff, .lc-tseg, .lc-blink2, .lc-look, .lc-awake, .lc-face-yawn, .lc-yawn-tilt, .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave, .lc-fall, .lc-foam, .lc-shishi, .lc-shishi-water { animation: none !important; }
   [data-tap|="bird"].lc-tapped .lc-note { opacity: 1; }
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }

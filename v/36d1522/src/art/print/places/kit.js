@@ -120,7 +120,9 @@ export function makePlace(spec) {
     const c = { a: own ? tint(spec.tones.a, time) : V.d[3], b: own ? tint(spec.tones.b, time) : V.d[2], l: own ? tint(spec.tones.l, time) : V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
     const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
     const view = full(time, animate, true) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
-    return { back: view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
+    /* spec.frontThings: things that stand in front of the seat and the judge's feet (the hot spring's bucket on the
+       rim and its monkey in the water, 2026-11-28), drawn with the band */
+    return { back: view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : "") + (spec.frontThings ? spec.frontThings(V, q, time, on) : ""),
       things: thingsOf(time, animate),
       /* spec.tall: a place whose scenery is one tall picture gives it whole for Home ({ box, inner }), which then
          fills the phone with it and lays the things, the seat and the judge over it (ui/home-art.js) */
@@ -128,7 +130,10 @@ export function makePlace(spec) {
       /* spec.motion: what an effects layer over the picture moves (art/fx.js; the jungle's, 2026-11-28). Home draws
          it when the picture is animated; everywhere else the picture moves only by its own CSS */
       motion: animate && spec.motion ? spec.motion(time) : null,
-      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: floor, line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY, judge: spec.judge || null };
+      /* spec.frontOnTall: Home draws the band in front of the judge over a tall picture as well (the hot spring's pool
+         with its floating yuzu, 2026-11-28), and carries its colour (spec.down(time), else the floor) to the bottom */
+      frontOnTall: !!spec.frontOnTall,
+      frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: floor, line: V.line, water: !!spec.water, ...(spec.down ? spec.down(time) : {}) }, wall: V.sky[0], ink: KEY, judge: spec.judge || null };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));
   return { scene, landscape, stamp, name: spec.name };

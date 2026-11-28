@@ -7,7 +7,7 @@
    Home is drawn again on a resize and under an open sheet: each time the old canvas leaves the page and its loop
    stops (art/fx.js), and a new one starts here. Nothing runs when the player asks for less motion; the picture then
    keeps its own still monkey, drops and leaves. */
-import { makeFx, waterSpray, fallingLeaves, bendingTail, lessMotion } from "../art/fx.js";
+import { makeFx, waterSpray, fallingLeaves, bendingTail, steamWisps, puff, lessMotion } from "../art/fx.js";
 
 export const fxWanted = (art) => !!(art && art.motion && art.layers) && !lessMotion();
 
@@ -19,6 +19,8 @@ export function startHomeFx(el, art, W, H) {
   const fx = makeFx(canvas, { width: W, height: H, fps: 30 });
   const state = { water: null, tail: null };
   if (M.falls) state.water = fx.add(waterSpray({ at: L.tallPx, falls: M.falls, pale: M.falls.pale }));
+  /* the hot spring's steam, rising off the pool beside the judge (the print's units) */
+  if (M.steam) fx.add(steamWisps({ sources: M.steam.sources.map(([x, y]) => { const p = L.toPx(x, y); return [p.x, p.y]; }), pale: M.steam.pale, scale: L.s }));
   if (M.leaves) {
     const { strips, from, to, greens } = M.leaves;
     state.leaves = fx.add(fallingLeaves({ strips: strips.map(([a, b]) => [L.tallPx(a, 0).x, L.tallPx(b, 0).x]), from: L.tallPx(0, from).y, to: L.tallPx(0, to).y, greens }));
@@ -39,6 +41,8 @@ export function startHomeFx(el, art, W, H) {
     tap(t) {
       if (t.dataset.tap === "waterfall" && state.water) state.water.splash();
       if (t.dataset.tap === "monkey" && state.tail && t.querySelector(".lc-fx-sit")) state.tail.hop();
+      /* the shishi-odoshi pressed: as its tube comes down, the water it held splashes off the stone */
+      if (t.dataset.tap === "shishi" && M.shishi) { const p = (M.shishi.tall ? L.tallPx : L.toPx)(M.shishi.at[0], M.shishi.at[1]); setTimeout(() => { if (canvas.isConnected) fx.add(puff({ x: p.x, y: p.y, colours: ["#eef6fa", "#cfe3ea", "#a9c6d6"], count: 12, speed: .7, spread: 1.1, life: [.4, .7] })); }, 150); }
     },
     /* a leaf on the canvas is a thing to press too (the designer, 2026-11-28): it falls quicker, once */
     leafAt: (x, y) => !!(state.leaves && state.leaves.hit(x, y)),

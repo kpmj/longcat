@@ -3970,6 +3970,54 @@ export const FILES = {
     "attack": 0.3155,
     "clicks": 0
   },
+  "fx.tap.onsen-monkey": {
+    "path": "fx/onsen/monkey.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "onsen_new_taps@monkey",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "freesound-771257"
+    ],
+    "bytes": 12155,
+    "sha256": "d8fea3757a68826aa109d5b8e99b248465e556bdf496ec22e16a1cbef1ad79fa",
+    "seconds": 0.8947,
+    "channels": 1,
+    "lufs": -6.0,
+    "measure": "TP",
+    "peak": -6.0,
+    "lead": 0.003,
+    "below300": 0.0,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.0175,
+    "clicks": 0
+  },
+  "fx.tap.shishi": {
+    "path": "fx/onsen/shishi.m4a",
+    "family": "fx_knock",
+    "kind": "sound",
+    "piece": "onsen_new_taps@shishi",
+    "version": 1,
+    "libraries": [
+      "vcsl",
+      "freesound-771257"
+    ],
+    "bytes": 20269,
+    "sha256": "9960ef7f90ba8aa60190d3116769142c4ece9de012293451e91ab756e7c071af",
+    "seconds": 1.556,
+    "channels": 1,
+    "lufs": -6.1,
+    "measure": "TP",
+    "peak": -6.1,
+    "lead": 0.003,
+    "below300": 0.426,
+    "monoLoss": 0.0,
+    "tags": [],
+    "attack": 0.6165,
+    "clicks": 0
+  },
   "fx.tap.waterfall": {
     "path": "fx/jungle/waterfall.m4a",
     "family": "fx_knock",
