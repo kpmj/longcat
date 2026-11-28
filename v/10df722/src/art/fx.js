@@ -176,6 +176,19 @@ export function paperBurst({ x, y, scale = 1, count = 44 }) {
   };
 }
 
+/* The paper burst on a canvas of its own over the whole page (class lc-fx-burst, styles.css), at x y in the page's
+   px; the canvas goes when the last piece is down. For a good take (take-screen.js) and the sun or moon pressed
+   when its time of day is all done (ui/home.js). Nothing with less motion */
+export function burstOver(x, y) {
+  if (lessMotion() || typeof document === "undefined") return null;
+  const c = document.createElement("canvas");
+  c.className = "lc-fx-burst";
+  c.setAttribute("aria-hidden", "true");
+  document.body.append(c);
+  const fx = makeFx(c, { width: innerWidth, height: innerHeight, onIdle: () => c.remove() });
+  return fx.add(paperBurst({ x, y }));
+}
+
 /* A PICTURE WHOSE TAIL BENDS (mesh deformation). A generated picture is one still image; here its tail is cut into
    a strip of triangles along the tail's middle line and each triangle drawn where the bent tail puts it, so the tail
    swings like a rope while the rest of the picture stays as it is. img: the picture; box: where it is drawn, in

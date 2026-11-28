@@ -14,6 +14,8 @@ import { openLetter, openPlaces } from "./places.js";
 import { wardrobeThumbSvg, placeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
 import { fxWanted, startHomeFx, stopHomeFx } from "./home-fx.js";
+import { burstOver } from "../art/fx.js";
+import { chime } from "../audio/synth.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, ladderKey, LADDER_HOW, sylFor, yarnName } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
@@ -54,6 +56,23 @@ function paintArt(root = document.getElementById("screen")) {
   if (fxWanted(art)) { el.innerHTML = `${art.layers.back}<canvas class="lc-fx-back" aria-hidden="true"></canvas>${art.layers.front}`; startHomeFx(el, art, W, H); }
   else { el.innerHTML = art.svg; stopHomeFx(el); }
   wireTaps(el); // pat a cat or the judge, tap the yuzu, the lamp, the sun
+  if (!el._lcCheer) { el._lcCheer = true; el.addEventListener("click", cheerOnSun); }
+}
+/* the designer, 2026-11-28: "when you click the sun or the moon, if you already finished the entire time stage, then it will
+   play the celebration vfx and animation. the one you already made". A time of day whose three garments are all on:
+   the sun or moon pressed throws the good take's paper out of itself (art/fx.js), the judge smiles as when patted,
+   the three cats hop, and the good take's chime plays. Otherwise the sun or moon only pops, as before. */
+function cheerOnSun(e) {
+  const t = e.target.closest ? e.target.closest('[data-tap="window"]') : null, S = app.S, el = e.currentTarget;
+  if (!t || app.screen !== "home" || !St.timeDone(S, S.here, shownTime(S, S.here))) return;
+  const r = t.getBoundingClientRect();
+  burstOver(r.left + r.width / 2, r.top + r.height / 2);
+  for (const j of el.querySelectorAll('[data-group="judge"]')) {
+    j.classList.remove("lc-tapped"); j.getBoundingClientRect(); j.classList.add("lc-tapped");
+    clearTimeout(j._lcTap); j._lcTap = setTimeout(() => j.classList.remove("lc-tapped"), 1400);
+  }
+  ZONES.forEach((z, i) => setTimeout(() => app.screen === "home" && hopCat(el, z.id), 120 + i * 140));
+  if (S.settings.sound !== false) chime();
 }
 function onResize() { clearTimeout(resizeT); resizeT = setTimeout(() => paintArt(), 120); }
 function leaveHome() { stopMusic(); window.removeEventListener("resize", onResize); clearTimeout(resizeT); }

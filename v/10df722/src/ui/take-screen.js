@@ -14,7 +14,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD, latOf
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
-import { makeFx, paperBurst, lessMotion } from "../art/fx.js";
+import { burstOver } from "../art/fx.js";
 import { laneShape, laneInside, onChart, sweepSeconds, sweepView, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
 import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
@@ -881,16 +881,10 @@ function wireTouch(root) {
    top of the result, once it has risen, and falls over the page for two or three seconds without catching a touch.
    Not with less motion. */
 function goodBurst(sheetEl) {
-  if (lessMotion() || !sheetEl || !sheetEl.isConnected) return;
+  if (!sheetEl || !sheetEl.isConnected) return;
   const face = sheetEl.querySelector(".rhead svg") || sheetEl;
   const r = face.getBoundingClientRect();
-  if (!r.width) return;
-  const c = document.createElement("canvas");
-  c.className = "lc-fx-burst";
-  c.setAttribute("aria-hidden", "true");
-  document.body.append(c);
-  const fx = makeFx(c, { width: innerWidth, height: innerHeight, onIdle: () => c.remove() });
-  fx.add(paperBurst({ x: r.left + r.width / 2, y: r.top + r.height * 0.2 }));
+  if (r.width) burstOver(r.left + r.width / 2, r.top + r.height * 0.2);
 }
 
 function resultLine(grade, mood) {
