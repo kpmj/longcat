@@ -149,7 +149,9 @@ function parts(V, q, time, on, picked = PICKED, layout = LAYOUT) {
   /* the sun where Home shows it, in the left strip: a picture by day; the moon stays a plain disc. Without the
      picture the kit's own disc is in the sky and this part is empty */
   const [sx, sy, sw, sh] = A.sun, moon = `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .38}" fill="${V.disc[0]}"/>`;
-  const sun = !picked.background ? "" : `<g${on("lc-sun")}>${pic("sun") && time !== "night" ? picture(PIC.sun, sx, sy, sw, sh) : time === "night" ? moon : `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .45}" fill="${V.disc[0]}"/>`}</g>`;
+  const disc = `<g${on("lc-sun")}>${pic("sun") && time !== "night" ? picture(PIC.sun, sx, sy, sw, sh) : time === "night" ? moon : `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .45}" fill="${V.disc[0]}"/>`}</g>`;
+  /* pressed, it pops: the sun or moon is a thing of its own, the sky behind it is not (the designer, 2026-11-28) */
+  const sun = !picked.background ? "" : live(on) ? `<g data-tap="window">${disc}</g>` : disc;
   const branch = (d, w = 9.500) => q.s(d, INK, w) + q.s(d, bark, w - (w > 7 ? 3 : 2.400));
   const BIRD = { "bird-1": { body: RED, wing: "#33517a", n: 1 }, "bird-2": { body: YUZU, wing: "#5d8a63", beak: RED, n: 2 }, "bird-3": { body: "#3f8fa6", wing: YUZU, n: 3 } };
   const birdPart = id => { const b = A.birds[id], [x, y, dir, s] = b; return { id, box: birdBox(b), hold: "bottom", svg: bird(q, on, { x, y, s, dir, ...BIRD[id], pic: pic(id) }) }; };
@@ -192,7 +194,7 @@ function airOf(V, q, time, on, [w, h]) {
    Pale streaks run down the water and the foam at its foot breathes, all the time. A tap on the water is the
    waterfall's own (data-tap="waterfall"), so the picture behind no longer swings the hanging monkey: the streaks
    rush, a wash of white runs down the water, drops splash out of its side and spray swells at its foot (ART_CSS),
-   and it sounds (audio/ambient.js). Only while
+   and it sounds (audio/ambient.js). Since the same day the picture behind answers no tap at all. Only while
    the picture is animated; a postcard shows the picture alone. */
 const FALLS = { top: 206, foot: 556, xs: [348, 355, 362, 369, 376, 383] };
 function fallsOf(time, on) {

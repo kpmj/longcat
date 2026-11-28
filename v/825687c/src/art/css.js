@@ -40,7 +40,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   [data-tap|="bird"].lc-tapped .lc-note { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-heart 1.2s ease-out both; }
   [data-tap="heart"].lc-tapped .lc-beat { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-beat .5s ease-out; }
   .lc-wave { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-wave 6s ease-in-out infinite; }
-  .lc-tapped .lc-sway { animation: lc-swing 1.3s ease-out 0s 1 !important; }
+  .lc-tapped .lc-sway, .lc-sway.lc-tapped { animation: lc-swing 1.3s ease-out 0s 1 !important; }
   /* the jungle's waterfall: streaks run down the water, the foam breathes; pressed, the water rushes, drops jump
      from its foot and a puff of spray swells */
   .lc-fall { animation: lc-fall 1.6s linear infinite; }
@@ -50,7 +50,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   [data-tap="waterfall"].lc-tapped .lc-drop { animation: lc-drop .9s ease-out both; }
   [data-tap="waterfall"].lc-tapped .lc-spray { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-spray 1s ease-out both; }
   [data-tap="waterfall"].lc-tapped .lc-surge { animation: lc-surge .9s ease-in both; }
-  .lc-tapped .lc-sun { animation: lc-sunpop .8s ease-out 0s 1 !important; }
+  .lc-tapped .lc-sun, .lc-sun.lc-tapped { animation: lc-sunpop .8s ease-out 0s 1 !important; }
   .lc-tapped .lc-flame { animation: lc-flare .7s ease-out 0s 1 !important; }
   .lc-tapped .lc-flicker { animation: lc-flash .8s ease-out 0s 1 !important; }
   .lc-breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-breathe 4.6s ease-in-out infinite; }

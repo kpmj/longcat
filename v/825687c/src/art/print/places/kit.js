@@ -47,9 +47,11 @@ export const mist = (V, x, y, w, h) => `<g fill="${V.mist}" opacity="${V.mistO}"
 export const floorBand = (y0, fill, line, pattern = "") => `<rect x="0" y="${y0}" width="400" height="${500 - y0}" fill="${fill}"/>${pattern}<path d="M0 ${y0}H400" stroke="${line}" stroke-width="1.6"/>`;
 const SPECK = Array.from({ length: 70 }, (_, i) => [((i * 97) % 380) + 10, ((i * 61 + (i % 7) * 23) % 450) + 12, .6 + (i % 3) * .35]);
 /* animated (the round window on the home page): the sun or moon breathes and the stars twinkle */
-const sky = (V, animate) => V.sky.map((c, i) => `<rect y="${i * 62}" width="400" height="${i === 3 ? 500 : 62}" fill="${c}"/>`).join("")
+/* taps: the sun or moon is a thing to press of its own (the landscape; the designer, 2026-11-28: a tap on nothing does
+   nothing, so the sky is not one) */
+const sky = (V, animate, taps = false) => V.sky.map((c, i) => `<rect y="${i * 62}" width="400" height="${i === 3 ? 500 : 62}" fill="${c}"/>`).join("")
   + (V === VIEW.night ? STARS.map(([x, y, r]) => `<circle${animate ? ` class="lc-twinkle"` : ""} cx="${x}" cy="${y}" r="${animate ? r * 2.4 : r}" fill="#f2ecd6"/>`).join("") : "")
-  + `<circle${animate ? ` class="lc-sun"` : ""} cx="${V.disc[1]}" cy="${V.disc[2]}" r="${V.disc[3]}" fill="${V.disc[0]}"/>`;
+  + `<circle${animate ? ` class="lc-sun"` : ""}${animate && taps ? ` data-tap="window"` : ""} cx="${V.disc[1]}" cy="${V.disc[2]}" r="${V.disc[3]}" fill="${V.disc[0]}"/>`;
 
 /* the H title: the place in big characters on the ground, the series name beside it, the time in a red seal, a small 貓 seal */
 export function titleH(time, name, ink) {
@@ -80,7 +82,11 @@ export function makePlace(spec) {
      on), drawn over the view. Kept apart so the same things can be laid over another background (the landscape
      hands them back as `things`); a place without any draws exactly as before */
   const thingsOf = (time, animate) => (spec.things ? spec.things(VIEW[time], pen(VIEW[time].line), time, onOf(animate)) : "");
-  const full = (time, animate) => sky(VIEW[time], animate) + spec.view(VIEW[time], pen(VIEW[time].line), time, onOf(animate)) + thingsOf(time, animate);
+  /* taps (the landscape): each hanging thing of the view (lc-sway: a lantern, a pendulum, a strap) is a thing to press
+     of its own and swings when pressed, and so is the sun or moon. Nothing else of the view answers a tap: the designer,
+     2026-11-28, of the whole picture swinging at any tap: "I rather not have any effect if clicking on nothing" */
+  const onTap = animate => (name, style = "") => onOf(animate)(name, style) + (animate && name === "lc-sway" ? ` data-tap="swing"` : "");
+  const full = (time, animate, taps = false) => sky(VIEW[time], animate, taps) + spec.view(VIEW[time], pen(VIEW[time].line), time, (taps ? onTap : onOf)(animate)) + thingsOf(time, animate);
   const bandY = spec.bandY || 474;
   function scene(time, R, animate) {
     const ground = spec.grounds[time], night = time === "night", ink = night ? PAPER : KEY, q = pen(KEY);
@@ -104,15 +110,17 @@ export function makePlace(spec) {
   }
   /* the landscape is still on postcards and thumbs; on the home page and in the wardrobe it is drawn with `animate`:
      the view's own things move, the place's fx are added where the view has no such thing already (spec.fxOnView),
-     and a tap anywhere on the landscape makes its hanging things swing and its sun or moon pop */
+     and what can be pressed is a thing itself: a hanging thing swings, the sun or moon pops. Until 2026-11-28 the
+     whole landscape was one thing to press ("swing"), so a tap on empty sky swung everything that hangs; the designer: "I
+     rather not have any effect if clicking on nothing" */
   function landscape(time, animate = false) {
     const V = VIEW[time], q = pen(V.line), on = onOf(animate);
     /* spec.ownColours: the seat and the floor band keep the place's own colours here too, not the landscape's ink */
     const own = !!spec.ownColours, floor = own ? tint(spec.floor[0], time) : V.d[3];
     const c = { a: own ? tint(spec.tones.a, time) : V.d[3], b: own ? tint(spec.tones.b, time) : V.d[2], l: own ? tint(spec.tones.l, time) : V.d[4], k: V.line, warm: V.warm, glow: V.glow, lit: V.lit, paper: V.paper };
     const fx = animate && spec.fx && spec.fxOnView ? spec.fx(c, q, time, on) : {};
-    const view = full(time, animate) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
-    return { back: animate ? `<g data-tap="swing">${view}</g>` : view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
+    const view = full(time, animate, true) + (fx.back ? inset(0, 0, 400, 500, "0 0 400 500", fx.back) : "");
+    return { back: view, seat: spec.seat(c, q, time, false), front: spec.band({ fill: floor, mark: own ? tint(spec.floor[1], time) : V.d[1], k: V.line, paper: V.paper }, bandY, q, time, on) + (fx.front ? `<g data-tap="fire">${fx.front}</g>` : ""),
       things: thingsOf(time, animate),
       /* spec.tall: a place whose scenery is one tall picture gives it whole for Home ({ box, inner }), which then
          fills the phone with it and lays the things, the seat and the judge over it (ui/home-art.js) */
