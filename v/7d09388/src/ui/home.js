@@ -159,7 +159,7 @@ function homeTips(root, nt, unread) {
   const S = app.S, scene = $("#home-scene", root);
   if (!scene) return;
   /* a step of a garment, as a place on the screen: across (0 to 1) and down (px) the picture */
-  const at = (zone, step) => { const pt = stepPoint(zone, step), px = layout ? layout.toPx(pt.x, pt.y) : { x: pt.x, y: pt.y }; return { x: px.x / Math.max(1, scene.getBoundingClientRect().width), y: px.y }; };
+  const at = (zone, step) => { const pt = stepPoint(zone, step), px = layout ? (layout.judgePx || layout.toPx)(pt.x, pt.y) : { x: pt.x, y: pt.y }; return { x: px.x / Math.max(1, scene.getBoundingClientRect().width), y: px.y }; };
   const glow = app.props.glow;
   if (glow && St.takesAt(S, S.here) === 1) {
     const left = STEPS - glow.step, name = garmentName(St.currentTime(S, S.here) || "morning", glow.zone).toLowerCase();

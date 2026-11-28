@@ -19,6 +19,14 @@ import { NEW_JUDGE } from "../art/style.js";
 /* the judge with the fruit on a bare head, in the print's own 400 x 500 (the new capybara's head is taller) */
 const JUDGE_TOP = NEW_JUDGE ? 35 : 51, JUDGE_FEET = 475;
 const MARGIN = 22; // clear space above the fruit and under the feet, at the least
+/* The judge on Home is smaller than in the print (the designer, 2026-11-28: 「我在想把水豚縮小10% 這樣背景就比較大 看起來也不會
+   那麼擠」, after seeing that the judge hides most of a background). The judge, its garments and its cats are drawn
+   at HOME_JUDGE of the print round STAND, where its feet are on the seat: they stand where they stood, the seat,
+   the place's things and the scenery keep their size, and the room beside and above the head grows. Only Home:
+   postcards, the Wardrobe and the singing screen keep the print as it is (wrapping by hand works in its units). */
+export const HOME_JUDGE = 0.9;
+const STAND = [200, NEW_JUDGE ? 461 : 473];
+export const smaller = (inner) => `<g transform="translate(${STAND[0]} ${STAND[1]}) scale(${HOME_JUDGE}) translate(${-STAND[0]} ${-STAND[1]})">${inner}</g>`;
 
 /* Where the judge goes. W, H: the screen in px; top: where the top row ends; bottom: where the tray begins;
    lift: how far the hat has raised the fruit. Everything inside the picture is in units of a 400-wide viewBox. */
@@ -31,8 +39,10 @@ export function homeLayout(W, H, top, bottom, lift = 0) {
   const D = feet - JUDGE_FEET;
   return {
     VH, s, D, T,
-    /* a point of the print (stepPoint and the like) in screen px */
+    /* a point of the print (a place's things) in screen px */
     toPx: (x, y) => ({ x: (200 + (x - 200) * s) / u, y: (JUDGE_FEET + (y - JUDGE_FEET) * s + D) / u }),
+    /* a point of the judge or its garments (stepPoint), which Home draws smaller round its feet */
+    judgePx: (x, y) => { const X = STAND[0] + (x - STAND[0]) * HOME_JUDGE, Y = STAND[1] + (y - STAND[1]) * HOME_JUDGE; return { x: (200 + (X - 200) * s) / u, y: (JUDGE_FEET + (Y - JUDGE_FEET) * s + D) / u }; },
   };
 }
 
@@ -65,7 +75,7 @@ export function homeArt(o, W, H, top, bottom) {
     return { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">
 <rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
 ${/data-tap/.test(String(P.back)) ? `<g data-tap="swing">${scenery}</g>` : scenery}
-${print(`${p.special}${P.seat}${p.shelves}${p.character}`)}
+${print(`${p.special}${P.seat}${p.shelves}${smaller(p.character)}`)}
 ${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}
 </svg>`, layout: L };
   }
@@ -73,7 +83,7 @@ ${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : 
 <rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
 ${y0 > 70 ? `<rect width="400" height="${(y0 - 62 * L.s).toFixed(1)}" fill="${mix(sky, "#2a1420", 0.13)}"/>` : ""}
 <rect y="${(below - 20).toFixed(1)}" width="400" height="${Math.max(0, L.VH - below + 20).toFixed(1)}" fill="${down.fill}"/>${waves}
-<svg x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(400 * L.s).toFixed(1)}" height="${(500 * L.s).toFixed(1)}" viewBox="0 0 400 500">${P.back}${p.special}${P.seat}${p.shelves}${p.character}${P.front}</svg>
+<svg x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(400 * L.s).toFixed(1)}" height="${(500 * L.s).toFixed(1)}" viewBox="0 0 400 500">${P.back}${p.special}${P.seat}${p.shelves}${smaller(p.character)}${P.front}</svg>
 ${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}
 </svg>`;
   return { svg, layout: L };
