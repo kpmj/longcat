@@ -10,6 +10,7 @@ import { judgeFigureOf, itemSeatOf } from "./judges.js";
 import { pile, loaf, PILE } from "./loaf.js";
 import { KEY } from "./cat.js";
 import { garmentLayers, stepPoint, guideMarkup, drawZone } from "./garments.js";
+const CAT_MOTION = { tail: true, face: true };
 import { onsen, onsenLandscape } from "./places/onsen.js";
 import { PLACES as YEAR } from "./places/all.js";
 import { jungle } from "./places/jungle.js";
@@ -63,8 +64,9 @@ export function sceneParts(o = {}) {
     if (int(g.steps, 0, 12, 0) > 0) worn.push(g); else waiting.push(g);
   }
   for (const w of list(o.waiting)) { const z = zoneId(w.zone); if (z && !seen.has(z)) { seen.add(z); waiting.push(w); } }
-  /* catMotion: the finer cat's pieces, asked for by the trial page only (tools/art/cats-motion.mjs) */
-  const ctx = { time, animate, seed, ink: L.ink, catMotion: o.catMotion || null };
+  /* catMotion: the finer cat's pieces (the tail in three, the face that glances and yawns), drawn wherever the cats
+     move since the designer's picks of 2026-11-28; a scene may still ask for less (the trial page's "now") */
+  const ctx = { time, animate, seed, ink: L.ink, catMotion: o.catMotion || CAT_MOTION };
   const order = ["bottom", "top", "scarf"];
   worn.sort((a, b) => order.indexOf(a.zone) - order.indexOf(b.zone));
   const layers = worn.map(g => garmentLayers(g, ctx));
