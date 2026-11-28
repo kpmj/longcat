@@ -149,11 +149,44 @@ const ARRANGE = {
     flies: [[40, 130], [104, 260], [28, 340], [372, 260], [376, 380]],
   },
 };
+/* FEWER (the designer, 2026-11-28: "please remove the blue bird and the hanging monkey from the jungle for now. don't delete the
+   assets but just remove them so it doesn't look that crowded. please also reposition them in three time scenes").
+   The blue bird and the hanging monkey are away (AWAY below; their pictures, frames and drawings all stay), and the
+   four left, the sun, the red bird, the yellow bird and the sitting monkey, stand two on each side, somewhere else
+   at each time of day. Every place is one the arrangements above already used and the zones test passed:
+   morning, the red bird up on the left facing the judge, the monkey on a branch under the title, the yellow bird on
+   the log's right end facing the judge; golden hour, the monkey low on the left, the yellow bird under the title,
+   the red bird on the log's right end; night, the two birds asleep side by side up on the left under the moon, the
+   monkey on the log's right end. */
+ARRANGE.m4 = {
+  sun: [66, 50, 36, 36],
+  branches: [["M10 168Q48 166 92 154", 9.5, [90, 155, -28, .5, 2]], ["M394 238Q366 236 330 228", 9.5, [332, 228, 200, .5, 2]]],
+  birds: { "bird-1": [52, 166, 1, 1.1], "bird-2": [358, 447, -1, 1.05] },
+  sit: [356, 234],
+  flies: [[30, 110], [104, 210], [26, 380], [376, 160], [372, 380]],
+};
+ARRANGE.g4 = {
+  sun: [70, 46, 36, 36],
+  branches: [["M8 302Q34 302 62 294", 8, [60, 295, -24, .42, 1]], ["M394 238Q366 236 330 228", 9.5, [332, 228, 200, .5, 2]]],
+  birds: { "bird-2": [356, 234, -1, 1.05], "bird-1": [358, 447, 1, 1.05] },
+  sit: [38, 300],
+  flies: [[96, 120], [100, 250], [30, 390], [370, 160], [372, 380]],
+};
+ARRANGE.n4 = {
+  sun: [66, 50, 36, 36],
+  branches: [["M8 206Q60 204 112 192", 9.5, [110, 193, -26, .46, 2]]],
+  birds: { "bird-1": [36, 205, 1, .95], "bird-2": [80, 200, -1, .95] },
+  sit: [356, 447],
+  flies: [[40, 130], [104, 260], [28, 340], [372, 260], [376, 380]],
+};
+/* the pieces that are away for now (the designer, 2026-11-28): nothing of them is drawn, in any layout */
+export const AWAY = { "bird-3": true, "monkey-hang": true };
 /* 甲, 乙 the same all day; 丙 moves with the day: the birds up singing in the morning, down low at golden hour,
-   asleep together up on a branch at night while the monkeys come down */
-export const LAYOUTS = { first: {}, spread: { all: "spread" }, log: { all: "log" }, day: { morning: "spread", golden: "log", night: "night" } };
-/* the designer's pick (2026-11-28, on the page of tools/art/sets/jungle-new.json): 丙, the animals move with the day */
-export const LAYOUT = "day";
+   asleep together up on a branch at night while the monkeys come down; fewer: 丙 with four things, two to a side */
+export const LAYOUTS = { first: {}, spread: { all: "spread" }, log: { all: "log" }, day: { morning: "spread", golden: "log", night: "night" }, fewer: { morning: "m4", golden: "g4", night: "n4" } };
+/* the designer's pick (2026-11-28, on the page of tools/art/sets/jungle-new.json): 丙, the animals move with the day; the
+   same day fewer of them (above) */
+export const LAYOUT = "fewer";
 const arrangementOf = (layout, time) => ARRANGE[(LAYOUTS[layout] || {})[time] || (LAYOUTS[layout] || {}).all || "first"];
 /* a thing's box in the print, for the art tools: a bird stands in a box on its feet, the monkeys round their own */
 const birdBox = ([x, y, , s]) => [Math.round(x - 22 * s), Math.round(y - 37.5 * s), Math.round(44 * s), Math.round(40 * s)];
@@ -169,14 +202,14 @@ function parts(V, q, time, on, picked = PICKED, layout = LAYOUT) {
   const branch = (d, w = 9.500) => q.s(d, INK, w) + q.s(d, bark, w - (w > 7 ? 3 : 2.400));
   const BIRD = { "bird-1": { body: RED, wing: "#33517a", n: 1 }, "bird-2": { body: YUZU, wing: "#5d8a63", beak: RED, n: 2 }, "bird-3": { body: "#3f8fa6", wing: YUZU, n: 3 } };
   const birdPart = id => { const b = A.birds[id], [x, y, dir, s] = b; return { id, box: birdBox(b), hold: "bottom", svg: bird(q, on, { x, y, s, dir, ...BIRD[id], pic: pic(id), frames: pic(id) && FRAMED[id] ? PIC[`${id}-frames`] : null }) }; };
-  const [mx, my] = A.sit, [hx, hy] = A.hang;
+  const [mx, my] = A.sit, here = id => !AWAY[id];
   return [
     { id: "sun", box: A.sun, hold: "middle", svg: sun },
     /* the branches the animals stand on and hang from, each from the edge of the picture */
     { id: "branches", svg: A.branches.map(([d, w, [lx, ly, rot, ls, g]]) => branch(d, w) + leaf(q, lx, ly, rot, ls, G[g])).join("") },
-    ...["bird-1", "bird-2", "bird-3"].map(birdPart),
+    ...["bird-1", "bird-2", "bird-3"].filter(id => here(id) && A.birds[id]).map(birdPart),
     { id: "monkey-sit", box: [mx - 22, my - 45, 40, 73], hold: "bottom", svg: sitting(q, on, mx, my, pic("monkey-sit")) },
-    { id: "monkey-hang", box: [hx - 15, hy - 2, 41, 78], hold: "top", svg: hanging(q, on, hx, hy, 16, G, pic("monkey-hang")) },
+    ...(here("monkey-hang") && A.hang ? [{ id: "monkey-hang", box: [A.hang[0] - 15, A.hang[1] - 2, 41, 78], hold: "top", svg: hanging(q, on, A.hang[0], A.hang[1], 16, G, pic("monkey-hang")) }] : []),
     { id: "fireflies", svg: V.glow ? A.flies.map(([fx, fy]) => `<circle${on("lc-twinkle")} cx="${fx}" cy="${fy}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`).join("") : "" },
   ];
 }
