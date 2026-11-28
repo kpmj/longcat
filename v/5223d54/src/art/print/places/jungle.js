@@ -185,6 +185,31 @@ function airOf(V, q, time, on, [w, h]) {
   const G = greens(time);
   return [[40, 0, 17], [84, 7, 21], [330, 11, 19], [372, 3, 23]].map(([x, d, dur], i) => `<g transform="translate(${x * w / 400} ${70 * h / 711})"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${dur}s`)}>${q.p(LEAF, G[2 + (i % 2)], 1.1)}</g></g>`).join("");
 }
+/* THE WATERFALL (2026-11-28, the designer: "Can you make the waterfall animation? When the waterfall is clicked. Now the
+   monkey moves when the waterfall is clicked"). The water is part of the picture (back*.jpg, GPT's waterfall);
+   what moves is drawn here over it, measured off the picture in its own 400 x 711 (the print shows its top 500 in
+   the same units): the water from x 338 to 390, its lip near y 200, its foot near y 556, under the log on Home.
+   Pale streaks run down the water and the foam at its foot breathes, all the time. A tap on the water is the
+   waterfall's own (data-tap="waterfall"), so the picture behind no longer swings the hanging monkey: the streaks
+   rush, a wash of white runs down the water, drops splash out of its side and spray swells at its foot (ART_CSS),
+   and it sounds (audio/ambient.js). Only while
+   the picture is animated; a postcard shows the picture alone. */
+const FALLS = { top: 206, foot: 556, xs: [348, 355, 362, 369, 376, 383] };
+function fallsOf(time, on) {
+  if (!live(on)) return "";
+  const pale = time === "night" ? "#d6e3ef" : time === "golden" ? "#fff4d6" : "#f6fafc";
+  const streaks = FALLS.xs.map((x, i) => `<g${on("lc-fall", `animation-delay:${-(i * .37 + (i % 2) * .6).toFixed(2)}s;animation-duration:${(1.5 + (i % 3) * .25).toFixed(2)}s`)}><path d="M${x} ${FALLS.top}v${26 + (i % 3) * 10}" fill="none" stroke="${pale}" stroke-width="2.400" stroke-linecap="round"/></g>`).join("");
+  const foam = [[328, 557, 9, 5], [345, 561, 11, 6], [361, 556, 8, 5]].map(([x, y, rx, ry], i) => `<g${on("lc-foam", `animation-delay:${-i * .5}s`)}><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#f7f9f8" opacity=".850"/></g>`).join("");
+  /* pressed: a wash of white rushes down the water; drops splash out of its left side, where the water shows on
+     every phone (on the designer's the log hides the foot of the fall); and at the foot, where it shows, a puff of spray */
+  const surge = `<g class="lc-surge"><rect x="341" y="196" width="48" height="64" rx="20" fill="#ffffff" opacity=".600"/></g>`;
+  const drops = [[340, 300, -18, -16], [339, 336, -26, -10], [338, 372, -14, -20], [338, 410, -24, -14], [338, 446, -16, -18], [339, 478, -28, -8], [341, 266, -12, -12]].map(([x, y, dx, dy], i) => `<g class="lc-drop" style="--lc-x:${dx}px;--lc-y:${dy}px;animation-delay:${(.08 + i * .07).toFixed(2)}s"><circle cx="${x}" cy="${y}" r="3.400" fill="${pale}" stroke="${INK}" stroke-width=".900"/></g>`).join("");
+  const spray = `<g class="lc-spray"><ellipse cx="346" cy="552" rx="22" ry="9" fill="#ffffff" opacity=".700"/></g>`;
+  /* what can be pressed: the water, down to the foam */
+  const hit = `<path d="M338 204Q362 190 392 192V562H318Q332 552 336 540Z" fill="${INK}" fill-opacity="0"/>`;
+  return `<g data-tap="waterfall">${hit}${streaks}${foam}${surge}${spray}${drops}</g>`;
+}
+
 const build = (picked = PICKED, layout = LAYOUT) => makePlace({
   name: "雨之森", grounds: { morning: "#cfd8a6", golden: "#dc9a62", night: "#2c3a40" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 480,
   tones: { a: "#8a6a48", b: "#6b4f34", l: "#7fa06a" }, floor: ["#6f9160", "#4b7250"], ownColours: true,
@@ -193,7 +218,7 @@ const build = (picked = PICKED, layout = LAYOUT) => makePlace({
      brings it back, and everything that draws and sounds it is still in print/judge.js and audio/ambient.js */
   judge: HOLDS_HEART ? { item: "acorn", hold: "heart" } : { item: "acorn" },
   view(V, q, time, on) {
-    if (picked.background) return scenery(time, 0, 0, 400, 500, "xMidYMin slice") + airOf(V, q, time, on, [400, 500]);
+    if (picked.background) return scenery(time, 0, 0, 400, 500, "xMidYMin slice") + fallsOf(time, on) + airOf(V, q, time, on, [400, 500]);
     const d = V.d, G = greens(time), bark = tint("#8a6a48", time), barkDk = tint("#6b4f34", time);
     const hills = "M-10 300Q30 250 78 262Q112 214 160 240Q204 196 250 236Q292 208 330 244Q372 226 410 262V360H-10Z";
     /* the roof of leaves along the top, in two rows, scalloped underneath */
@@ -212,7 +237,7 @@ const build = (picked = PICKED, layout = LAYOUT) => makePlace({
      own layer and can stand in front of another background (kit.js, spec.things) */
   things: (V, q, time, on) => parts(V, q, time, on, picked, layout).map(p => p.svg).join(""),
   /* the whole painting for Home, which fills the phone with it (ui/home-art.js) */
-  tall: picked.background ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: scenery(time, 0, 0, TALL[0], TALL[1], "xMidYMid slice") + airOf(V, q, time, on, TALL) }) : null,
+  tall: picked.background ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: scenery(time, 0, 0, TALL[0], TALL[1], "xMidYMid slice") + fallsOf(time, on) + airOf(V, q, time, on, TALL) }) : null,
   /* a mossy log behind the judge's feet: bark, a ring at one end, moss along the top */
   seat: (c, q) => q.r(16, 446, 368, 28, c.a, 2.2, 13) + q.e(372, 460, 9, 12.500, mix(c.a, "#ffffff", .25), 1.6) + q.e(372, 460, 4, 6, "none", 1.1)
     + q.p("M40 447Q70 438 104 446Q150 438 188 447Q240 440 292 447Q320 441 348 447V452H40Z", c.l, 1.5) + q.s("M60 462h36M150 466h50M250 461h40", c.b, 1.4, .7),

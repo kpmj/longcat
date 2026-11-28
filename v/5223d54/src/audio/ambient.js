@@ -189,7 +189,11 @@ export function setTapSource(v) { tapSource = v === "page" ? "page" : "files"; }
 export function prepareTaps() {
   if (tapSource === "files" && ctx()) loadFiles(ac, [...Object.values(TAP_FILES), ...ALSO]).catch(() => {});
 }
+/* a thing that sounds like another, until it has a sound of its own: the jungle's waterfall (2026-11-28) the water
+   drops of a yuzu in the hot spring */
+const TAP_AS = { waterfall: "dunk" };
 export function tapSound(kind, place = null) {
+  kind = TAP_AS[kind] || kind;
   const play = (place && TAP[`${kind}@${place}`]) || TAP[kind];
   if (!play || !ctx() || ac.state !== "running") return;
   const key = place && TAP[`${kind}@${place}`] ? `${kind}@${place}` : kind;

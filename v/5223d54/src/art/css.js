@@ -25,6 +25,8 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 .lc-new-spark { transform-box: fill-box; transform-origin: 50% 50%; transform: scale(0); }
 /* a shooting star shows only while it flies */
 .lc-shoot { opacity: 0; }
+/* the jungle's waterfall: its drops and its puff of spray show only while it is pressed */
+.lc-drop, .lc-spray, .lc-surge { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .lc-tapped .lc-nuzzle { transform-box: fill-box; transform-origin: 50% 90%; animation: lc-nuzzle .55s ease-in-out 2; }
   .lc-tapped .lc-heart { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-heart 1.2s ease-out both; }
@@ -39,6 +41,15 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   [data-tap="heart"].lc-tapped .lc-beat { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-beat .5s ease-out; }
   .lc-wave { transform-box: fill-box; transform-origin: 50% 100%; animation: lc-wave 6s ease-in-out infinite; }
   .lc-tapped .lc-sway { animation: lc-swing 1.3s ease-out 0s 1 !important; }
+  /* the jungle's waterfall: streaks run down the water, the foam breathes; pressed, the water rushes, drops jump
+     from its foot and a puff of spray swells */
+  .lc-fall { animation: lc-fall 1.6s linear infinite; }
+  .lc-foam { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-foam 1.8s ease-in-out infinite alternate; }
+  [data-tap="waterfall"].lc-tapped .lc-fall { animation-duration: .55s !important; }
+  [data-tap="waterfall"].lc-tapped .lc-foam { animation-duration: .35s !important; }
+  [data-tap="waterfall"].lc-tapped .lc-drop { animation: lc-drop .9s ease-out both; }
+  [data-tap="waterfall"].lc-tapped .lc-spray { transform-box: fill-box; transform-origin: 50% 50%; animation: lc-spray 1s ease-out both; }
+  [data-tap="waterfall"].lc-tapped .lc-surge { animation: lc-surge .9s ease-in both; }
   .lc-tapped .lc-sun { animation: lc-sunpop .8s ease-out 0s 1 !important; }
   .lc-tapped .lc-flame { animation: lc-flare .7s ease-out 0s 1 !important; }
   .lc-tapped .lc-flicker { animation: lc-flash .8s ease-out 0s 1 !important; }
@@ -135,6 +146,11 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-stretch { 0%, 78%, 96%, 100% { transform: translate(0, 0) scale(1, 1); } 84% { transform: translate(calc(var(--lc-d, 1) * 6px), -2px) scale(1.08, .94); } 90% { transform: translate(calc(var(--lc-d, 1) * -1px), 0) scale(.97, 1.03); } }
 @keyframes lc-snooze { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.02, 1.04); } }
 @keyframes lc-sun { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes lc-fall { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .85; } 85% { opacity: .85; } 100% { transform: translate(0, 300px); opacity: 0; } }
+@keyframes lc-foam { 0% { transform: scale(.85); } 100% { transform: scale(1.1); } }
+@keyframes lc-drop { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 45% { transform: translate(calc(var(--lc-x) * .6), var(--lc-y)); opacity: 1; } 100% { transform: translate(var(--lc-x), 34px); opacity: 0; } }
+@keyframes lc-surge { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .9; } 80% { opacity: .7; } 100% { transform: translate(0, 300px); opacity: 0; } }
+@keyframes lc-spray { 0% { transform: scale(.4); opacity: 0; } 25% { opacity: .8; } 100% { transform: scale(1.6, 2); opacity: 0; } }
 @keyframes lc-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 @keyframes lc-leaf { 0% { transform: translate(0, -30px) rotate(0deg); opacity: 0; } 6% { opacity: 1; } 30% { transform: translate(-22px, 130px) rotate(110deg); } 60% { transform: translate(14px, 280px) rotate(230deg); } 90% { opacity: 1; } 100% { transform: translate(-10px, 450px) rotate(360deg); opacity: 0; } }
 @keyframes lc-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-2px) rotate(4deg); } }
@@ -151,7 +167,7 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
 @keyframes lc-ride { from { transform: translate(0, 0); } to { transform: translate(var(--lc-x, 200px), var(--lc-y, 34px)); } }
 @keyframes lc-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--lc-x, 6px), var(--lc-y, -3px)); } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave { animation: none !important; }
+  .lc-breathe, .lc-blink, .lc-tail, .lc-steam, .lc-glow, .lc-ear, .lc-shake, .lc-yawn-head, .lc-yawn-off, .lc-stretch, .lc-snooze, .lc-sun, .lc-twinkle, .lc-leaf, .lc-bob, .lc-flicker, .lc-drift, .lc-sway, .lc-rain, .lc-snow, .lc-flame, .lc-scroll, .lc-ride, .lc-float, .lc-spark, .lc-sweep, .lc-burst, .lc-shoot, .lc-spin, .lc-wave, .lc-fall, .lc-foam { animation: none !important; }
   [data-tap|="bird"].lc-tapped .lc-note { opacity: 1; }
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }
