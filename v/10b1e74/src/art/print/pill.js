@@ -7,10 +7,11 @@
    - snag: only a little loop of the yarn pulled out of the row;
    - mend: a small cross stitch in cream thread, as a mended spot;
    - fuzz: three tiny specks of fluff, no ball.
-   `PILL.style` says which; the game draws "ball" until the designer picks. */
+   `PILL.style` says which. the designer picked "none" on the board (2026-11-28): an off note leaves nothing on the knitting or
+   the fur. The other ways stay here, drawn only by the board. */
 const KEY = "#262122";
 const f = n => (Math.round(n * 100) / 100).toString();
-export const PILL = { style: "ball" };
+export const PILL = { style: "none" };
 export const PILL_STYLES = ["ball", "none", "snag", "mend", "fuzz"];
 
 /* the other ways, at (x y), r the ball's radius as it would have been, c its colour, sc the scale of the lines;

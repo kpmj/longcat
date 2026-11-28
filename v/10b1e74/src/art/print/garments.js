@@ -3,7 +3,8 @@
      the rows there is only a soft darker rim, like chunky knitting; a trim says which garment it is.
    - the three garments are a hat, a scarf and a top. The hat replaces the old lap garment: the game's zone id is still
      `bottom` (saves keep working), and this module draws it on the head. `hat` is accepted as the same zone.
-   - an off note leaves a pill of fluff (foldMarkup in ./cat.js), not a fold.
+   - an off note left a pill of fluff (foldMarkup in ./cat.js); since the designer's pick of 2026-11-28 it leaves nothing
+     (./pill.js PILL.style "none").
    - a garment with a yarn (g.yarn, ./yarn.js) is a cat in a knitted sleeve: "整件毛衣", the designer's choice of 2026-11-14
      after the test board docs/design/longcat-sleeve-test.md. Head, tail, paws and a short piece of body at each end
      are the cat's own coat, in short fur; the body between is the yarn, with a ribbed cuff where the fur comes out.
