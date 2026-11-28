@@ -23,7 +23,7 @@ import { ZONES as OLD, moodOf } from "../garments.js";
 import { headFor, tailFor, palFor } from "./guests.js";
 import { COATS, KEY, LWC, coatMarkup, pawPair, foldMarkup, foldSpots, catHead, catTail, catTailTucked, petHearts } from "./cat.js";
 import { zzPrint, bodyLeftAt } from "./judge.js";
-import { NEW_JUDGE } from "../style.js";
+import { NEW_JUDGE, ARMS } from "../style.js";
 import { yarnOf, sleeveMarkup, yarnPill, KNIT, CAT_W } from "./yarn.js";
 
 /* rows lowest first: [y, sag, x0, x1]. The hat is a small cap of three rows between the judge's ears; it runs right
@@ -40,6 +40,8 @@ if (NEW_JUDGE) {
   ZONES.hat.rows = ZONES.hat.rows.map(([y, s, a, b]) => [y - 13, s, a, b]);
   ZONES.scarf.rows = ZONES.scarf.rows.map(([y, s]) => [y - 20, s, 306, 94]);
   ZONES.top.rows = ZONES.top.rows.map(([y, s]) => [y, s, 74, 326]);
+  /* ARMS "under": the top goes 24 lower, its first row clear of the paws (which end at y 338) */
+  if (ARMS === "under") ZONES.top.rows = ZONES.top.rows.map(([y, s, a, b]) => [y + 24, s, a + 1, b - 1]);
 }
 export const ZONE_NAME = { scarf: "Scarf", top: "Top", hat: "Hat", bottom: "Hat" };
 /* the zone to draw: `bottom` (the game's id) and `hat` are the same garment */
@@ -85,7 +87,7 @@ const AREA = {
 /* the new capybara's areas: the same rules, on its own outline (judge.js bodyLeftAt) */
 if (NEW_JUDGE) {
   const side = (y0, y1) => { const L = [], R = []; for (let y = y0; y <= y1; y += 8) { const x = bodyLeftAt(y); L.push([x, y]); R.push([400 - x, y]); } return { L, R }; };
-  const s = side(232, 296), tp = side(326, 400);
+  const s = side(232, 296), tp = ARMS === "under" ? side(350, 424) : side(326, 400);
   AREA.hat = { ...AREA.hat, poly: AREA.hat.poly.map(([x, y]) => [x, y - 13]), view: [78, 21, 244, 226], shut: AREA.hat.shut.map(l => l.map(([x, y]) => [x, y - 13])) };
   const neck = [[s.L[0][0], 232], [132, 232], [160, 248], [240, 248], [268, 232], [s.R[0][0], 232]];
   AREA.scarf = { poly: [...neck, ...s.R.slice(1), ...[...s.L].reverse().slice(0, -1)], view: [16, 156, 368, 250], shut: [[s.R[s.R.length - 1], s.L[s.L.length - 1]], neck] };

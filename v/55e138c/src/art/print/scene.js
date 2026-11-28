@@ -127,7 +127,7 @@ export function sceneParts(o = {}) {
   const things = L.judge || {};
   const J = judgeFigureOf(o.judge, o.face || "neutral", { animate, react: o.react, paws: o.paws, onHead, itemLift, item: things.item, hold: o.hold === false ? null : things.hold, holdUp: !!o.holdUp });
   const special = o.special === "newyear" ? newYear(time, rng(hash(`ny|${place}|${seed}`)), animate) : "";
-  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${cushion}${J.held || ""}${heads}${leaveArt}${waitingArt}${J.paws}`;
+  const character0 = `${J.feet}${J.body}${J.lap}${J.head}${guide}${garments}${J.arms || ""}${cushion}${J.held || ""}${heads}${leaveArt}${waitingArt}${J.paws}`;
   const character = animate && o.react === "shiver" ? `<g class="lc-shiver">${character0}</g>` : character0;
   return { place, time, L, special, shelves, character: (animate ? `<g class="lc-breathe">${character}</g>` : character) + runners + breeze, judge: J, garments, heads, onHead, itemLift, cushion: cushion0 };
 }

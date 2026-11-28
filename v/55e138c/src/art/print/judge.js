@@ -4,7 +4,7 @@
    2026-11-27 the new one the designer picked (NEW below), drawn only when ../style.js says so. */
 import { f, num, svgDoc } from "../util.js";
 import { FACES } from "../judge.js";
-import { NEW_JUDGE } from "../style.js";
+import { NEW_JUDGE, ARMS } from "../style.js";
 
 export const J = { fur: "#b3885d", dk: "#916b46", muzzle: "#d3b189", ink: "#2a2223", key: "#262122", yuzu: "#ebb229", yuzuDk: "#cf8f1c", leaf: "#5d8a63", ear: "#c79c84", mouth: "#7a3b33", white: "#f8f2e2", tear: "#8fb8cc", card: "#f3ead6" };
 const LW = 2.7;
@@ -217,8 +217,10 @@ export function judgeFigure(face, o = {}) {
   const holding = o.hold === "heart" && !p.paws, up = holding && !!o.holdUp;
   /* the new capybara's arms hang at its sides: the arm's inner edge and a pale paw. Not while the paws are busy */
   const sideArms = NEW_JUDGE && !holding && !p.paws ? [-1, 1].map(s => { const x = v => 200 + s * (v - 200); return ln(`M${x(116)} 283C${x(111)} 300 ${x(104)} 316 ${x(97)} 330`, .9) + `<g transform="translate(${x(91)} 327) rotate(${s * -18})">${sh(ell(0, 0, 14, 10.5), NEW.paw, .85)}</g>`; }).join("") : "";
+  /* ARMS "over": the arms are their own layer, drawn on the garments (print/scene.js), so no garment hides a paw */
+  const armsOver = ARMS === "over" ? sideArms : "";
   const body = NEW_JUDGE
-    ? fl(NEW.body, J.fur) + fl(ell(...NEW.belly), J.muzzle, .55) + fl(NEW.bodyShade, J.dk, .35) + ln(NEW.body) + sideArms + (holding ? heartArms(up) : "")
+    ? fl(NEW.body, J.fur) + fl(ell(...NEW.belly), J.muzzle, .55) + fl(NEW.bodyShade, J.dk, .35) + ln(NEW.body) + (armsOver ? "" : sideArms) + (holding ? heartArms(up) : "")
     : fl(BODY, J.fur) + fl(ell(200, 386, 88, 64), J.muzzle, .55) + fl("M296 250C332 262 360 302 360 372V420C360 450 338 464 304 464H272C330 440 344 360 296 250Z", J.dk, .35) + ln(BODY) + (holding ? heartArms(up) : "");
   /* the new capybara stands: no lap */
   const lap = NEW_JUDGE ? "" : ln("M64 424Q128 404 194 414M206 414Q272 404 336 424", .6);
@@ -228,7 +230,7 @@ export function judgeFigure(face, o = {}) {
   const paws = up ? heartUp(!!o.animate) : holding ? "" : pawsScene(p, 200, 270), held = holding && !up ? heartHold(!!o.animate) : "";
   /* animated: head and body can be patted; they answer together through data-group */
   const tap = m => (o.animate ? `<g data-tap="judge" data-group="judge">${m}</g>` : m);
-  return { body: tap(body), lap, feet, head: tap(head), paws, held };
+  return { body: tap(body), lap, feet, head: tap(head), paws, held, arms: armsOver ? tap(armsOver) : "" };
 }
 
 /* the head making one face, like ../portrait.js faceIconSvg */
