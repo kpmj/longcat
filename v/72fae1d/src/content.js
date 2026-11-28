@@ -680,6 +680,7 @@ export function singerNote(id) {
 export const YARN_PATTERNS = [
   { id: "plain", name: "Plain" }, { id: "stripe", name: "Fine stripes" }, { id: "wide", name: "Wide stripes" }, { id: "check", name: "Gingham" },
   { id: "dots", name: "Dots" }, { id: "zigzag", name: "Zigzag" }, { id: "diamond", name: "Argyle" }, { id: "star", name: "Stars" },
+  { id: "fairisle", name: "Fair Isle" }, { id: "snowflake", name: "Snowflake" }, { id: "nordic", name: "Nordic" },
 ];
 export const YARN_COLOR_NAMES = {
   vermilion: "vermilion", indigo: "indigo", moss: "moss", yuzu: "yuzu", milk: "milk", sky: "sky", plum: "plum", teal: "teal", rose: "rose",
@@ -692,7 +693,9 @@ function yarnBox([g0, g1, g2], light, accent, soft, turn = 0) {
   return {
     morning: { [zA]: { type: "plain", a: g0 }, [zB]: { type: "plain", a: g1 }, [zC]: { type: "plain", a: g2 } },
     golden: { [zA]: { type: "stripe", a: g0, b: light }, [zB]: { type: turn % 2 ? "zigzag" : "dots", a: g2, b: accent }, [zC]: { type: "check", a: light, b: g1 } },
-    night: { [zA]: { type: "wide", a: g0, b: g1, c: light }, [zB]: { type: "star", a: turn ? g2 : g1, b: light }, [zC]: { type: "diamond", a: g1, b: soft, c: accent } },
+    /* the night's three are GPT's designs, picked by the designer on 2026-11-27 (docs/art-generation.md): the place's second
+       colour as the ground, cream motifs, the first colour as the red accent. Wide stripes, stars and argyle before */
+    night: { [zA]: { type: "snowflake", a: g1, b: light, c: g0 }, [zB]: { type: "fairisle", a: turn ? g2 : g1, b: light, c: g0 }, [zC]: { type: "nordic", a: g1, b: light, c: g0 } },
   };
 }
 const YARN_BOX = {
