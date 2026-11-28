@@ -522,7 +522,7 @@ export const PLACES = [
      trees and monkeys that can be pressed, and a capybara with hands that holds a heart, which turns from red to
      pink and back. Every word below is DRAFT, written by the art session to go with it. */
   { id: "jungle", name: "Jungle", at: "in the jungle", seat: "a mossy log", hit: "a bird's chirp", miss: "a monkey's hoot",
-    lines: { morning: "The birds were up first. It let them sing.", golden: "It's holding a heart. Nobody asked why.", night: "The jungle is loud at night. It is not." },
+    lines: { morning: "The birds were up first. It let them sing.", golden: "It's wearing an acorn. Nobody asked why.", night: "The jungle is loud at night. It is not." },
     letter: ["The jungle birds invite the judge to sit on their log.", "They say there's an acorn in it for the judge."] },
   { id: "livingroom", name: "The judge's living room", at: "in its own living room", seat: "the armchair", hit: "a teacup touching its saucer", miss: "the cuckoo clock",
     lines: { morning: "It woke up in the armchair. It did not get up.", golden: "It went nowhere this month. This is home.", night: "Half the lights are off. The other half is cat." },

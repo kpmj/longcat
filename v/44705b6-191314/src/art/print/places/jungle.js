@@ -1,6 +1,7 @@
 /* The jungle (2026-11-23; the brief is in content.js, where it came from in docs/later.md). Birds sit in a tree and each sings a very short
    tune when pressed; monkeys in the trees can be pressed too; the capybara wears an acorn instead of the yuzu and
    holds a heart in its paw (`judge` below; print/judge.js draws them and scene.js passes them on).
+   Since 2026-11-28 the heart is away for now, at the designer's word (HOLDS_HEART).
    Built with ./kit.js like the other places. Two things are its own:
    - the leaves are green. The far hills, the mist and the sky stay in the kit's one ink, so the picture still sits
      beside the others; a jungle printed all in indigo would not read as a jungle.
@@ -20,6 +21,8 @@ import { makePlace, mist, floorBand, tint, mix, RED, VIEW, pen } from "./kit.js"
 import { PICTURES, picture } from "../../pictures.js";
 
 const PIC = PICTURES.jungle;
+/* the capybara holds the heart in both paws (her idea, 2026-11-23); away for now, see `judge` below */
+export const HOLDS_HEART = false;
 /* the pieces that are pictures. Take a line out and that piece is drawn by code again */
 export const PICKED = { background: true, sun: true, "bird-1": true, "bird-2": true, "bird-3": true, "monkey-sit": true, "monkey-hang": true };
 
@@ -132,8 +135,10 @@ const SUN = [78, 154, 34, 34];
 const build = (picked = PICKED) => makePlace({
   name: "雨之森", grounds: { morning: "#cfd8a6", golden: "#dc9a62", night: "#2c3a40" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 480,
   tones: { a: "#8a6a48", b: "#6b4f34", l: "#7fa06a" }, floor: ["#6f9160", "#4b7250"], ownColours: true,
-  /* what the judge has here instead of the yuzu, and what it holds (scene.js hands these to the judge) */
-  judge: { item: "acorn", hold: "heart" },
+  /* what the judge has here instead of the yuzu, and what it holds (scene.js hands these to the judge). The heart is
+     away for now (the designer, 2026-11-28: "把愛心先拿走"; the arms hang at its sides as at the hot spring): HOLDS_HEART
+     brings it back, and everything that draws and sounds it is still in print/judge.js and audio/ambient.js */
+  judge: HOLDS_HEART ? { item: "acorn", hold: "heart" } : { item: "acorn" },
   view(V, q, time, on) {
     if (picked.background) return scenery(time, 0, 0, 400, 500, "xMidYMin slice") + airOf(V, q, time, on, [400, 500]);
     const d = V.d, G = greens(time), bark = tint("#8a6a48", time), barkDk = tint("#6b4f34", time);

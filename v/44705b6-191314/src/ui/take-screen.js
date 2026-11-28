@@ -786,15 +786,6 @@ function steadyVoice(v, t, notes, lat) {
   return R.headMidi ?? null;
 }
 
-/* beside the head, when the voice is shown an octave from where it really is (lane-body.js onChart) */
-const OCT_WORDS = { 1: "an octave high", 2: "two octaves high", "-1": "an octave low", "-2": "two octaves low" };
-/* on the left of the head when the head is near the right edge (the sweep takes it there) */
-const octTag = (oct, x, y) => {
-  if (!OCT_WORDS[oct]) return "";
-  const left = x > W - 130;
-  return `<text class="oct-tag" x="${(left ? x - 26 : x + 26).toFixed(1)}" y="${(y - 14).toFixed(1)}"${left ? ' text-anchor="end"' : ""}>${oct > 0 ? "↑" : "↓"} ${OCT_WORDS[oct]}</text>`;
-};
-
 /* a critically damped spring towards `want`, with time constant tau, stepped finely so a slow frame is fine */
 function springHead(want, tau, dt) {
   if (!(dt > 0)) { R.headY = want; R.headV = 0; return; }
@@ -838,9 +829,10 @@ function draw(v, dt = 1 / 60) {
   if (T.phase === "demo" || T.phase === "count") { R.headY = guideY(T.phase === "demo" ? T.t : 0); R.headV = 0; }
   else {
     const hv = steadyVoice(v, T.t, P.notes, latOf(T));
-    /* a voice off the chart by an octave is shown on the note of the same name, with a tag that says so */
+    /* a voice off the chart by an octave is shown on the note of the same name. No words say how high or low a
+       voice is, an octave or a little: the head's height says it (the designer, 2026-11-28: "高低八度不用特別說 用貓頭顯示高低
+       就好了 偏高偏低也不用特別說 用貓頭高低表示"; until then a tag beside the head said "an octave high") */
     const seen = onChart(hv, R.geo.lo - 0.5, R.geo.hi + 0.5);
-    R.oct = hv != null ? seen.oct : 0;
     R.seenMidi = hv != null ? seen.midi : null;
     const want = hv != null ? yOf(seen.midi) : guideY(tp);
     const semitone = Math.abs(yOf(61) - yOf(60));
@@ -862,7 +854,7 @@ function draw(v, dt = 1 / 60) {
   const mouth = open || P.mouth === "mm" ? P.mouth : null;
   const line = document.getElementById("lane-line");
   if (line) line.innerHTML = laneCatSvg({ subs: shape.subs, threads: shape.slim ? shape.threads : [], slim: shape.slim, thin: true, tail: shape.tail, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal });
-  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: hx, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth }) + octTag(T.phase === "sing" && v ? R.oct : 0, hx, R.headY + bob);
+  if (el) el.innerHTML = laneCatSvg({ subs: [], threads: [], head: { x: hx, y: R.headY + bob, dir: 1 }, tail: null, look: R.g.look, yarn: R.g.yarn, kind: R.g.kind, animal: R.g.animal, mood, marks, mouth });
 }
 
 function wireTouch(root) {

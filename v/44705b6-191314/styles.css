@@ -477,8 +477,6 @@ button.gstep:focus-visible { outline: 2px solid var(--brand); outline-offset: 2p
 
 /* ---------- climbing drills: rounds ---------- */
 .rep-tag { font-family: var(--body); font-weight: 800; font-size: 12px; fill: #8a6a3a; }
-/* beside the cat's head while the voice is an octave from the note it is shown on */
-.oct-tag { font-family: var(--body); font-weight: 800; font-size: 12px; fill: #7c2414; stroke: #fdf6e8; stroke-width: 3.5px; paint-order: stroke; }
 .gl-label.away { opacity: 0; }
 .gl-line.away { stroke: #ecdfc4; stroke-width: 1; stroke-dasharray: 2 5; }
 .note-dots > span { display: contents; }
