@@ -116,10 +116,19 @@ export function sceneParts(o = {}) {
   /* shelves sit lower than in the old scene so they clear the round window and the title */
   if (baskets[0]) shelves += plank(312, 240, L.wood) + basket(352, 240, baskets[0], L.wood, time, animate, newB === 0 ? arrive : null);
   if (baskets[1]) shelves += plank(8, 240, L.wood) + basket(48, 240, baskets[1], L.wood, time, animate, newB === 1 ? arrive : null);
-  /* the cats that are waiting sit on the judge's lap, not on a shelf at the side, so they do not cover the
-     background (the designer, 2026-11-14). The lap is free now that the lap garment is a hat. `arriving`: they pop onto the
-     lap one after another */
-  const waitingArt = waiting.length ? pile(200, 437, waiting.map(w => ({ ...w, mark: drawZone(w.zone) })), "normal", time, 1.15, animate, o.arriving ? waiting.map((_, i) => .3 + i * .35) : null) : "";
+  /* the cats that are waiting lie on the judge, each where its garment will go (the designer, 2026-11-28, of the three in a
+     pile on the lap: 「還是他們分別在水豚身上的部分位置 點他們就開始唱」): the scarf's across the neck, the top's across
+     the waist, the hat's on top of the head, beside the thing there (it rides the head, see hatOnHead below).
+     `arriving`: they pop on one after another. Each is marked data-wait with its garment: on Home a tap on it starts
+     that garment (ui/home.js). Before 2026-11-28 they lay in a pile on the lap (pile, 200 437) */
+  const WAIT_AT = { scarf: [200, 292, 1], top: [200, 432, -1], hat: [176, 73, 1] };
+  const waitOne = (w, i) => {
+    const z = drawZone(w.zone), [x, y, dir] = WAIT_AT[z] || WAIT_AT.top;
+    const m = loaf(x, y, dir, { ...w, mark: z }, "normal", 1.15, w.zone, time, animate ? 2.3 + i * 3.1 : null);
+    return `<g class="lc-wait" data-wait="${zoneId(w.zone)}">${animate && o.arriving ? `<g class="lc-arrive" style="animation-delay:${f(.3 + i * .35)}s">${m}</g>` : m}</g>`;
+  };
+  const waitingAll = waiting.map((w, i) => [drawZone(w.zone), waitOne(w, i)]);
+  const waitingArt = waitingAll.filter(([z]) => z !== "hat").map(([, m]) => m).join(""), waitingHat = waitingAll.filter(([z]) => z === "hat").map(([, m]) => m).join("");
   /* a small breeze crosses in front of the judge: two lines of wind and a leaf */
   const breeze = animate && o.react === "shiver" ? `<g class="lc-breeze"><path d="M0 300q22 -9 44 0t44 0M30 324q18 -7 36 0t36 0" fill="none" stroke="#f8f2e2" stroke-width="2.4" stroke-linecap="round" opacity=".85"/><path transform="translate(104 300) rotate(30)" d="M0 -9L2.4 -3.6L8 -6L5.6 -.4L10 3L3.6 4L0 10L-3.6 4L-10 3L-5.6 -.4L-8 -6L-2.4 -3.6Z" fill="#bf452d" stroke="${KEY}" stroke-width="1.2" stroke-linejoin="round"/></g>` : "";
   const cushion0 = o.cushion && typeof o.cushion === "object" ? cushionMarkup(o.cushion) : "";
@@ -129,7 +138,7 @@ export function sceneParts(o = {}) {
   const guideOf = z => { const g = worn.find(w => w.zone === z); return guideMarkup(z, g ? g.steps : 0); };
   const guide = guides.filter(z => drawZone(z) !== "hat").map(guideOf).join("");
   /* the fruit on the judge's head is seated on top of the hat, however far the hat has grown (hatOnHead) */
-  const { onHead, itemLift } = hatOnHead(hat[0] || null, itemSeatOf(o.judge), { guide: guides.filter(z => drawZone(z) === "hat").map(guideOf).join(""), cushion: cushionOnHead ? cushion0 : "" });
+  const { onHead, itemLift } = hatOnHead(hat[0] || null, itemSeatOf(o.judge), { guide: guides.filter(z => drawZone(z) === "hat").map(guideOf).join(""), cushion: (cushionOnHead ? cushion0 : "") + waitingHat });
   /* o.judge: which of the six judges sits here (print/judges.js); the capybara unless told otherwise */
   /* a place may give the judge something else on its head and something to hold (the jungle: an acorn, a heart).
      o.hold === false: the paws are down and empty (wrapping by hand: the heart would lie on the turns being laid).

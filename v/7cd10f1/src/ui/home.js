@@ -56,6 +56,7 @@ function paintArt(root = document.getElementById("screen")) {
   if (fxWanted(art)) { el.innerHTML = `${art.layers.back}<canvas class="lc-fx-back" aria-hidden="true"></canvas>${art.layers.front}`; startHomeFx(el, art, W, H, { sound: (kind) => { if (S.settings.sound !== false) tapSound(kind, S.here); }, prepare: () => { if (S.settings.sound !== false) prepareStation(); } }); } // (sounds of its own: the station's train coming and going)
   else { el.innerHTML = art.svg; stopHomeFx(el); }
   wireTaps(el); // pat a cat or the judge, tap the yuzu, the lamp, the sun
+  if (!el._lcWait) { el._lcWait = true; el.addEventListener("click", waitingTap); }
   if (!el._lcCheer) { el._lcCheer = true; el.addEventListener("click", cheerOnSun); }
 }
 /* the designer, 2026-11-28: "when you click the sun or the moon, if you already finished the entire time stage, then it will
@@ -170,7 +171,10 @@ export function renderHome(root) {
   if (nb) nb.onclick = () => { app.visit = null; show("home", { noAutoPick: true }); };
   const lb = $("[data-act=letter]", root);
   if (lb) lb.onclick = () => openLetter(unread[0]);
-  if (!nt && time && !away && !app.props.noAutoPick) setTimeout(() => app.screen === "home" && document.getElementById("home-scene") && openPicker(), 350);
+  /* with no garment chosen the picker opens by itself only for the tutorial's first garment, which it explains; after
+     that the cats waiting on the judge are the choice (tap one and it is sung: waitingTap), with a tip the first time
+     (homeTips), and Sing still says Pick and opens the picker (2026-11-28) */
+  if (!nt && time && !away && !app.props.noAutoPick && !St.tutorialDone(app.S)) setTimeout(() => app.screen === "home" && document.getElementById("home-scene") && openPicker(), 350);
   if (!app.canSave && !warnedSave) { warnedSave = true; setTimeout(() => toast("This browser won’t remember your progress."), 600); }
   if (!away) setTimeout(() => homeTips(root, nt, unread), 450);
 }
@@ -188,8 +192,27 @@ function homeTips(root, nt, unread) {
     const p = at(glow.zone, glow.step);
     if (tip("step", scene, { text: `That’s one step. ${left === 11 ? "Eleven" : left} more and the ${name} is done.`, at: "below", x: p.x, y: p.y + 24 })) return;
   }
+  /* no garment chosen: the cats on the judge are the choice */
+  if (!nt && St.currentTime(S, S.here) && layout && layout.judgePx) {
+    const p = layout.judgePx(200, 305), w = Math.max(1, scene.getBoundingClientRect().width);
+    if (tip("waitcat", scene, { text: "Tap a cat to sing its garment.", at: "below", x: p.x / w, y: p.y })) return;
+  }
   const lb = $("[data-act=letter]", root);
   if (lb && unread.length) tip("letter", lb, { at: "below", x: 0.3 });
+}
+
+/* A cat waiting on the judge, where its garment will go (art/print/scene.js), is tapped: that garment starts and is
+   sung (the designer, 2026-11-28: 「點他們就開始唱」). It is patted first, as any cat is (wireTaps), and the take opens a moment
+   later. During the tutorial the first garment is worn to the end: another cat opens its garment's sheet, which says so */
+function waitingTap(e) {
+  const t = e.target.closest ? e.target.closest("[data-wait]") : null;
+  if (!t || app.screen !== "home" || visiting()) return;
+  const S = app.S, place = S.here, zone = t.dataset.wait, time = St.currentTime(S, place), active = St.activeZone(S, place);
+  if (!time || St.garmentDone(S, place, time, zone)) return;
+  if (!St.tutorialDone(S) && active && active !== zone) return openGarment(zone, time);
+  if (!St.chooseZone(S, place, zone)) return;
+  app.save();
+  setTimeout(() => { if (app.screen === "home") show(St.beatPending(S, place) ? "home" : "take", St.beatPending(S, place) ? {} : { ctx: St.nextTake(S, place) }); }, 550);
 }
 
 /* Which garment next: the player chooses (decided 2026-11-11). Colours come with the garment.
