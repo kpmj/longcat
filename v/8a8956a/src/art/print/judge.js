@@ -134,17 +134,24 @@ export function judgeHead(face, o = {}) {
     ? (sx, flick) => `<g transform="translate(${sx * 63} -99) scale(${sx * 1.05} 1.05) rotate(${-12 + (flick ? -30 : 0)})">${sh("M-17 14L-10 -16Q-6 -26 2 -19L18 7Z", J.fur)}${fl("M-9 10L-5 -9Q-2 -15 3 -10L10 5Z", "#e9c9a0", .95)}</g>`
     : (sx, flick) => `<g transform="translate(${sx * 67} -71) rotate(${sx * 40 + (flick ? -34 : 0)})">${sh(ell(0, 0, 9, 11.5), J.dk)}${fl(ell(0, 1.5, 4, 6), J.ear, .9)}</g>`;
   /* animated: each ear twitches now and then, out of step with the other */
-  const ear = (sx, flick) => (o.animate && !flick ? `<g class="lc-ear" style="animation-delay:${sx < 0 ? -2 : -5.6}s;animation-duration:${sx < 0 ? 7.5 : 9.5}s">${earArt(sx, flick)}</g>` : earArt(sx, flick))
+  /* the finer judge (o.motion) also says which side an ear is on (--lc-d), so both lie back outwards */
+  const ear = (sx, flick) => (o.animate && !flick ? `<g class="lc-ear" style="animation-delay:${sx < 0 ? -2 : -5.6}s;animation-duration:${sx < 0 ? 7.5 : 9.5}s${o.motion && o.motion.face ? `;--lc-d:${sx}` : ""}">${earArt(sx, flick)}</g>` : earArt(sx, flick))
     + (flick ? ln("M-88 -92q-8 6 -6 16M-96 -84q-6 5 -4 12", .6) : "");
   const nostril = sx => `<path d="${ell(0, 0, 5.6 * p.nostril, 2.8 * p.nostril)}" transform="translate(${sx * 15} 13) rotate(${sx * 26})" fill="${J.ink}"/>`;
   const dots = [[34, 31], [43, 40], [32, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.7"/><circle cx="${-x}" cy="${y}" r="1.7"/>`).join("");
   const brow = p.brow === "one" ? ln("M43 -45q9 -6 19 -2") : p.brow === "both" ? ln("M-62 -44q9 -6 19 -1M43 -45q10 -5 19 1") : "";
   const resting = p.l === "lid" && p.r === "lid";
-  const eyes = `<g${o.animate && resting ? ` class="lc-blink"` : ""}>${eye(-52, p.l, p.look)}${eye(52, p.r, p.look)}</g>`;
+  /* o.motion (the finer judge, a trial page since 2026-11-28, tools/art/judge-motion.mjs): the eyes sit in a group that
+     can glance aside (lc-jlook), the nostrils in one that can sniff (lc-sniff), the head in one that can follow the
+     breath (lc-jbreath). Without it the head is drawn as before; the CSS that moves them is the trial page's */
+  const rich = !!(o.animate && o.motion && o.motion.face);
+  const eyes0 = `<g${o.animate && resting ? ` class="lc-blink"` : ""}>${eye(-52, p.l, p.look)}${eye(52, p.r, p.look)}</g>`;
+  const eyes = rich && resting ? `<g class="lc-jlook">${eyes0}</g>` : eyes0;
   /* at rest and animated, the judge yawns now and then: the resting eyes and mouth swap with shut eyes and an open mouth */
   const idle = !!o.animate && resting && p.mouth === "split" && !p.chew && !p.tilt && !p.dy && !p.paws && !p.flick && !p.tear && p.nostril === 1 && !p.brow;
   const mouthM = idle ? "" : MOUTH[p.mouth] || MOUTH.split;
-  const muzzle = `<g${p.chew ? ` transform="translate(3 2) rotate(3)"` : ""}>${fl(MUZZLE, J.muzzle)}${nostril(-1)}${nostril(1)}${ln("M0 20V36", .85)}<g fill="${J.dk}">${dots}</g>${mouthM}</g>`
+  const nostrils = rich ? `<g class="lc-sniff" style="transform-origin:0px 13px">${nostril(-1)}${nostril(1)}</g>` : nostril(-1) + nostril(1);
+  const muzzle = `<g${p.chew ? ` transform="translate(3 2) rotate(3)"` : ""}>${fl(MUZZLE, J.muzzle)}${nostrils}${ln("M0 20V36", .85)}<g fill="${J.dk}">${dots}</g>${mouthM}</g>`
     + (p.chew ? ln("M60 34q6 3 5 10", .6) : "");
   /* idle: a third face waits for a pat: eyes shut in arcs and a small smile (shown while lc-tapped) */
   const face2 = idle ? `<g class="lc-face"><g class="lc-yawn-off">${MOUTH.split}${eyes}</g><g class="lc-yawn-on">${MOUTH.yawn}${eye(-52, "shut", [0, 0])}${eye(52, "shut", [0, 0])}</g></g><g class="lc-face-pet">${MOUTH.smile}${eye(-52, "happy", [0, 0])}${eye(52, "happy", [0, 0])}</g>` : eyes;
@@ -160,7 +167,8 @@ export function judgeHead(face, o = {}) {
   const head0 = ear(-1, p.flick) + ear(1, false) + (NEW_JUDGE ? fl(NEW.fill, J.fur) + shade + ln(NEW.line) : fl(HEAD, J.fur) + shade + ln(HEAD)) + faceArt + onHeadOf(o, yz);
   /* idle: the head shakes now and then and tips back with the yawn. Animated: a pat makes it bob (lc-bobble) */
   const head1 = idle ? `<g class="lc-shake"><g class="lc-yawn-head">${head0}</g></g>` : head0;
-  const head = o.animate ? `<g class="lc-bobble">${head1}</g>` : head1;
+  const head1b = rich ? `<g class="lc-jbreath">${head1}</g>` : head1;
+  const head = o.animate ? `<g class="lc-bobble">${head1b}</g>` : head1b;
   const tf = [p.tilt ? `rotate(${p.tilt} 0 68)` : "", p.dy ? `translate(0 ${p.dy})` : ""].filter(Boolean).join(" ");
   const ticks = p.ticks ? ln("M104 -40v20M98 -28l6 6l6 -6M-104 -40v20M-110 -28l6 6l6 -6", .7) : "";
   const sleep = p.zz && !o.noZz ? zz(98, -74, 2.1) : "";
