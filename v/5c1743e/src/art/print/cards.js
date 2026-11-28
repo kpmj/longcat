@@ -92,7 +92,7 @@ export function wardrobeThumbSvg(o = {}) {
 /* a cat sitting as a loaf, showing its kind: ears and tail */
 export function catKindSvg(kind, o = {}) {
   const k = kindId(kind), look = lookOf((o && o.look) || { fur: "short", pattern: "plain", palette: "ginger" }, "bottom", "morning"), pal = COATS[look.palette] || COATS.ginger;
-  const art = `<g transform="translate(40 24) scale(1.2)">${catTail(k, 0, 0, -1, 8, pal)}</g><ellipse cx="10" cy="22" rx="32" ry="17" fill="${pal.fur}" stroke="${KEY}" stroke-width="2.2"/>${coatMarkup([{ pts: straight(-16, 20, 50), pattern: look.pattern }], 22, pal, 1)}<ellipse cx="6" cy="29" rx="20" ry="7" fill="${pal.belly}"/>${pawPair(-10, 38, 1, 1, pal)}${catHead(-12, -4, 1, "normal", 1.2, pal, k)}`;
+  const art = `<g transform="translate(40 24) scale(1.2)">${catTail(k, 0, 0, -1, 8, pal)}</g><rect x="-25" y="3" width="71" height="37" rx="18.5" fill="${pal.fur}" stroke="${KEY}" stroke-width="2.6"/>${coatMarkup([{ pts: straight(-16, 20, 50), pattern: look.pattern }], 22, pal, 1)}<ellipse cx="6" cy="29" rx="22" ry="8" fill="${pal.belly}"/>${pawPair(-10, 38, 1, 1, pal)}${catHead(-12, -4, 1, "normal", 1.2, pal, k)}`;
   return svgDoc("0 0 120 100", `<g transform="translate(48 54) scale(.86)">${art}</g>`);
 }
 

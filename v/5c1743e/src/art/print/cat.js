@@ -14,8 +14,9 @@ export const COATS = {
   cream:  { fur: "#ecdcb6", furDk: "#d4be90", stripe: "#b2975f", belly: "#f8f1df", ink: KEY, nose: "#a7605a", inner: "#dcb8a4", eye: "#d9dc8e" },
 };
 const C = COATS.ginger;
-/* the line weight inside a cat's head space (head is about 40 wide); garments draw the head at ~.9 */
-export const LWC = 2.4;
+/* the line weight inside a cat's head space (head is about 40 wide); garments draw the head at ~.9.
+   2.8 since 2026-11-28: GPT's cats, picked by the designer, have a heavier line (2.4 before) */
+export const LWC = 2.8;
 const key = (w) => `stroke="${KEY}" stroke-width="${f(w)}" stroke-linejoin="round" stroke-linecap="round"`;
 const ln = (d, w) => `<path d="${d}" fill="none" ${key(w)}/>`;
 const both = m => `<g>${m}</g><g transform="scale(-1 1)">${m}</g>`;
@@ -36,7 +37,8 @@ export function catEars(kindIn, pal, anim = null) {
   /* round: a small round ear, set wide */
   if (kind === "round") return one("M-20.2 -8.6A8.2 8.2 0 1 1 -6.4 -15.8Z", "M-17.2 -12.6A4.6 4.6 0 1 1 -10.4 -16.4Z");
   const tuft = kind === "tuft" ? ln("M-16.6 -26l-2 -4.2M-15.4 -27.2l.1 -4.8M-14.2 -26.8l2.3 -3.6", LWC * .7) : "";
-  return one("M-18 -6L-17 -26Q-16.4 -29 -13.4 -26.8L-3.5 -15.2Z", "M-15.8 -11.4L-15.2 -22.6L-8.4 -15.4Z", tuft);
+  /* pointed: taller since GPT's cats (2026-11-28) */
+  return one("M-19 -6L-18.4 -29Q-17.7 -32.2 -14.5 -29.6L-3 -15Z", "M-16.4 -11.4L-16 -25.4L-8 -15.4Z", tuft);
 }
 
 /* eyes and mouth by mood: normal (awake), listen, sing, smug, squint, wide, sleep. almond eyes with a slit.
@@ -51,7 +53,8 @@ const SUNG = {
 };
 export function catFace(mood, pal, dy = 0, sung = null) {
   const y = -2 + dy, lw = LWC;
-  const almond = x => `<path d="M${f(x - 4.2)} ${f(y)}Q${x} ${f(y - 4.6)} ${f(x + 4.2)} ${f(y)}Q${x} ${f(y + 3.8)} ${f(x - 4.2)} ${f(y)}Z" fill="${pal.eye || "#e9d98a"}" ${key(lw * .55)}/><path d="M${x} ${f(y - 3)}V${f(y + 2.2)}" ${key(lw * .7)}/>`;
+  /* the almond eye, a little larger since GPT's cats (2026-11-28) */
+  const almond = x => `<path d="M${f(x - 4.8)} ${f(y)}Q${x} ${f(y - 5.2)} ${f(x + 4.8)} ${f(y)}Q${x} ${f(y + 4.3)} ${f(x - 4.8)} ${f(y)}Z" fill="${pal.eye || "#e9d98a"}" ${key(lw * .5)}/><path d="M${x} ${f(y - 3.3)}V${f(y + 2.5)}" ${key(lw * .68)}/>`;
   const eye = x => mood === "smug" || mood === "listen" ? ln(`M${f(x - 3.6)} ${f(y + .6)}q3.6 -4.4 7.2 0`, lw * .8)
     : mood === "sleep" ? ln(`M${f(x - 3.6)} ${f(y - 1.4)}q3.6 3.6 7.2 0`, lw * .8)
       : mood === "squint" ? ln(`M${f(x - 4)} ${f(y)}h8`, lw * .9)
@@ -63,7 +66,8 @@ export function catFace(mood, pal, dy = 0, sung = null) {
       : ln(`M-3.6 ${f(my)}q1.8 2.2 3.6 0q1.8 2.2 3.6 0`, lw * .6);
   return `${eye(-8.4)}${eye(8.4)}<path d="M-2 ${f(3.6 + dy)}h4l-2 2.4z" fill="${pal.nose}" stroke="${pal.nose}" stroke-width=".9" stroke-linejoin="round"/>${mouth}`;
 }
-const HEAD = "M-20.5 1C-21 -11.5 -12 -17 0 -17C12 -17 21 -11.5 20.5 1C20 10.5 10.5 15.5 0 15.5C-10.5 15.5 -20 10.5 -20.5 1Z";
+/* the head: rounder, with fuller cheeks below the eyes, as GPT drew the cats the designer picked (2026-11-28) */
+const HEAD = "M-21 0C-21.5 -12 -12.5 -17.5 0 -17.5C12.5 -17.5 21.5 -12 21 0C22.5 6 19 13 11 15.5C7.5 16.6 3.8 17 0 17C-3.8 17 -7.5 16.6 -11 15.5C-19 13 -22.5 6 -21 0Z";
 /* A charm: one small thing worn by the ear on the cat's own right (drawn at the left of the head space), flat and
    key-lined like everything else. It sits beside the ear, not on the crown, so the judge's fruit can still rest on
    a hat cat's head. Colours are the print's own red, green, indigo and ochre, the same on every coat. */
@@ -88,13 +92,13 @@ export const charmMarkup = kind => { const c = kindParts(kind).charm; return c &
    lane cat, which is redrawn every frame. mouth (optional): the shape of a sung sound, see catFace */
 export function catHead(x, y, dir, mood, sc = 1, pal = C, kind = "point", anim = null, mouth = null) {
   const s = f(dir * sc * 100) / 100 || .01, t = f(sc * 100) / 100 || .01;
-  const marks = `<path d="M-4.6 -16v5M0 -17v6.2M4.6 -16v5" stroke="${pal.stripe}" stroke-width="1.9" stroke-linecap="round"/>`;
+  const marks = `<path d="M-5 -16.2v5.6M0 -17.4v7M5 -16.2v5.6" stroke="${pal.stripe}" stroke-width="2.6" stroke-linecap="round"/>`;
   const whisk = `<path d="M-13.5 4l-11 -1.8M-13.5 7l-10.4 1.8M13.5 4l11 -1.8M13.5 7l10.4 1.8" ${key(LWC * .38)} opacity=".75"/>`;
   /* animated and awake: the face blinks, and a second, happy face waits for a pat (shown while lc-tapped) */
   const blinks = anim != null && (mood === "normal" || mood === "wide");
   const face0 = blinks ? `<g class="lc-blink" style="animation-delay:${f(-anim * 1.7)}s">${catFace(mood, pal, 0, mouth)}</g>` : catFace(mood, pal, 0, mouth);
   const face = anim != null && mood !== "sleep" ? `<g class="lc-face">${face0}</g><g class="lc-face-pet">${catFace("smug", pal)}</g>` : face0;
-  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="7.6" rx="9.4" ry="6.4" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}${charmMarkup(kind)}</g>`;
+  return `<g transform="translate(${f(x)} ${f(y)}) scale(${s} ${t})">${catEars(kind, pal, anim)}<path d="${HEAD}" fill="${pal.fur}"/><ellipse cy="8.4" rx="10.6" ry="7" fill="${pal.belly}"/>${marks}<path d="${HEAD}" fill="none" ${key(LWC)}/>${whisk}${face}${charmMarkup(kind)}</g>`;
 }
 
 /* a key-lined tube: the line under, the fur over */
@@ -106,7 +110,7 @@ export function catTail(kindIn, x, y, dir, w = 8, pal = C) {
   const kind = kindParts(kindIn).shape;
   const P = (dx, dy) => `${f(x + dx * dir)} ${f(y + dy)}`;
   const d = `M${P(0, 0)} Q${P(-14, -1)} ${P(-15, -13)} Q${P(-16, -22)} ${P(-8, -24)}`;
-  if (kind === "big") return pipe(`M${P(0, 0)} Q${P(-17, 0)} ${P(-17, -15)} Q${P(-17, -28)} ${P(-8, -29)}`, pal.fur, w * .55);
+  if (kind === "big") return pipe(`M${P(0, 0)} Q${P(-17, 0)} ${P(-17, -15)} Q${P(-17, -28)} ${P(-8, -29)}`, pal.fur, w * .68);
   if (kind === "tuft") return pipe(d, pal.fur, w * 1.35) + blob(x - 8 * dir, y - 25, w * 1.1, pal.fur) + `<path d="M${P(-13, -27)} q${f(4 * dir)} -5 ${f(9 * dir)} -1" stroke="${pal.stripe}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
   if (kind === "small") return blob(x - 4 * dir, y - 5, w * .9, pal.fur);
   /* folded: short and thick, held low */
@@ -114,8 +118,8 @@ export function catTail(kindIn, x, y, dir, w = 8, pal = C) {
   /* curled: a plume that rolls over at the tip */
   if (kind === "curl") return pipe(`M${P(0, 0)} Q${P(-16, 0)} ${P(-16, -14)} Q${P(-16, -25)} ${P(-7, -23)} Q${P(-1.5, -21)} ${P(-5.5, -15.5)}`, pal.fur, w * .8);
   /* round: long and thin with two rings near the tip */
-  if (kind === "round") return pipe(d, pal.fur, w * .72) + `<path d="M${P(-15.6, -15.5)}h${f(4.6 * dir)}M${P(-13.4, -21.6)}l${f(3.6 * dir)} 2.6" stroke="${pal.stripe}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-  return pipe(d, pal.fur, w * .9);
+  if (kind === "round") return pipe(d, pal.fur, w * .85) + `<path d="M${P(-15.6, -15.5)}h${f(4.6 * dir)}M${P(-13.4, -21.6)}l${f(3.6 * dir)} 2.6" stroke="${pal.stripe}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  return pipe(d, pal.fur, w * 1.05);
 }
 /* the tail tucked along the body (asleep) */
 export function catTailTucked(kindIn, x, y, dir, w = 8, pal = C) {
