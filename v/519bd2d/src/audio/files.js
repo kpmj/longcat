@@ -12,10 +12,13 @@ export const fileInfo = (id) => FILES[id] || null;
 /* the loaded file, or null if it is not here yet */
 export const fileReady = (id) => { const e = cache.get(id); return e && e.buf ? e : null; };
 
-export function loadFile(ctx, id) {
-  const info = FILES[id];
-  if (!ctx || !info) return Promise.reject(new Error(`no sound file "${id}"`));
-  const e = cache.get(id);
+/* A long tune also has its first half-minute in a file of its own (its `head`, written by the export step from
+   the whole file's own frames): `{ head: true }` loads that one, which a phone decodes in a moment. */
+export function loadFile(ctx, id, { head = false } = {}) {
+  const whole = FILES[id], info = head ? whole && whole.head && { ...whole, ...whole.head } : whole;
+  if (!ctx || !info) return Promise.reject(new Error(`no sound file "${id}"${head ? " (its head)" : ""}`));
+  const key = head ? `${id}#head` : id;
+  const e = cache.get(key);
   if (e) return e.buf ? Promise.resolve(e) : e.promise;
   const promise = fetch(new URL(`./files/${info.path}`, import.meta.url))
     .then((r) => { if (!r.ok) throw new Error(`sound file ${id}: ${r.status}`); return r.arrayBuffer(); })
@@ -33,17 +36,17 @@ export function loadFile(ctx, id) {
         lead = Math.max(0, i / buf.sampleRate - 0.003);
       }
       const done = { buf, lead, info };
-      cache.set(id, done);
+      cache.set(key, done);
       return done;
     })
-    .catch((err) => { cache.delete(id); throw err; });
-  cache.set(id, { promise });
+    .catch((err) => { cache.delete(key); throw err; });
+  cache.set(key, { promise });
   return promise;
 }
 
 /* Let a decoded file go. A long tune is tens of megabytes once decoded, and Home has one for each time of day:
    only the one that is playing is kept. (Fetched again from the browser's own cache if it is wanted later.) */
-export function dropFile(id) { const e = cache.get(id); if (e && e.buf) cache.delete(id); }
+export function dropFile(id, { head = false } = {}) { const key = head ? `${id}#head` : id, e = cache.get(key); if (e && e.buf) cache.delete(key); }
 
 /* Several files before they are needed. Resolves true when all are here, false if one is missing, fails, or they
    take longer than `ms`: the caller then plays what it played before, never half and half. */

@@ -2100,7 +2100,15 @@ export const FILES = {
     "tags": [],
     "joinJump": 1.36,
     "loopResidual": -30.2,
-    "clicks": 0
+    "clicks": 0,
+    "head": {
+      "path": "music/home-yuzu-golden-head.m4a",
+      "bytes": 488163,
+      "sha256": "0a4df00a91e354a3eba541d2f710db5c35052e9527ec5055895ef44f09851b32",
+      "seconds": 30.0147,
+      "same": -200.0,
+      "tags": []
+    }
   },
   "music.home.yuzu.morning": {
     "path": "music/home-yuzu-morning.m4a",
@@ -2131,7 +2139,15 @@ export const FILES = {
     "tags": [],
     "joinJump": 1.55,
     "loopResidual": -28.4,
-    "clicks": 0
+    "clicks": 0,
+    "head": {
+      "path": "music/home-yuzu-morning-head.m4a",
+      "bytes": 488157,
+      "sha256": "72f07acf6de41b8b711cd663a4398578a2f988a75941185587211e1f3ff3a5c6",
+      "seconds": 30.0147,
+      "same": -200.0,
+      "tags": []
+    }
   },
   "music.home.yuzu.night": {
     "path": "music/home-yuzu-night.m4a",
@@ -2162,7 +2178,15 @@ export const FILES = {
     "tags": [],
     "joinJump": 1.31,
     "loopResidual": -27.9,
-    "clicks": 0
+    "clicks": 0,
+    "head": {
+      "path": "music/home-yuzu-night-head.m4a",
+      "bytes": 487589,
+      "sha256": "82dbef7fe6c19cf77b5c9dc270c1f6acf39b3afb96d3e225384ae040d951f7ce",
+      "seconds": 30.0147,
+      "same": -200.0,
+      "tags": []
+    }
   },
   "music.trial.loop": {
     "path": "music/trial-loop.m4a",

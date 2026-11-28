@@ -404,25 +404,85 @@ let loopSrc = null, loopWait = false; // a file tune's looping source, and wheth
 
 /* the sound file a file tune plays now: its one file, or the one for the time of day */
 const fileOf = (t) => t.file || (t.files && (t.files[timeName] || t.files.golden)) || null;
-/* Start a file tune's loop at `at` (once its file is here; the first time that is a moment later). */
+/* Start a file tune's loop at `at`, or as soon as its sound is here. the designer, 2026-11-28: "the bgm came in pretty
+   delayed whenever the main page is loaded in". A long tune's whole file is megabytes, and a phone takes seconds
+   to decode it, so it begins on its head (its first half-minute, a file of its own, decoded in a moment) and goes
+   on in the whole file, at the same sample, once that is decoded. The two are the same coded frames, so the step
+   from one to the other cannot be heard. The bus opens as the first sound starts, so a late start still fades in. */
 function startLoop(at) {
   if (loopSrc || loopWait) return;
-  const c = ac, want = tune, id = fileOf(tune);
+  const c = ac, want = tune, id = fileOf(tune), info = fileInfo(id);
+  const still = () => ac === c && playing && tune === want && fileOf(tune) === id;
   loopWait = true;
-  loadFile(c, id).then((e) => {
-    loopWait = false;
-    if (ac !== c || !playing || tune !== want || loopSrc) return;
-    if (fileOf(tune) !== id) return schedule(); // the time of day changed while this was on its way: get that one
+  const g = c.createGain();
+  g.gain.value = FILE_LEVEL * LEVEL;
+  g.connect(musicBus);
+  const frame = (t) => Math.ceil(t * c.sampleRate) / c.sampleRate; // on a sample: the step to the whole file lands on one
+  const play = (buf, when, offset, loop) => {
+    const s = c.createBufferSource();
+    s.buffer = buf;
+    if (loop) { s.loop = true; s.loopStart = info.loopStart; s.loopEnd = info.loopEnd; }
+    s.connect(g);
+    s.start(when, offset);
+    return s;
+  };
+  const opened = (when) => {
+    if (!wanted) return; // it was asked to stop meanwhile: the fade-out is left alone
+    const mg = musicBus.gain;
+    mg.cancelScheduledValues(when);
+    mg.setValueAtTime(0, when);
+    mg.linearRampToValueAtTime(LEVEL, when + Math.max(0.05, fadeIn));
+    quietAt = 0;
+  };
+  const whole = (e) => {
     /* the other times of day are let go: decoded, each is some sixty megabytes */
     for (const other of Object.values(want.files || {})) if (other !== id) dropFile(other);
-    const s = c.createBufferSource(), g = c.createGain();
-    s.buffer = e.buf; s.loop = true; s.loopStart = e.info.loopStart; s.loopEnd = e.info.loopEnd;
-    g.gain.value = FILE_LEVEL * LEVEL;
-    s.connect(g); g.connect(musicBus);
-    s.start(Math.max(at, c.currentTime + 0.02), e.info.loopStart);
-    loopSrc = s;
-  }, () => { loopWait = false; });
+    return e;
+  };
+  const fail = () => { loopWait = false; };
+  if (!info.head || fileReady(id)) {
+    loadFile(c, id).then((e) => {
+      loopWait = false;
+      if (ac !== c || !playing || tune !== want || loopSrc) return;
+      if (fileOf(tune) !== id) return schedule(); // the time of day changed while this was on its way: get that one
+      whole(e);
+      const when = frame(Math.max(at, c.currentTime + 0.02));
+      loopSrc = play(e.buf, when, info.loopStart, true);
+      opened(when);
+    }, fail);
+    return;
+  }
+  loadFile(c, id, { head: true }).then((h) => {
+    loopWait = false;
+    if (ac !== c || !playing || tune !== want || loopSrc) return;
+    if (fileOf(tune) !== id) return schedule();
+    const began = frame(Math.max(at, c.currentTime + 0.02));
+    const first = play(h.buf, began, info.loopStart, false);
+    loopSrc = first;
+    opened(began);
+    loadFile(c, id).then((e) => {
+      if (loopSrc !== first || !still()) return;
+      whole(e);
+      /* the whole file takes over a moment from now, at the sample the head has reached; if the head has run out
+         (a very slow phone), the tune goes on from where it would be */
+      const when = frame(Math.max(c.currentTime + 0.1, began));
+      const into = (when - began) % info.loopSeconds;
+      loopSrc = play(e.buf, when, info.loopStart + into, true);
+      try { first.stop(when); } catch { /* already over */ }
+      dropFile(id, { head: true });
+    }, () => {});
+  }, fail);
 }
+/* ask for a file tune's sound before it is wanted: the head first, then the whole; a context still waiting for the
+   player's first touch can already decode */
+function prefetch() {
+  const id = fileOf(tune), c = ctx();
+  if (!id || !c || fileReady(id)) return;
+  const whole = () => loadFile(c, id).catch(() => {});
+  (fileInfo(id).head ? loadFile(c, id, { head: true }).then(whole, whole) : whole());
+}
+/* open the bus, unless a file tune's sound has not started yet: it opens the bus itself as it starts */
+function openMusic(seconds) { if (fileOf(tune) && !loopSrc) return; openBus(seconds); }
 function stopLoop(at = 0) {
   if (!loopSrc) return;
   try { loopSrc.stop(at); } catch { /* already stopped */ }
@@ -471,7 +531,7 @@ function begin() {
   }
   playing = true;
   nextAt = ac.currentTime + 0.25;
-  openBus(fadeIn);
+  openMusic(fadeIn);
   schedule();
   timer = setInterval(schedule, 120);
 }
@@ -488,7 +548,8 @@ export function startMusic(time = "golden", { delay = 0, fade = 1.5 } = {}) {
   /* a tune with a file for each time of day changes file when the time does (Home shown at another time): the
      bus closes over the old one and opens on the new, as when the Dev panel changes the tune */
   if (playing && ac && was && fileOf(tune) !== was) return restart();
-  if (playing && ac) return openBus(Math.min(fade, 0.8)); // it was only fading out: bring it back
+  if (playing && ac) return openMusic(Math.min(fade, 0.8)); // it was only fading out: bring it back
+  prefetch(); // its sound is fetched and decoded while the page settles and the phone waits for a touch
   if (delay > 0) startTimer = setTimeout(() => { startTimer = null; if (wanted) begin(); }, delay * 1000);
   else begin();
 }
@@ -533,7 +594,7 @@ function restart() {
   g.setValueAtTime(g.value, t);
   g.setTargetAtTime(0, t, 0.06);
   g.linearRampToValueAtTime(0, t + 0.25);
-  setTimeout(() => { if (ac === c && playing && wanted) openBus(0.6); }, 620);
+  setTimeout(() => { if (ac === c && playing && wanted) openMusic(0.6); }, 620);
 }
 export const tuneId = () => Object.keys(TUNES).find((k) => TUNES[k] === tune);
 export const musicState = () => ({ wanted, playing, step, tune: tuneId(), time: timeName, file: fileOf(tune), looping: !!loopSrc, bpm: fileOf(tune) ? fileInfo(fileOf(tune)).bpm : Math.round(tune.bpm * mood.speed) });
@@ -543,5 +604,5 @@ export const ambientNodes = () => (ctx() ? { bus, musicBus } : null);
 if (typeof addEventListener === "function") addEventListener("longcat-audio", () => { ctx(); if (wanted && !startTimer) begin(); });
 /* no music while the page is in the background */
 if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => {
-  if (document.hidden) fadeOut(true, 0.6); else if (wanted) { clearTimeout(haltTimer); if (playing) openBus(0.8); else begin(); }
+  if (document.hidden) fadeOut(true, 0.6); else if (wanted) { clearTimeout(haltTimer); if (playing) openMusic(0.8); else begin(); }
 });
