@@ -86,31 +86,85 @@ function sitting(q, on, x, y, pic) {
    its `box` in the print's 400 x 500 ([x, y, width, height], measured off the drawing) and where it holds on to the
    picture (`hold`: "bottom" stands on its branch, "top" hangs from it). The art tools read this list to show each
    thing alone and to lay other versions in the same boxes (tools/art/set.mjs). */
-function parts(V, q, time, on, picked = PICKED) {
-  const G = greens(time), bark = tint("#8a6a48", time), pic = id => (picked[id] ? PIC[id] : null);
-  /* the sun where Home shows it, between the birds' branch and the monkey's: a picture by day; the moon stays a
-     plain disc. Without the picture the kit's own disc is in the sky and this part is empty */
-  const [sx, sy, sw, sh] = SUN, moon = `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .38}" fill="${V.disc[0]}"/>`;
+/* WHERE THE ANIMALS ARE. the designer, 2026-11-28: 「叢林的背景動物有點擁擠」: three birds, the sun and the sitting monkey were all
+   in the strip left of the judge's head, the hanging monkey alone on the right. An arrangement says where each
+   one is, in the print's 400 x 500: a bird or the sitting monkey by its feet, the hanging monkey by the knot of its
+   vine, the sun by its box; the branches they stand on (a path from the edge, its width, and a leaf at its tip:
+   x y degrees size, which green); and the fireflies. Besides the strips beside the head, the free places on Home are
+   beside the body, low down (the body narrows to x 75 at its waist), and the two ends of the log, which the judge's
+   feet leave free; a long top covers the log's middle, so each end holds one (x 16 to 70 and 330 to 384; the log's
+   top is y 447).
+   A layout says which arrangement each time of day shows. Until the designer picks one, the game keeps the first. */
+const ARRANGE = {
+  /* as it was from 2026-11-27: everything in the left strip but the hanging monkey */
+  first: {
+    sun: [78, 154, 34, 34],
+    branches: [["M16 104Q42 102 72 92", 6, [70, 93, -24, .42, 2]], ["M14 144Q66 138 108 122", 9.5, [104, 123, -30, .5, 2]], ["M22 224Q54 222 86 210", 9.5, [84, 211, -26, .5, 1]], ["M392 156Q364 154 334 147", 9.5, [336, 147, 196, .5, 2]]],
+    birds: { "bird-1": [44, 135, 1, 1.1], "bird-2": [88, 124, -1, 1.1], "bird-3": [54, 93, 1, 1.05] },
+    sit: [62, 212], hang: [344, 151],
+    flies: [[28, 66], [100, 178], [26, 190], [374, 236], [310, 200]],
+  },
+  /* 甲 spread: one thing to a place, round both sides. Up on the left the sun and the red bird; under the title the
+     hanging monkey; low beside the body the sitting monkey (left) and the yellow bird (right); the blue bird on the
+     log's left end */
+  spread: {
+    sun: [66, 50, 36, 36],
+    branches: [["M10 168Q48 166 92 154", 9.5, [90, 155, -28, .5, 2]], ["M392 156Q364 154 334 147", 9.5, [336, 147, 196, .5, 2]], ["M8 302Q34 302 62 294", 8, [60, 295, -24, .42, 1]], ["M394 330Q376 328 346 320", 8, [348, 320, 200, .42, 2]]],
+    birds: { "bird-1": [52, 166, 1, 1.1], "bird-2": [366, 328, -1, 1.1], "bird-3": [40, 447, 1, 1.05] },
+    sit: [38, 300], hang: [344, 151],
+    flies: [[30, 110], [104, 210], [26, 380], [376, 240], [372, 410]],
+  },
+  /* 乙 birds low, monkeys high: a bird on each end of the log (a long top covers the log's middle, so each end holds
+     one) and one on a low branch on the left; the hanging monkey up on the left under the sun, the sitting monkey on
+     a branch under the title */
+  log: {
+    sun: [70, 46, 36, 36],
+    branches: [["M10 112Q40 110 74 100", 9.5, [72, 101, -24, .46, 2]], ["M394 238Q366 236 330 228", 9.5, [332, 228, 200, .5, 2]], ["M8 322Q34 322 62 314", 8, [60, 315, -24, .42, 1]]],
+    birds: { "bird-1": [40, 447, 1, 1.1], "bird-2": [38, 320, 1, 1.05], "bird-3": [358, 447, -1, 1.05] },
+    sit: [356, 234], hang: [50, 108],
+    flies: [[96, 120], [100, 250], [30, 390], [370, 160], [372, 380]],
+  },
+  /* the night of 丙: the three birds asleep side by side on one branch up on the left, under the moon; the monkeys
+     low: one sitting on the log's right end, one hanging under the title */
+  night: {
+    sun: [66, 50, 36, 36],
+    branches: [["M8 206Q60 204 112 192", 9.5, [110, 193, -26, .46, 2]], ["M392 156Q364 154 334 147", 9.5, [336, 147, 196, .5, 2]]],
+    birds: { "bird-1": [30, 205, 1, .95], "bird-3": [62, 203, 1, .95], "bird-2": [94, 197, -1, .95] },
+    sit: [356, 447], hang: [344, 151],
+    flies: [[40, 130], [104, 260], [28, 340], [372, 260], [376, 380]],
+  },
+};
+/* 甲, 乙 the same all day; 丙 moves with the day: the birds up singing in the morning, down low at golden hour,
+   asleep together up on a branch at night while the monkeys come down */
+export const LAYOUTS = { first: {}, spread: { all: "spread" }, log: { all: "log" }, day: { morning: "spread", golden: "log", night: "night" } };
+export const LAYOUT = "first";
+const arrangementOf = (layout, time) => ARRANGE[(LAYOUTS[layout] || {})[time] || (LAYOUTS[layout] || {}).all || "first"];
+/* a thing's box in the print, for the art tools: a bird stands in a box on its feet, the monkeys round their own */
+const birdBox = ([x, y, , s]) => [Math.round(x - 22 * s), Math.round(y - 37.5 * s), Math.round(44 * s), Math.round(40 * s)];
+
+function parts(V, q, time, on, picked = PICKED, layout = LAYOUT) {
+  const G = greens(time), bark = tint("#8a6a48", time), pic = id => (picked[id] ? PIC[id] : null), A = arrangementOf(layout, time);
+  /* the sun where Home shows it, in the left strip: a picture by day; the moon stays a plain disc. Without the
+     picture the kit's own disc is in the sky and this part is empty */
+  const [sx, sy, sw, sh] = A.sun, moon = `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .38}" fill="${V.disc[0]}"/>`;
   const sun = !picked.background ? "" : `<g${on("lc-sun")}>${pic("sun") && time !== "night" ? picture(PIC.sun, sx, sy, sw, sh) : time === "night" ? moon : `<circle cx="${sx + sw / 2}" cy="${sy + sh / 2}" r="${sw * .45}" fill="${V.disc[0]}"/>`}</g>`;
   const branch = (d, w = 9.500) => q.s(d, INK, w) + q.s(d, bark, w - (w > 7 ? 3 : 2.400));
+  const BIRD = { "bird-1": { body: RED, wing: "#33517a", n: 1 }, "bird-2": { body: YUZU, wing: "#5d8a63", beak: RED, n: 2 }, "bird-3": { body: "#3f8fa6", wing: YUZU, n: 3 } };
+  const birdPart = id => { const b = A.birds[id], [x, y, dir, s] = b; return { id, box: birdBox(b), hold: "bottom", svg: bird(q, on, { x, y, s, dir, ...BIRD[id], pic: pic(id) }) }; };
+  const [mx, my] = A.sit, [hx, hy] = A.hang;
   return [
-    { id: "sun", box: SUN, hold: "middle", svg: sun },
-    /* three branches of the left tree, top to bottom (a twig for the third bird, the two birds' branch, the sitting
-       monkey's branch), and the hanging monkey's branch from the right tree */
-    { id: "branches", svg: branch("M16 104Q42 102 72 92", 6) + leaf(q, 70, 93, -24, .42, G[2])
-      + branch("M14 144Q66 138 108 122") + leaf(q, 104, 123, -30, .5, G[2])
-      + branch("M22 224Q54 222 86 210") + leaf(q, 84, 211, -26, .5, G[1])
-      + branch("M392 156Q364 154 334 147") + leaf(q, 336, 147, 196, .5, G[2]) },
-    { id: "bird-1", box: [20, 94, 48, 44], hold: "bottom", svg: bird(q, on, { x: 44, y: 135, s: 1.1, dir: 1, body: RED, wing: "#33517a", n: 1, pic: pic("bird-1") }) },
-    { id: "bird-2", box: [64, 83, 48, 44], hold: "bottom", svg: bird(q, on, { x: 88, y: 124, s: 1.1, dir: -1, body: YUZU, wing: "#5d8a63", beak: RED, n: 2, pic: pic("bird-2") }) },
-    { id: "bird-3", box: [31, 54, 46, 42], hold: "bottom", svg: bird(q, on, { x: 54, y: 93, s: 1.05, dir: 1, body: "#3f8fa6", wing: YUZU, n: 3, pic: pic("bird-3") }) },
-    { id: "monkey-sit", box: [40, 167, 40, 73], hold: "bottom", svg: sitting(q, on, 62, 212, pic("monkey-sit")) },
-    { id: "monkey-hang", box: [329, 149, 41, 78], hold: "top", svg: hanging(q, on, 344, 151, 16, G, pic("monkey-hang")) },
-    { id: "fireflies", svg: V.glow ? rep(5, i => `<circle${on("lc-twinkle")} cx="${[28, 100, 26, 374, 310][i]}" cy="${[66, 178, 190, 236, 200][i]}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`) : "" },
+    { id: "sun", box: A.sun, hold: "middle", svg: sun },
+    /* the branches the animals stand on and hang from, each from the edge of the picture */
+    { id: "branches", svg: A.branches.map(([d, w, [lx, ly, rot, ls, g]]) => branch(d, w) + leaf(q, lx, ly, rot, ls, G[g])).join("") },
+    ...["bird-1", "bird-2", "bird-3"].map(birdPart),
+    { id: "monkey-sit", box: [mx - 22, my - 45, 40, 73], hold: "bottom", svg: sitting(q, on, mx, my, pic("monkey-sit")) },
+    { id: "monkey-hang", box: [hx - 15, hy - 2, 41, 78], hold: "top", svg: hanging(q, on, hx, hy, 16, G, pic("monkey-hang")) },
+    { id: "fireflies", svg: V.glow ? A.flies.map(([fx, fy]) => `<circle${on("lc-twinkle")} cx="${fx}" cy="${fy}" r="2.200" fill="${V.warm}" opacity="${time === "night" ? .95 : .5}"/>`).join("") : "" },
   ];
 }
-/* the pieces as they are in the game, or with `picked` given (an empty object: none) as they were drawn first */
-export const jungleParts = (time = "morning", picked = PICKED) => parts(VIEW[time], pen(VIEW[time].line), time, () => "", picked);
+/* the pieces as they are in the game, or with `picked` given (an empty object: none) as they were drawn first, or in
+   another layout */
+export const jungleParts = (time = "morning", picked = PICKED, layout = LAYOUT) => parts(VIEW[time], pen(VIEW[time].line), time, () => "", picked, layout);
 
 /* The scenery as a picture: one tall painting (400 x 711 in the print's units) of trunks, a roof of leaves, far hills
    and mist, with nothing in it where Home's buttons and the judge are. Home shows all of it (`tall`); the print
@@ -129,10 +183,7 @@ function airOf(V, q, time, on, [w, h]) {
   const G = greens(time);
   return [[40, 0, 17], [84, 7, 21], [330, 11, 19], [372, 3, 23]].map(([x, d, dur], i) => `<g transform="translate(${x * w / 400} ${70 * h / 711})"><g${on("lc-leaf", `animation-delay:${-d}s;animation-duration:${dur}s`)}>${q.p(LEAF, G[2 + (i % 2)], 1.1)}</g></g>`).join("");
 }
-/* the sun's box in the print, in the left strip */
-const SUN = [78, 154, 34, 34];
-
-const build = (picked = PICKED) => makePlace({
+const build = (picked = PICKED, layout = LAYOUT) => makePlace({
   name: "雨之森", grounds: { morning: "#cfd8a6", golden: "#dc9a62", night: "#2c3a40" }, crop: "0 60 330 330", stampCrop: "0 60 300 355", bandY: 480,
   tones: { a: "#8a6a48", b: "#6b4f34", l: "#7fa06a" }, floor: ["#6f9160", "#4b7250"], ownColours: true,
   /* what the judge has here instead of the yuzu, and what it holds (scene.js hands these to the judge). The heart is
@@ -157,7 +208,7 @@ const build = (picked = PICKED) => makePlace({
   },
   /* the animals, each with the branch it sits on or hangs from, and the fireflies: not scenery, so they are their
      own layer and can stand in front of another background (kit.js, spec.things) */
-  things: (V, q, time, on) => parts(V, q, time, on, picked).map(p => p.svg).join(""),
+  things: (V, q, time, on) => parts(V, q, time, on, picked, layout).map(p => p.svg).join(""),
   /* the whole painting for Home, which fills the phone with it (ui/home-art.js) */
   tall: picked.background ? (V, q, time, on) => ({ box: `0 0 ${TALL[0]} ${TALL[1]}`, inner: scenery(time, 0, 0, TALL[0], TALL[1], "xMidYMid slice") + airOf(V, q, time, on, TALL) }) : null,
   /* a mossy log behind the judge's feet: bark, a ring at one end, moss along the top */
@@ -170,3 +221,5 @@ const build = (picked = PICKED) => makePlace({
 export const jungle = build();
 /* the jungle as it was drawn before any picture was chosen */
 export const jungleDrawn = build({});
+/* the jungle in another of the LAYOUTS, for the art tools to show (tools/art/set.mjs) */
+export const jungleIn = layout => build(PICKED, layout);
