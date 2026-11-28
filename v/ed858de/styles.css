@@ -16,6 +16,9 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* No zoom on a double tap (iPhone, 2026-11-28, in the simulator: two quick presses on Home zoomed the page in).
+   Pinching to zoom still works. */
+html { touch-action: manipulation; }
 body {
   margin: 0; background: var(--soft); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
   -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
