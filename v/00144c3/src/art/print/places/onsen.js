@@ -46,11 +46,11 @@ const leaves = (animate) => [[112, 150, 20, 0], [300, 214, -40, 5.2], [262, 96, 
 const steam = (x, y, s, P, animate) => `<g${animate ? ` class="lc-steam"` : ""} transform="translate(${x} ${y}) scale(${s})"><path d="M0 0c-10 -10 8 -17 0 -27c-8 -9 7 -15 1 -24M12 -3c-7 -8 6 -13 0 -21" fill="none" stroke="${P.steam}" stroke-width="${f(3.4 / s)}" stroke-linecap="round" opacity="${P.steamO}"/></g>`;
 const floatYuzu = (x, y, r, animate) => `<g transform="translate(${x} ${y})"${animate ? ` data-tap="dunk"` : ""}><g class="lc-dunk"><g${animate ? ` class="lc-bob" style="animation-delay:${-(x % 7) / 2}s"` : ""}><circle r="${r}" fill="#ebb229" ${key(1.4)}/><path d="M1 ${-r}q${f(r * .8)} ${f(-r * .8)} ${f(r * 1.5)} ${f(-r * .2)}q${f(-r * .8)} ${f(r * .6)} ${f(-r * 1.5)} ${f(r * .2)}z" fill="#5d8a63" ${key(1.1)}/></g></g></g>`;
 
-/* the title: the place in three big characters, the time in a red seal under it (the series name and the small 貓
+/* the title: the place in three big characters, the time in a red seal to its left, tops level (the series name and the small 貓
    seal taken away, the designer, 2026-11-28; places/kit.js titleH) */
 export function title(time, name = "湯之里") {
   const P = T[time] || T.morning, n = [...name].length, step = 31, end = 30 + n * step;
-  return column(name, 364, 30, 28, step, P.ink) + `<rect x="351" y="${end + 4}" width="26" height="26" fill="${RED}"/>${glyph(P.time, 364, end + 7.5, 18, PAPER)}`;
+  return column(name, 364, 30, 28, step, P.ink) + `<rect x="320" y="30" width="26" height="26" fill="${RED}"/>${glyph(P.time, 333, 33.5, 18, PAPER)}`;
 }
 
 export function onsen(time, R, animate) {
@@ -116,9 +116,9 @@ export function onsenLandscape(time, animate = false) {
   const front = `<path d="${wave}V500H0Z" fill="${P.water}"/><rect y="488" width="400" height="12" fill="${P.waterDk}"/><path d="${wave}" fill="none" ${ikey(1.6)}/>`
     + `<g${on("lc-float", "--lc-x:10px;--lc-y:0px;animation-duration:5s")}><path d="M8 484q12.5 -6 25 0t25 0t25 0M150 488q12.5 -6 25 0t25 0t25 0M270 483q12.5 -6 25 0t25 0t25 0t25 0" fill="none" stroke="${P.wave}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/></g>`
     + floatYuzu(84, 487, 8, animate) + floatYuzu(318, 490, 7, animate) + steamG(52, 470, .8) + steamG(360, 466, .8);
-  /* the title block: the place reversed out of an indigo strip, the time in a red seal under it (as kit.js titleG) */
+  /* the title block: the place reversed out of an indigo strip, the time in a red seal to its left (as kit.js titleG) */
   const titleG = `<rect x="352" y="24" width="30" height="93" fill="${IND[0]}" stroke="${PAPER}" stroke-width="1.2"/>${column("湯之里", 367, 30, 21, 27, PAPER)}`
-    + `<rect x="352" y="121" width="30" height="30" fill="${RED}" stroke="${PAPER}" stroke-width="1.2"/>${glyph(P.time, 367, 125.5, 19.8, PAPER)}`;
+    + `<rect x="318" y="24" width="30" height="30" fill="${RED}" stroke="${PAPER}" stroke-width="1.2"/>${glyph(P.time, 333, 28.5, 19.8, PAPER)}`;
   const frame = `<path d="M0 0H400V500H0ZM10 10V490H390V10Z" fill="${PAPER}" fill-rule="evenodd"/><rect x="10" y="10" width="380" height="480" fill="none" ${ikey(1.5)}/>${titleG}`;
   return { back, seat, front, frame, title: titleG, up: P.sky[0], down: { fill: P.waterDk, line: P.line || IND[0], wave: P.wave, water: true }, wall: P.sky[0], ink: P.ink };
 }
