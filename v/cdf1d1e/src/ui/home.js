@@ -258,7 +258,7 @@ export function openGarment(zone, time = St.currentTime(app.S, app.S.here) || "n
   }
   const el = sheet(`
     <div class="ghead">${wardrobeThumbSvg({ ...g, steps: done ? STEPS : g.steps })}<div><p class="eyebrow">${esc(timeById(time).name)} · ${esc(z.aim.toLowerCase())} · ${esc(SOUNDS[zone].cat)}, “${sylFor(zone, time)}”</p><h3>${esc(name)} · ${n} / ${STEPS}</h3><p class="muted small">${g.yarn ? `${esc(upper(yarnName(g.yarn)))}, ${KNIT[g.look.fur] || ""}` : `No yarn: ${esc((PATTERN_NAME[g.look.pattern] || "").toLowerCase())} on ${esc(g.look.palette)}`}.</p><button class="who-btn" data-a="cat">${esc(singerLabel(S, g.singer))} · ${esc(yarnLabel(g.yarn).toLowerCase())} · change</button></div></div>
-    <p class="muted small"><b>${esc(z.aim)}:</b> ${esc(z.how)}. <b>${esc(timeById(time).name)}:</b> ${esc(LADDER_HOW[ladderKey(zone, time)] || "")}. Steps 1 to 4 are sung once, 5 to 8 in three sets, 9 to 12 in five.</p>
+    <p class="muted small"><b>${esc(z.aim)}:</b> ${esc(z.how)}. <b>${esc(timeById(time).name)}:</b> ${esc(LADDER_HOW[ladderKey(zone, time)] || "")}. Steps 1 to 4 are sung once, 5 to 8 in three sets, 9 to 12 in up to five.</p>
     <div class="gsteps">${grid}</div>
     ${n ? `<p class="muted small">Tap a step you’ve sung to sing it again.</p>` : ""}
     ${folds.length ? `<p class="muted small">${folds.length === 1 ? `Step ${folds[0]} has a fold: one note got away there.` : `Steps ${folds.join(", ")} have folds: a note got away there.`} It’s part of the ${esc(name.toLowerCase())} now.</p>` : ""}

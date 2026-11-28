@@ -88,333 +88,114 @@ export const GUESTS = {
   dragon: { name: "Long dragon", mark: "only at New Year" },
 };
 
-/* The drills (drill-ladder board, proposal 丙, the designer 2026-11-14). The names say what the singer does, in plain
-   words (2026-11-24): a step, half a step, a skip (a third), a wide skip (a fourth), a leap (a fifth), a long leap
-   (a sixth), a big leap (an octave); "dark" or "darker" is the lowered third step. The notes further down about
-   how the ladders were dealt in 2026-11-15 use the names of that day ("Arpeggio down", "Five-note scale").
-   rel = semitones above the drill's root (the lowest note is placed in the singer's range, so a rel may be
-   negative); dur = the seconds a note gets, the gap before the next note included (drills.js gapOf).
-   What a drill is sung on is not here: the sound belongs to the cat (SOUNDS below).
-   How many times a drill is sung is not here either: the step decides (drills.js STEP_RULE, the designer 2026-11-25):
-   once in steps 1 to 4, three sets in steps 5 to 8, five in steps 9 to 12. From 2026-11-14 to then a drill carried
-   its own `climb`, and only steps 10 to 12 of a ladder had one.
-   The drills stand here in the order of their ladders (LADDERS below): nine ladders of twelve, 108 drills, each in
-   one step of one ladder. */
+/* The drills. Since 2026-11-28 a handful of shapes, the same everywhere (the designer, 2026-11-28: "drill is still too hard to do ... the goal of the drill is not to memorize how the scale goes or
+   how complicated it's. Let's reduce the variables of the scale transition and keep the main ones like do mi so do
+   so mi do, do re mi fa do fa mi re do, do mi so do do do so so mi do, do mi so do so mi do mi so do so mi do etc";
+   on the board that followed, docs/design/longcat-drills-simple.md, the designer chose 甲 one list everywhere and a: the
+   step keeps its length, and a shape too long for it is sung in fewer sets). The shapes (`shape`, which also
+   names the drill's card, DRILL_CARD below):
+     long       do——                                     the top's first four steps, a little longer each step
+     arc        do re mi re do                           (mine: the first four steps hold five notes or so)
+     arpud      do mi so mi do                           (mine, the short arpud of arp8)
+     climb5     do re mi fa so fa mi re do               the designer's (written "do re mi fa do fa mi re do"; read with so)
+     arp8       do mi so do so mi do                     the designer's
+     arptop     do mi so do do do so so mi do            the designer's (read as: the top do three times, so twice)
+     arp8twice  do mi so do so mi do mi so do so mi do   the designer's (arp8 twice without a stop)
+   Each step is a drill of its own here (`scarf1` ... `bottom12`, the hat's id being "bottom") so that it has its own
+   note length: in a group of four steps each one is a little quicker, the top's held note a little longer. The
+   garment says how a shape is sung: the scarf quick (0.55 to 0.7 s a note), the top long (0.9 s or more, its
+   first four steps one held note), the hat like the scarf with its sets going to the edge of the range
+   (drills.js wayOf). `sets`: fewer sets than the step's rule, where the shape is too long for its seconds (the
+   double arpeggio in four, the top's long climbs in three or four). All worked out with planTake and takeSeconds
+   on five ranges (docs/design/longcat-drills-simple/build.mjs, and the deal script in docs/later.md); the
+   numbers are mine, DRAFT. Plain names as since 2026-11-24 (a step, a skip = a third, a leap = a fifth, the
+   top = the octave above).
+   rel = semitones above the drill's root (the lowest note is placed in the singer's range); dur = the seconds a
+   note gets, the gap before the next note included (drills.js gapOf). What a drill is sung on is not here: the
+   sound belongs to the cat (SOUNDS below). How many sets: the step's (drills.js STEP_RULE), unless `sets` says
+   fewer.
+   Until 2026-11-28 there were nine ladders of twelve different drills, 108 in all, one ladder for each garment at
+   each time of day (git history; their board is docs/design/longcat-drill-ladder.md). */
 export const DRILL = {
-  /* the scarf, morning */
-  doremi: { name: "Three steps up", rel: [0, 2, 4], dur: 0.8 },
-  fourup: { name: "Four steps up", rel: [0, 2, 4, 5], dur: 0.7 },
-  fiveup: { name: "Five steps up", rel: [0, 2, 4, 5, 7], dur: 0.6 },
-  sixup: { name: "Six steps up", rel: [0, 2, 4, 5, 7, 9], dur: 0.56 },
-  then5: { name: "Three up, then five up", rel: [0, 2, 4, 0, 2, 4, 5, 7], dur: 0.6 },
-  scaleup: { name: "Eight steps up", rel: [0, 2, 4, 5, 7, 9, 11, 12], dur: 0.6 },
-  stairs: { name: "Threes up the stairs", rel: [0, 2, 4, 2, 4, 5, 4, 5, 7], dur: 0.58 },
-  eighthome: { name: "Eight up, one big leap home", rel: [0, 2, 4, 5, 7, 9, 11, 12, 0], dur: 0.57 },
-  climb5: { name: "Climbing five", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.62 },
-  twice: { name: "Every step twice", rel: [0, 0, 2, 2, 4, 4, 5, 5, 7, 7], dur: 0.55 },
-  nextfive: { name: "Five up, then five from the next step", rel: [0, 2, 4, 5, 7, 2, 4, 5, 7, 9], dur: 0.55 },
-  sixskips: { name: "Six up, and skips home", rel: [0, 2, 4, 5, 7, 9, 7, 4, 0], dur: 0.6 },
-  /* the scarf, golden hour */
-  arc: { name: "Up three and back", rel: [0, 2, 4, 2, 0], dur: 0.6 },
-  turn: { name: "One step, then three", rel: [0, 2, 0, 2, 4], dur: 0.6 },
-  skips: { name: "Zigzag", rel: [0, 4, 2, 5, 4], dur: 0.6 },
-  zigup: { name: "Zigzag up", rel: [0, 4, 2, 5, 4, 7], dur: 0.56 },
-  arc4: { name: "Up four and back", rel: [0, 2, 4, 5, 4, 2, 0], dur: 0.6 },
-  penta: { name: "Steps, a skip, and back", rel: [0, 2, 4, 7, 4, 2, 0], dur: 0.62 },
-  fiveskip: { name: "Five up, two skips home", rel: [0, 2, 4, 5, 7, 4, 0], dur: 0.62 },
-  gaps: { name: "Steps and skips to the top", rel: [0, 2, 4, 7, 9, 12], dur: 0.64 },
-  arp8: { name: "Skips to the top and back", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.66 },
-  zigtop: { name: "Zigzag all the way up", rel: [0, 4, 2, 5, 4, 7, 5, 9, 7, 12], dur: 0.55 },
-  gapsback: { name: "Over the gaps and back", rel: [0, 2, 4, 7, 9, 7, 4, 2, 0], dur: 0.62 },
-  fivetop: { name: "Five up, on to the top, skips home", rel: [0, 2, 4, 5, 7, 12, 7, 4, 0], dur: 0.6 },
-  /* the scarf, night */
-  dark3: { name: "Three dark steps up", rel: [0, 2, 3], dur: 0.8 },
-  darkarc: { name: "Up three and back, darker", rel: [0, 2, 3, 2, 0], dur: 0.6 },
-  dark5: { name: "Five dark steps up", rel: [0, 2, 3, 5, 7], dur: 0.6 },
-  darkzig: { name: "The darker zigzag", rel: [0, 3, 2, 5, 3], dur: 0.6 },
-  dark4: { name: "Up four and back, darker", rel: [0, 2, 3, 5, 3, 2, 0], dur: 0.6 },
-  darkskip: { name: "Five dark steps, two skips home", rel: [0, 2, 3, 5, 7, 3, 0], dur: 0.62 },
-  dark8: { name: "Eight dark steps up", rel: [0, 2, 3, 5, 7, 8, 10, 12], dur: 0.6 },
-  darkgaps: { name: "Dark steps and skips to the top", rel: [0, 3, 5, 7, 10, 12], dur: 0.64 },
-  minor5: { name: "The darker five", rel: [0, 2, 3, 5, 7, 5, 3, 2, 0], dur: 0.62 },
-  darkarp8: { name: "Dark skips to the top and back", rel: [0, 3, 7, 12, 7, 3, 0], dur: 0.66 },
-  darkstairs: { name: "Dark threes up the stairs", rel: [0, 2, 3, 2, 3, 5, 3, 5, 7], dur: 0.6 },
-  darkgapsback: { name: "Over the dark gaps and back", rel: [0, 3, 5, 7, 10, 7, 5, 3, 0], dur: 0.62 },
-  /* the top, morning */
-  long: { name: "One long note", rel: [0], dur: 3.2 },
-  two: { name: "One step up", rel: [0, 2], dur: 1.7 },
-  nbup: { name: "Step up and back", rel: [0, 2, 0], dur: 1.15 },
-  nbdown: { name: "Step down and back", rel: [0, -2, 0], dur: 1.15 },
-  hold4: { name: "A longer note", rel: [0], dur: 4.2 },
-  stay2: { name: "Step up, stay, step home", rel: [0, 2, 2, 0], dur: 1.2 },
-  nbup2: { name: "Step up and back, twice", rel: [0, 2, 0, 2, 0], dur: 1 },
-  nbdown2: { name: "Step down and back, twice", rel: [0, -2, 0, -2, 0], dur: 1 },
-  hold5: { name: "The longest note", rel: [0], dur: 5 },
-  nbboth: { name: "A step each way", rel: [0, 2, 0, -2, 0], dur: 0.98 },
-  up3hold: { name: "Three long steps up", rel: [0, 2, 4], dur: 1.9 },
-  valley: { name: "Down three and back up", rel: [4, 2, 0, 2, 4], dur: 1 },
-  /* the top, golden hour */
-  long2: { name: "The same note twice", rel: [0, 0], dur: 1.7 },
-  third: { name: "Skip up", rel: [0, 4], dur: 1.7 },
-  thirddown: { name: "Skip down", rel: [4, 0], dur: 1.7 },
-  thirdback: { name: "Skip up and back", rel: [0, 4, 0], dur: 1.15 },
-  same3: { name: "The same note three times", rel: [0, 0, 0], dur: 1.8 },
-  dipskip: { name: "Skip down and back", rel: [0, -3, 0], dur: 1.4 },
-  walkhome: { name: "Skip up, walk home", rel: [0, 4, 2, 0], dur: 1.2 },
-  skiphome: { name: "Three up, skip home", rel: [0, 2, 4, 0], dur: 1.2 },
-  skipstay: { name: "Skip up, stay, and home", rel: [0, 4, 4, 0], dur: 1.3 },
-  skipboth: { name: "A skip each way", rel: [0, 4, 0, -3, 0], dur: 1 },
-  thirdback2: { name: "Skip up and back, twice", rel: [0, 4, 0, 4, 0], dur: 1 },
-  leanover: { name: "Skip up, half a step more, and home", rel: [0, 4, 5, 4, 0], dur: 1 },
-  /* the top, night */
-  twodown: { name: "One step down", rel: [2, 0], dur: 1.7 },
-  halfdown: { name: "Half a step down", rel: [1, 0], dur: 1.7 },
-  halfback: { name: "Half a step down and back", rel: [0, -1, 0], dur: 1.15 },
-  down3: { name: "Three steps down", rel: [4, 2, 0], dur: 1.15 },
-  darkdown: { name: "Dark skip down", rel: [3, 0], dur: 2 },
-  darkdown3: { name: "Three dark steps down", rel: [3, 2, 0], dur: 1.4 },
-  fourdown: { name: "Four steps down", rel: [5, 4, 2, 0], dur: 1.2 },
-  darkback: { name: "Dark skip up and back", rel: [0, 3, 0], dur: 1.8 },
-  darkfour: { name: "Four dark steps down", rel: [5, 3, 2, 0], dur: 1.3 },
-  darkfive: { name: "Five dark steps down", rel: [7, 5, 3, 2, 0], dur: 1 },
-  halfboth: { name: "Half a step each way", rel: [0, 1, 0, -1, 0], dur: 1 },
-  hold6: { name: "The longest note of all", rel: [0], dur: 5.8 },
-  /* the hat, morning */
-  fourth: { name: "Wide skip up", rel: [0, 5], dur: 1.5 },
-  fifth: { name: "Leap up", rel: [0, 7], dur: 1.5 },
-  arp: { name: "Two skips up", rel: [0, 4, 7], dur: 1.1 },
-  sixth: { name: "Long leap up", rel: [0, 9], dur: 1.5 },
-  fifthoct: { name: "Two leaps up", rel: [0, 7, 12], dur: 1.3 },
-  octave: { name: "Big leap up", rel: [0, 12], dur: 2 },
-  arp4: { name: "Skips all the way up", rel: [0, 4, 7, 12], dur: 0.9 },
-  steptop: { name: "Five steps up, then on to the top", rel: [0, 2, 4, 5, 7, 12], dur: 0.66 },
-  octstay: { name: "Big leap up, and stay", rel: [0, 12, 12], dur: 1.4 },
-  oct2: { name: "Big leap up, twice", rel: [0, 12, 0, 12], dur: 1.2 },
-  fourwide: { name: "Wide skip, step, wide skip", rel: [0, 5, 7, 12], dur: 1.2 },
-  topagain: { name: "To the top, dip, and the top again", rel: [0, 7, 12, 7, 12], dur: 1 },
-  /* the hat, golden hour */
-  fourthback: { name: "Wide skip and back", rel: [0, 5, 0], dur: 1.1 },
-  fifthback: { name: "Leap and back", rel: [0, 7, 0], dur: 1.1 },
-  arpud: { name: "Two skips up and back", rel: [0, 4, 7, 4, 0], dur: 0.6 },
-  sixback: { name: "Long leap and back", rel: [0, 9, 0], dur: 1.1 },
-  octback: { name: "Big leap and back", rel: [0, 12, 0], dur: 1.3 },
-  wider2: { name: "A skip, then a leap", rel: [0, 4, 0, 7, 0], dur: 0.9 },
-  leapsback: { name: "Two leaps up and back", rel: [0, 7, 12, 7, 0], dur: 0.9 },
-  wider3: { name: "Wider every time", rel: [0, 5, 0, 7, 0, 12, 0], dur: 0.62 },
-  leapbig: { name: "A leap, then a big leap", rel: [0, 7, 0, 12, 0], dur: 1 },
-  octback2: { name: "Big leap and back, twice", rel: [0, 12, 0, 12, 0], dur: 1 },
-  bothways: { name: "A leap up, a wide skip down", rel: [0, 7, 0, -5, 0], dur: 1 },
-  topskips: { name: "Big leap up, skips home", rel: [0, 12, 7, 4, 0], dur: 1 },
-  /* the hat, night */
-  fourthdown: { name: "Wide skip down", rel: [5, 0], dur: 1.5 },
-  fifthdown: { name: "Leap down", rel: [7, 0], dur: 1.5 },
-  arpdown: { name: "Two skips down", rel: [7, 4, 0], dur: 1.1 },
-  darkarpdown: { name: "Two dark skips down", rel: [7, 3, 0], dur: 1.1 },
-  octdown: { name: "Big leap down", rel: [12, 0], dur: 2 },
-  arp4down: { name: "Skips all the way down", rel: [12, 7, 4, 0], dur: 0.9 },
-  fivedown: { name: "Five steps down", rel: [7, 5, 4, 2, 0], dur: 0.9 },
-  leapsdown: { name: "Two leaps down", rel: [12, 7, 0], dur: 1.3 },
-  scaledown: { name: "Eight steps down", rel: [12, 11, 9, 7, 5, 4, 2, 0], dur: 0.66 },
-  darkarp4down: { name: "Dark skips all the way down", rel: [12, 7, 3, 0], dur: 1.3 },
-  octdownstay: { name: "Big leap down, and stay", rel: [12, 0, 0], dur: 1.4 },
-  darkscaledown: { name: "Eight dark steps down", rel: [12, 10, 8, 7, 5, 3, 2, 0], dur: 0.66 },
+  /* the scarf */
+  scarf1: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 0.67 },
+  scarf2: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 0.63 },
+  scarf3: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 0.59 },
+  scarf4: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 0.55 },
+  scarf5: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.64 },
+  scarf6: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.66 },
+  scarf7: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.58 },
+  scarf8: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.57 },
+  scarf9: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.7 },
+  scarf10: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.69 },
+  scarf11: { name: "Skips to the top, three on top", shape: "arptop", rel: [0, 4, 7, 12, 12, 12, 7, 7, 4, 0], dur: 0.55 },
+  scarf12: { name: "Skips to the top and back, twice", shape: "arp8twice", rel: [0, 4, 7, 12, 7, 4, 0, 4, 7, 12, 7, 4, 0], dur: 0.55, sets: 4 },
+  /* the top */
+  top1: { name: "One long note", shape: "long", rel: [0], dur: 2.27 },
+  top2: { name: "One long note", shape: "long", rel: [0], dur: 2.83 },
+  top3: { name: "One long note", shape: "long", rel: [0], dur: 3.15 },
+  top4: { name: "One long note", shape: "long", rel: [0], dur: 3.64 },
+  top5: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 1.06 },
+  top6: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 1.01 },
+  top7: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 0.95 },
+  top8: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 0.9 },
+  top9: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.97, sets: 3 },
+  top10: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 1.04, sets: 4 },
+  top11: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.92, sets: 3 },
+  top12: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.99, sets: 4 }, // not quicker: the rest between sets would pass 4.6 s
+  /* the hat */
+  bottom1: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 0.67 },
+  bottom2: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 0.63 },
+  bottom3: { name: "Up three and back", shape: "arc", rel: [0, 2, 4, 2, 0], dur: 0.59 },
+  bottom4: { name: "Two skips up and back", shape: "arpud", rel: [0, 4, 7, 4, 0], dur: 0.55 },
+  bottom5: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.64 },
+  bottom6: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.66 },
+  bottom7: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.58 },
+  bottom8: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.57 },
+  bottom9: { name: "Climbing five", shape: "climb5", rel: [0, 2, 4, 5, 7, 5, 4, 2, 0], dur: 0.7 },
+  bottom10: { name: "Skips to the top and back", shape: "arp8", rel: [0, 4, 7, 12, 7, 4, 0], dur: 0.69 },
+  bottom11: { name: "Skips to the top, three on top", shape: "arptop", rel: [0, 4, 7, 12, 12, 12, 7, 7, 4, 0], dur: 0.55 },
+  bottom12: { name: "Skips to the top and back, twice", shape: "arp8twice", rel: [0, 4, 7, 12, 7, 4, 0, 4, 7, 12, 7, 4, 0], dur: 0.55, sets: 4 },
 };
 /* What the card of a drill says (the designer, 2026-11-24, after Vocalista's intro card): a goal in a few words and one line
    of how, about the body and the breath as much as the notes. Kept apart from DRILL so a drill edited in the dev
-   tools keeps its card; a drill made there has none. DRAFT: written by the agent, to be read by the designer or by someone
+   tools keeps its card; a drill made there has none. Keyed by the drill's shape (`drillKey`). DRAFT: written by the agent, to be read by the designer or by someone
    who teaches singing before the web test (docs/later.md). The names above say what the singer does ("Step down
    and back"), not what a musician calls it ("Neighbour down"); the sound is the cat's, so it is not in the name. */
 export const DRILL_CARD = {
-  /* the scarf, morning */
-  doremi: ["Even steps.", "Give every note the same length and the same loudness. No rush to the top."],
-  fourup: ["Four even steps.", "Walk up without leaning on any of them. The last note is as easy as the first."],
-  fiveup: ["Climb five without pushing.", "Stay as light on the fifth note as on the first."],
-  sixup: ["One step past the five.", "Keep the sound small and quick. Let the breath, not the jaw, do the climbing."],
-  then5: ["A short run, then a longer one.", "Three up, start again, and go on to five. Don’t breathe in the middle."],
-  scaleup: ["All eight on one breath.", "Breathe in low before you start and spend the air evenly, a little for every note."],
-  stairs: ["Three steps at a time.", "Up three, begin again one step higher, and again. Keep every note the same size."],
-  eighthome: ["Run up, drop home.", "Eight quick steps, then let go and land on the note you started from."],
-  climb5: ["Keep it easy all the way up.", "The same hill each round, one step higher. If it gets tight, sing softer, not harder."],
-  twice: ["Two taps on every step.", "Touch each note twice, lightly, like knocking. Keep the beat exactly even."],
-  nextfive: ["Five up, and five up again.", "The second run starts one step higher. Hear its first note before you get there."],
-  sixskips: ["Six up, the quick way home.", "Walk up six steps, then come down in skips. Keep the way down as light as the way up."],
-  /* the scarf, golden hour */
-  arc: ["One smooth curve.", "Sing it on one breath, up and back, like drawing a small hill."],
-  turn: ["A small turn before the run.", "Step up, come back, then go up three. The turn is as quick as the rest."],
-  skips: ["Keep your place while it turns.", "It goes up, back a little, and up again. Go through it in your head before you sing."],
-  zigup: ["Zigzag, and keep climbing.", "Skip up, step back, skip up again. Each pair lands one step higher."],
-  arc4: ["A slightly bigger hill.", "Four steps up and back on one breath. Turn at the top without stopping."],
-  penta: ["A wide curve on one breath.", "Two steps, one skip to the top, and home the same way. No hurry at the top."],
-  fiveskip: ["Walk up, skip home.", "Five even steps to the top, then two skips down. Land the last note as gently as you left it."],
-  gaps: ["Up to the top, over two gaps.", "Steps with two skips in them. Hear where the gaps are before you sing."],
-  arp8: ["The whole height in one go.", "Four notes up and the same way down. Let the top one be the lightest."],
-  zigtop: ["Zigzag all the way to the top.", "Small sound, loose jaw. Think of the line climbing, not of each turn."],
-  gapsback: ["Over the gaps, there and back.", "The same notes home as on the way up. Keep the turn at the top smooth."],
-  fivetop: ["Run, reach the top, skip home.", "Five steps, one wide skip to the top, then down in skips. Lighter as you go higher."],
-  /* the scarf, night */
-  dark3: ["Three steps, the last one closer.", "The third note sits nearer than you expect. Hear it before you sing it."],
-  darkarc: ["A small dark hill.", "Up three and back, with the closer third step. Keep it quiet and even."],
-  dark5: ["Five steps in the darker colour.", "Only the third step is different. Let it sit low, and walk on."],
-  darkzig: ["The zigzag, darker.", "Skip up, step back, skip up. The skips are a little narrower here."],
-  dark4: ["A dark hill, four steps high.", "Up four and back on one breath. The same notes home."],
-  darkskip: ["Walk up, skip home, darker.", "Five steps up, then two skips down. Land the last note gently."],
-  dark8: ["All eight, the darker way.", "Three of the eight sit lower than you expect. Listen once, then spend the air evenly."],
-  darkgaps: ["To the top, over the dark gaps.", "Six notes with gaps between. Hear the gaps first, and stay light at the top."],
-  minor5: ["Hear the third note sit lower.", "It is the five-note hill with a sadder third step. Listen for it before you sing."],
-  darkarp8: ["The whole height, darker.", "Four notes up and the same way down. The second note is the one that sits low."],
-  darkstairs: ["Three dark steps at a time.", "Up three, begin again one step higher, and again. Keep it quiet and quick."],
-  darkgapsback: ["Over the dark gaps and back.", "Up to the top and home the same way. Don’t rush the turn."],
-  /* the top, morning */
   long: ["Find the note and stay.", "Breathe in low, start gently, and let the sound run to the end without pushing."],
-  two: ["Move without sliding.", "Hear the second note in your head before you go, then step onto it."],
-  nbup: ["Come home to the same note.", "Go up one step and return. The last note should match the first."],
-  nbdown: ["Dip and come home.", "Let the lower note sit lightly, then return to where you began."],
-  hold4: ["A long note, steady.", "Breathe in through your nose, start quietly, and keep the sound the same from start to end."],
-  stay2: ["Go up, rest there, come home.", "Sing the upper note twice, the same both times, before you step back down."],
-  nbup2: ["Up and home, twice, on one breath.", "Don’t breathe in the middle. Home sounds the same all three times."],
-  nbdown2: ["Dip and home, twice, on one breath.", "Let the lower note sit lightly. Spend the air evenly to the last note."],
-  hold5: ["Longer still, without shaking.", "Use less air than you think. A quiet steady note beats a loud wobbly one."],
-  nbboth: ["Stay centred.", "Up a step, home, down a step, home. Home should sound the same all three times."],
-  up3hold: ["Three long notes, each one higher.", "Hold each one to the end of its bar. Keep the breath flowing as you step up."],
-  valley: ["Down and back up on one breath.", "Start at the top, walk down three and return. The last note matches the first."],
-  /* the top, golden hour */
-  long2: ["Land on it twice.", "Take a small breath in between, and start the second note exactly where the first one was."],
-  third: ["Jump over a note.", "Think of the note in between, then leave it out and land cleanly."],
-  thirddown: ["Come down over a note.", "Think of the note in between, leave it out, and land softly on the lower one."],
-  thirdback: ["Jump and return.", "Keep your jaw and shoulders loose. The last note should match the first."],
-  same3: ["Three long notes, all the same.", "A small breath between each. Start every one exactly where the last one was."],
-  dipskip: ["Skip down and come home.", "Keep the breath moving on the lower note, so the way back is easy."],
-  walkhome: ["Skip up, walk home.", "One skip up, then two slow steps down. All on one breath."],
-  skiphome: ["Three slow steps, one skip home.", "Three slow steps, then one skip back down. Land where you began."],
-  skipstay: ["Skip up and stay a while.", "Sing the upper note twice before you come home. Use less air than you think."],
-  skipboth: ["A skip each way, home between.", "Up a skip, home, down a skip, home. Home sounds the same every time."],
-  thirdback2: ["The same skip twice, one breath.", "Skip up and back, and again. Keep enough air for the second time."],
-  leanover: ["A skip, and a little further.", "From the top of the skip go half a step higher, come back, and skip home."],
-  /* the top, night */
-  twodown: ["Settle onto the lower note.", "Slow and soft. Let the second note rest; don’t press it down."],
-  halfdown: ["The smallest step down.", "The two notes are next-door neighbours. Let the second one settle; don’t slide."],
-  halfback: ["Lean down and come back.", "Half a step under and home again. The last note matches the first."],
-  down3: ["Come down without sagging.", "Keep the breath moving as you go down, so the last note doesn’t sink."],
-  darkdown: ["A dark skip down, slowly.", "Two long notes. Keep the breath flowing so the lower one doesn’t sink."],
-  darkdown3: ["Three dark steps down.", "The first step is only half, the second a whole one. Let each note rest."],
-  fourdown: ["Walk down calmly.", "Each note a little lower, none of them heavier. Keep the air flowing to the last one."],
-  darkback: ["A dark skip up and home.", "Long notes. Go up a little less far than a bright skip, and return."],
-  darkfour: ["Walk down four, darker.", "Slow and soft. Each note a little lower, none of them heavier."],
-  darkfive: ["Five dark steps down, one breath.", "Begin gently at the top, so there is air left for the bottom."],
-  halfboth: ["Half a step each way.", "Up a little, home, down a little, home. Home sounds the same all three times."],
-  hold6: ["One breath, as long as it goes.", "Quiet and steady. Use as little air as you can and let it run to the end."],
-  /* the hat, morning */
-  fourth: ["A wide skip up.", "Hear the top note first, then go straight there without sliding."],
-  fifth: ["A clean leap.", "Don’t reach up with your chin. Look straight ahead and let the breath carry it."],
-  arp: ["Skip, skip, land.", "Three notes far apart: keep your mouth the same shape and let the pitch do the moving."],
-  sixth: ["A long leap up.", "One step further than the leap. Keep your chin level and let the breath carry it."],
-  fifthoct: ["Leap, then leap again.", "Save room for the top note: start softly, so the last one needs no push."],
-  octave: ["The same note, high up.", "The top is the bottom note’s twin. Go lighter as you go up, never louder."],
-  arp4: ["Skips all the way to the top.", "Four notes far apart. Go lighter on each one; the top is the lightest."],
-  steptop: ["Walk up five, then reach the top.", "The last note is a wide skip away. Think it first; don’t push for it."],
-  octstay: ["Leap to the top and stay.", "Land on the high note and sing it again. Keep it as easy the second time."],
-  oct2: ["The big leap, twice.", "Up, home, and up again. Lighter as you go up, never louder."],
-  fourwide: ["Four wide notes to the top.", "A wide skip, a step, a wide skip. Keep your mouth the same shape all the way."],
-  topagain: ["Touch the top twice.", "Two leaps up, dip, and back to the top. The second time is as light as the first."],
-  /* the hat, golden hour */
-  fourthback: ["A wider jump, the same ease.", "Hear the top note first. Go there, come back, and match the note you left."],
-  fifthback: ["Leap up and come home.", "Don’t reach with your chin. The last note matches the first."],
+  arc: ["One smooth curve.", "Sing it on one breath, up and back, like drawing a small hill."],
   arpud: ["Up and back on one breath.", "Don’t stop at the top. Turn round and come home the way you came."],
-  sixback: ["A long leap and back.", "Go up lightly and return. Home is exactly where you left it."],
-  octback: ["To the top and home.", "The top is the bottom note’s twin. Touch it lightly and come back."],
-  wider2: ["A skip, then a leap.", "Home between them. The second jump is wider; start it the same easy way."],
-  leapsback: ["Two leaps up, two leaps home.", "Stay light at the top, and keep the low note from dropping away."],
-  wider3: ["Wider every time.", "A wide skip, a leap, a big leap, home between each. Never louder as it gets wider."],
-  leapbig: ["A leap, then the big leap.", "Home in between. Hear the top note before each jump."],
-  octback2: ["The big leap and back, twice.", "Save air for the second one. Both tops should sound the same."],
-  bothways: ["Up a leap, down a wide skip.", "Home is in the middle. Keep it the same each time you pass through it."],
-  topskips: ["Leap to the top, skip home.", "One big leap, then down in three skips. Start the top softly."],
-  /* the hat, night */
-  fourthdown: ["A wide skip down.", "Start softly and land softly. Keep the lower note light, not pressed."],
-  fifthdown: ["Drop and land softly.", "Don’t let the low note fall back into your throat. Keep it as light as the high one."],
-  arpdown: ["Come down in two skips.", "Start a little softer than you think, and keep the low note from dropping away."],
-  darkarpdown: ["Two dark skips down.", "The middle note sits a little lower than in the bright one. Listen for it."],
-  octdown: ["From the top to its twin below.", "Start light. Let the low note be quiet rather than pushed."],
-  arp4down: ["Skips all the way down.", "Start light at the top. Each note lower, none of them heavier."],
-  fivedown: ["A long way down, smoothly.", "Begin gently at the top, so there is air left for the bottom."],
-  leapsdown: ["Two leaps down.", "From the top to the bottom in two jumps. Keep the breath moving through both."],
-  scaledown: ["Eight even steps home.", "Spend the air slowly. The last three notes are where it likes to sag."],
-  darkarp4down: ["Dark skips all the way down.", "Four notes far apart. Let the low one be quiet rather than pushed."],
-  octdownstay: ["Drop to the bottom and stay.", "Land on the low note and sing it again, quietly, without pressing."],
-  darkscaledown: ["Eight dark steps home.", "Spend the air slowly. Three of the steps sit lower than you expect."],
+  climb5: ["Keep it easy all the way up.", "The same hill each round, one step higher. If it gets tight, sing softer, not harder."],
+  arp8: ["The whole height in one go.", "Four notes up and the same way down. Let the top one be the lightest."],
+  arptop: ["Land on the top and stay a moment.", "Sing the high note three times, lightly, without pushing. Then come home the way you went up."],
+  arp8twice: ["Twice to the top without a stop.", "The same arch two times on one breath. Keep the second one as light as the first."],
 };
+/* the drill's card and whether it has been met go by its shape: a shape met once is met (2026-11-28) */
+export const drillKey = (d) => (d && (d.shape || d.id)) || null;
 export const drillCard = (id) => { const c = DRILL_CARD[id]; return c ? { goal: c[0], how: c[1] } : null; };
-/* drills that no longer exist, for saves and drill-editor edits made before they went: the made-up melodies of
-   step 12 became the climbing five, and so did the two other drills that had its notes ("Up five and back" and
-   "Quick five", until 2026-11-25) */
-const DRILL_ALIAS = { free: "climb5", free5: "climb5", five: "climb5", fast5: "climb5" };
 for (const [id, d] of Object.entries(DRILL)) d.id = id;
 
-/* One ladder of twelve steps per GARMENT AND TIME OF DAY, nine in all, the same in every place.
-   The garment says what the drills are for (the designer, 2026-11-25, in the evening: "drills designed for hat is to
-   increase your range, for top is to increase your breath support, so more sustained notes, for scarf is to
-   increase agility, so having notes go from low to high in a quick tempo"). The step says how long a take is
-   (drills.js STEP_RULE): steps 1 to 4 once, 5 to 8 three sets, 9 to 12 five sets. The time of day says which
-   twelve drills (the designer, later that evening, asked whether a garment should sing the same twelve at all three times:
-   different drills, in Chinese). Until then the three garments' ladders were the same at every time of day,
-   36 drills in all.
-   What each time of day gives a garment is in LADDER_HOW below, and it is the agent's own, DRAFT:
-   - scarf, agility: morning straight runs going up; golden hour zigzags and skips; night the quick shapes with the
-     lowered third step.
-   - top, breath: morning one long note and a step either side of it; golden hour long notes across a skip; night
-     long notes coming down, half steps, and the longest note of all at the end.
-   - hat, range: morning leaps up, and its sets climb to the top of the singer's range; golden hour leaps up and
-     back; night leaps down, and its sets go down to the bottom of the range (drills.js wayOf).
-   No drill is in two ladders, and no two drills have the same notes, except the top's four held notes of four
-   lengths and "Three long steps up", which is the scarf's "Three steps up" at less than half the speed. Which shape
-   went where, the order and the note lengths are the agent's, DRAFT; docs/later.md lists what to read. A place
-   added later needs nothing here: it uses these ladders.
-   A ladder's key is "time.zone", the end of a take's seed ("place.time.zone").
-
-   Before this: one ladder per time of day. From 2026-11-14 the last three steps climbed; for some hours of
-   2026-11-25 the time of day decided the length instead (morning once, golden hour three rounds, night a minute).
-   The notes below are from the deal of 2026-11-15 and use the names of that day. */
-/*
-   What the review of 2026-11-15 found and what changed then:
-   - the same drill came up in two ladders (Three down, Up and back, Five down, Arpeggio down, Five-note scale) and
-     the nine notes of the five-note scale were sung in six of the thirty-six steps. Now every ladder has its own
-     eleven drills; only step 12, the climbing five, is shared (the designer's choice of 2026-11-14). "five" is still in the
-     list above for the drill editor, in no ladder.
-   - in each ladder the take of step 10 was longer than that of step 11. Now the three climbing steps grow: about
-     24, 35, 51 seconds in the morning, 10, 22, 44 at golden hour, 14, 29, 58 at night (for a range of an octave and
-     a half; a narrow range climbs less). Since 2026-11-24 the rest between rounds is longer, the next first note
-     being given on a beat with two or three beats to react (drills.js): about 29, 35, 55; 13, 24, 47; 15, 29, 58.
-   - golden hour put an easy step (Five down) after two harder ones and went from scales straight to the octave.
-     Now: the arpeggio three ways, a fourth, skips, a fifth, the fast five, fifth then octave, the scale, and then
-     the octave on its own before the arpeggio that has it inside.
-   - night borrowed five of its steps. Now it is its own: holds and falling lines, each a little longer, a minor
-     five as its one long phrase, the octave down before the scale down.
-   Morning only swapped steps 10 and 11. */
-export const LADDERS = {
-  "morning.scarf": ["doremi", "fourup", "fiveup", "sixup", "then5", "scaleup", "stairs", "eighthome", "climb5", "twice", "nextfive", "sixskips"],
-  "golden.scarf": ["arc", "turn", "skips", "zigup", "arc4", "penta", "fiveskip", "gaps", "arp8", "zigtop", "gapsback", "fivetop"],
-  "night.scarf": ["dark3", "darkarc", "dark5", "darkzig", "dark4", "darkskip", "dark8", "darkgaps", "minor5", "darkarp8", "darkstairs", "darkgapsback"],
-  "morning.top": ["long", "two", "nbup", "nbdown", "hold4", "stay2", "nbup2", "nbdown2", "hold5", "nbboth", "up3hold", "valley"],
-  "golden.top": ["long2", "third", "thirddown", "thirdback", "same3", "dipskip", "walkhome", "skiphome", "skipstay", "skipboth", "thirdback2", "leanover"],
-  "night.top": ["twodown", "halfdown", "halfback", "down3", "darkdown", "darkdown3", "fourdown", "darkback", "darkfour", "darkfive", "halfboth", "hold6"],
-  "morning.bottom": ["fourth", "fifth", "arp", "sixth", "fifthoct", "octave", "arp4", "steptop", "octstay", "oct2", "fourwide", "topagain"],
-  "golden.bottom": ["fourthback", "fifthback", "arpud", "sixback", "octback", "wider2", "leapsback", "wider3", "leapbig", "octback2", "bothways", "topskips"],
-  "night.bottom": ["fourthdown", "fifthdown", "arpdown", "darkarpdown", "octdown", "arp4down", "fivedown", "leapsdown", "scaledown", "darkarp4down", "octdownstay", "darkscaledown"],
-};
+/* One ladder of twelve steps per garment, the same at every time of day and in every place (the designer's 甲 on the
+   simpler-drills board, 2026-11-28). The keys stay "time.zone", nine of them, for the drill editor and the seeds
+   ("place.time.zone"); the three times of day of a garment have the same twelve drills.
+   The garment says what the drills are for (the designer, 2026-11-25: "drills designed for hat is to increase your range,
+   for top is to increase your breath support, so more sustained notes, for scarf is to increase agility, so
+   having notes go from low to high in a quick tempo"); the step says how long a take is (drills.js STEP_RULE).
+   Steps 1 to 4 the two short shapes, 5 to 8 the designer's two middle ones, 9 to 12 those again and then the two long ones;
+   the top: four held notes, the short shapes slowly, then the middle ones slowly.
+   From 2026-11-25 to 2026-11-28 each time of day had other drills (the designer: 「不同練習」), 108 in all; taken back by the
+   board's 甲. */
+const LADDER_OF = { scarf: [...Array(12)].map((_, i) => `scarf${i + 1}`), top: [...Array(12)].map((_, i) => `top${i + 1}`), bottom: [...Array(12)].map((_, i) => `bottom${i + 1}`) };
+export const LADDERS = Object.fromEntries(["morning", "golden", "night"].flatMap((t) => ["scarf", "top", "bottom"].map((z) => [`${t}.${z}`, [...LADDER_OF[z]]])));
 export const LADDER_KEYS = Object.keys(LADDERS);
 export const ladderKey = (zoneId, timeId) => { const k = `${timeId}.${zoneId}`; return LADDERS[k] ? k : LADDERS[`golden.${zoneId}`] ? `golden.${zoneId}` : "golden.scarf"; };
-/* what a time of day gives a garment's drills, for the garment's sheet: "Morning: straight runs, going up." DRAFT */
-export const LADDER_HOW = {
-  "morning.scarf": "straight runs, going up",
-  "golden.scarf": "zigzags and skips",
-  "night.scarf": "the quick shapes in a darker colour",
-  "morning.top": "one long note, and a step either side of it",
-  "golden.top": "long notes across a skip",
-  "night.top": "long notes coming down, and half steps",
-  "morning.bottom": "leaps up, to the top of your voice",
-  "golden.bottom": "leaps up and back",
-  "night.bottom": "leaps down, to the bottom of your voice",
-};
+/* what a garment's drills are, for the garment's sheet: "Morning: the same few shapes, quick." DRAFT */
+export const LADDER_HOW = Object.fromEntries(["morning", "golden", "night"].flatMap((t) => [
+  [`${t}.scarf`, "a few shapes, sung quick"],
+  [`${t}.top`, "one long note, then the same shapes slowly"],
+  [`${t}.bottom`, "the same shapes, each set going up to the top of your voice"],
+]));
 export const ladderFor = (zoneId, timeId) => LADDERS[ladderKey(zoneId, timeId)].map((id) => DRILL[id]);
 export const drillAt = (zoneId, timeId, step) => ladderFor(zoneId, timeId)[Math.max(1, Math.min(STEPS, step)) - 1];
 
@@ -439,7 +220,10 @@ export function cleanDrill(d) {
   const rel = d.rel.map(Number);
   if (rel.some((r) => !Number.isInteger(r) || r < L.low || r > L.high)) return null;
   if (Math.max(...rel) - Math.min(...rel) > L.span) return null;
-  return { name, rel, dur };
+  const out = { name, rel, dur };
+  if (typeof d.shape === "string" && /^[a-z0-9_]{1,24}$/.test(d.shape)) out.shape = d.shape;
+  if (Number.isInteger(d.sets) && d.sets >= 1 && d.sets <= 5) out.sets = d.sets;
+  return out;
 }
 /* The whole set of edits, cleaned: anything that does not fit is dropped, never half applied. */
 export function cleanDrillEdits(e) {
@@ -450,10 +234,10 @@ export function cleanDrillEdits(e) {
     if (c) out.drills[id] = c;
   }
   const known = (id) => typeof id === "string" && (id in out.drills || id in BUILT_IN.drills);
-  const now = (id) => (typeof id === "string" && !(id in out.drills) && DRILL_ALIAS[id]) || id; // a drill that was removed
+  /* a ladder that names a drill that is gone (the 108 drills of before 2026-11-28) is dropped whole */
   for (const t of LADDER_KEYS) {
     const l = e.ladders?.[t];
-    if (Array.isArray(l) && l.length === STEPS && l.map(now).every(known)) out.ladders[t] = l.map(now);
+    if (Array.isArray(l) && l.length === STEPS && l.every(known)) out.ladders[t] = [...l];
   }
   return out;
 }

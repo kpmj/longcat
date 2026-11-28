@@ -22,7 +22,7 @@ import { keepTake } from "../drill/pitchlog.js";
 import { musicQuiet } from "../audio/ambient.js";
 import { demoVoice } from "../audio/demo-voices.js";
 import { comboTier, nextCombo, COMBO_TIERS } from "./combo.js";
-import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS, ZONES, drillCard, timeById } from "../content.js";
+import { TUTORIAL_FACES, NOTE_FACE, NOTE_WORD, NOTE_GLYPH, garmentName, STEPS, ZONES, drillCard, drillKey, timeById } from "../content.js";
 import { noteName } from "../audio/pitch.js";
 import { tip, hideTip } from "./tips.js";
 import { micBlocked } from "./onboarding.js";
@@ -121,9 +121,8 @@ function laneNotes(plan) {
     const x = n.s * R.pxs, w = Math.max(14, (n.e - n.s) * R.pxs - 3), y = yOf(n.midi);
     return `<g class="nb" id="nb-${i}"><rect x="${x.toFixed(1)}" y="${(y - BLOCK_H / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${BLOCK_H}" rx="${BLOCK_H / 2}"/></g>`;
   }).join("");
-  /* a climbing drill: each later round is marked where it begins, "↑ 2 / 5" or "↓ 4 / 5" */
-  const tags = plan.reps.length > 1 ? plan.reps.slice(1).map((r, k) => `<text class="rep-tag" x="${(r.s * R.pxs).toFixed(1)}" y="20">${r.dir === "up" ? "↑" : r.dir === "down" ? "↓" : "·"} ${k + 2} / ${plan.reps.length}</text>`).join("") : "";
-  return bars + tags;
+  /* (until 2026-11-28 each later round was marked where it began, "↑ 2 / 5"; the rest's own label says it now) */
+  return bars;
 }
 /* the sound written on each note, in a layer of its own above the sung line, so the line never covers it */
 const laneLabels = (plan) => plan.notes.map((n, i) => `<text class="nl" id="nl-${i}" x="${(n.s * R.pxs + 12).toFixed(1)}" y="${(yOf(n.midi) + 5).toFixed(1)}">${esc(plan.syl)}</text>`).join("");
@@ -167,6 +166,21 @@ function playCues() {
   }
 }
 const roundWord = (P, k) => `round ${k + 1} of ${P.reps.length}`;
+/* the rest before set k (or none, -1): the note area dimmed and "Round 2 of 3 ↑" over it; `begun`: how many sets
+   have begun, by the beat (a set counts from its Go), as dots beside the garment's name */
+function restView(k, begun) {
+  const P = R.plan;
+  if (k !== R.restAt) {
+    R.restAt = k;
+    document.getElementById("lane-wrap")?.classList.toggle("resting", k >= 0);
+    const el = document.getElementById("set-label");
+    if (el) el.textContent = k >= 0 ? `Round ${k + 1} of ${P.reps.length}${P.reps[k].dir === "up" ? " ↑" : P.reps[k].dir === "down" ? " ↓" : ""}` : "";
+  }
+  if (begun !== R.begun) {
+    R.begun = begun;
+    document.querySelectorAll("#sets i").forEach((d, i) => d.classList.toggle("on", i < begun));
+  }
+}
 /* how the rounds of a take move, in words (drills.js: the time of day decides the rounds; plan.way says how they
    go, plan.by is 2 for a whole tone, 1 for a semitone where the singer has less room) */
 const WAY_WORDS = { up: "higher each time", down: "lower each time", wave: "higher each time, then back down", same: "the same notes each time" };
@@ -185,7 +199,7 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
   audioContext(); // inside the tap that opened this screen, so the browser lets sound start
   const plan = planTake({ step: ctx.step, time: ctx.time, zone: ctx.zone, range: S.settings.range, nudge: S.settings.nudge, seed: ctx.seed });
   /* a drill met for the first time shows its card before anything sounds; the title opens it again (`card`) */
-  const withCard = card || (!St.heardDrill(S, plan.drill.id) && !carded && !retake);
+  const withCard = card || (!St.heardDrill(S, drillKey(plan.drill)) && !carded && !retake);
   const g = St.garmentSpec(S, ctx.place, ctx.time, ctx.zone);
   R = { ctx, retake, outcome, plan, T: createTake(plan, { delay: headDelay(S) }), geo: null, g, raf: 0, last: 0, nodes: [], face: "neutral", faceUntil: 0, mood: "listen", moodUntil: 0, headY: MID_Y, marks: [], silentFor: 0, started: false, flash: null, gridOn: null, tier: 0, ticked: -1, raw: [], round: -1, cue: 0 };
   /* how far back the sung line is drawn (lane-body.js): what earlier takes with the microphone found, until this one knows */
@@ -207,7 +221,7 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
     <header class="take-head" id="take-head">
       <button class="icon-btn" data-act="close" aria-label="Leave. This take won’t count.">✕</button>
       <button class="take-title" data-act="card" aria-label="${esc(name)}, step ${ctx.step} of ${STEPS}${retake ? ", again" : ""}. ${esc(plan.drill.name)}: about this drill.">
-        <b>${esc(name)}${retake ? " · again" : ""}</b>
+        <b>${esc(name)}${retake ? " · again" : ""}${plan.reps.length > 1 ? `<span class="sets" id="sets" aria-hidden="true">${plan.reps.map(() => "<i></i>").join("")}</span>` : ""}</b>
         <span class="psegs" aria-hidden="true">${segs}</span>
         <span class="sub">${esc(plan.drill.name)}${plan.reps.length > 1 ? ` × ${plan.reps.length}` : ""} · sing “${esc(plan.syl)}” · starts on ${noteName(plan.notes[0].midi)}</span>
       </button>
@@ -240,6 +254,7 @@ function render(root, { ctx, retake = false, outcome = null, card = false, carde
         <g id="lane-cat"></g>
         <g id="lane-gutter">${grid.gutter}</g>
       </svg>
+      <div class="set-label" id="set-label" aria-live="polite"></div>
       <div class="countdown" id="countdown" aria-live="polite"></div>
       <div class="say" id="say" hidden></div>
       <div class="hint"><b id="hint-big">Listen first</b><span id="hint-small"></span></div>`;
@@ -295,8 +310,8 @@ function cardFigure(P) {
   return `<svg viewBox="0 0 ${FW} ${FH}" aria-hidden="true">${bars.map((r) => `<rect class="dc-pill" x="${(r.x + shift).toFixed(1)}" y="${(r.y - 6).toFixed(1)}" width="${r.w.toFixed(1)}" height="12" rx="6"/>`).join("")}</svg>`;
 }
 function openCard() {
-  const S = app.S, P = R.plan, d = P.drill, T = timeById(R.ctx.time), words = drillCard(d.id);
-  const fresh = !St.heardDrill(S, d.id), props = app.props;
+  const S = app.S, P = R.plan, d = P.drill, T = timeById(R.ctx.time), words = drillCard(drillKey(d));
+  const fresh = !St.heardDrill(S, drillKey(d)), props = app.props;
   const rounds = P.reps.length > 1 ? ` · ${P.reps.length} rounds, ${wayWords(P)}` : "";
   const el = sheet(`
     <p class="eyebrow">${fresh ? "New · " : ""}${esc(garmentName(R.ctx.time, R.ctx.zone))} · ${esc((ZONES.find((z) => z.id === R.ctx.zone) || ZONES[0]).aim)}</p>
@@ -473,7 +488,7 @@ function onCount() {
      does the count go Ready, 3, 2, 1. However long the phone takes, nothing is counted during it. */
   R.clicked = -1;
   /* the demo has played, or was skipped: this drill has been met, and its card will not come up by itself again */
-  if (!St.heardDrill(app.S, R.plan.drill.id)) { St.hearDrill(app.S, R.plan.drill.id); app.save(); }
+  if (!St.heardDrill(app.S, drillKey(R.plan.drill))) { St.hearDrill(app.S, drillKey(R.plan.drill)); app.save(); }
   /* the microphone is open since before the demo; this is only for one that is not, whatever the reason */
   if (app.S.dev.voice === "mic" && !micReady()) {
     R.hold = { since: wall(), ready: false, a0: 0, w0: 0, told: false };
@@ -792,14 +807,24 @@ export function frame(dt) {
     /* a rest between rounds is not the singer being silent: without this, "Sing out" flashed as every round began */
     if (ts > rep.e || ts < rep.s) R.silentFor = 0;
     if (many) { focusRound(k); playCues(); }
-    /* Go on the last beat of a rest, as in the count before the take: the chord, Go, and the round on the next beat */
-    const kb = roundAt(P, T.t), rb = P.reps[kb];
-    const go = many && kb > 0 && T.t >= rb.s - P.beat && T.t < rb.s;
-    if (go !== !!R.goOn) { R.goOn = go; countdown(go ? "Go" : "", go); }
+    /* The rest between two sets counts in as the start of the take does (the designer's 乙 on the simpler-drills board,
+       2026-11-28, after "the transition between sets inside the drill is not very clear"): the note area dims, the
+       set to come stands over it ("Round 2 of 3 ↑"), and 3, 2, 1, Go come on the beats before it, the two chords on
+       "1" as before, Go on the beat before the set. A beat the last note still holds shows nothing, so a short rest
+       counts 2, 1, Go. The dimming lifts at Go, so the first note is seen arriving. Until then only Go stood on the
+       last beat of a rest. Goes by the beat, as the chords do */
+    const kb = roundAt(P, T.t), rb = P.reps[kb], prev = many && kb > 0 ? P.reps[kb - 1] : null;
+    let word = "";
+    if (prev && T.t > prev.e && T.t < rb.s) {
+      const left = Math.ceil((rb.s - T.t) / P.beat - 1e-6);
+      if (rb.s - left * P.beat > prev.e - 1e-6) word = ["", "Go", "1", "2", "3"][left] || "";
+    }
+    if (word !== (R.restWord || "")) { R.restWord = word; countdown(word, word === "Go"); }
+    if (many) restView(prev && T.t > prev.e && T.t < rb.s - P.beat ? kb : -1, P.reps.filter((r) => T.t >= r.s - P.beat).length);
     /* one thing at a time: a note's verdict, or where the next round starts, or that nothing is heard. "Sing" is
        said as the singing begins and then goes; it used to sit there for the whole take */
     if (R.flash && T.t < R.flash.until) hint(R.flash.text, "", R.flash.level);
-    else if (resting) hint(dirWords(P, rep), `${roundWord(P, k)} · from ${noteName(P.notes[rep.i0].midi)}`);
+    else if (resting) hint(dirWords(P, rep), `from ${noteName(P.notes[rep.i0].midi)}`);
     else if (R.silentFor > 1.4 && ts < rep.e) hint("Sing out", "the judge can’t hear you yet"); // never in the rest between rounds
     else if (ts < 1.2 && !R.marks.length) hint("Sing", `“${P.syl}”`);
     else hint("", "");

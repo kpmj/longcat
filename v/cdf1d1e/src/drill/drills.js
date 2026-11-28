@@ -222,8 +222,9 @@ export function planTake({ step, time = "golden", zone = "", range, nudge = 0, s
      the cue on the third beat of the last bar, a beat to think, and the round on the bar line. */
   const noteBeats = rel.length * perNote;
   const roundBeats = Math.ceil((noteBeats + REST_BEATS) / BAR - 1e-9) * BAR, restBeats = roundBeats - noteBeats;
-  /* how many sets: the step's (STEP_RULE) */
-  const n = rounds || ruleOf(step || 1).rounds;
+  /* how many sets: the step's (STEP_RULE), or fewer where the drill says so: a shape too long for its step's seconds
+     (the designer's a on the simpler-drills board, 2026-11-28: the take keeps its length and the long shape is sung fewer times) */
+  const n = rounds || drill.sets || ruleOf(step || 1).rounds;
   const climb = roundsFor(range, span, base, { n, nudge, ...wayOf(zoneId, rel, n) });
   const root = climb.start - low;
   const notes = [], reps = [], cues = [], lift = chordLift(root);

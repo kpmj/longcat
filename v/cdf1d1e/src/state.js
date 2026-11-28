@@ -5,7 +5,7 @@
 import {
   STEPS, ZONE_IDS, TIME_IDS, TIMES, PLACES, PLACE_IDS, OPEN_AFTER, CALENDAR_LAUNCH, VISIT_MONTHS, VISITORS,
   TUTORIAL_FACES, MIX_LINE, placeById, timeById, garmentLook, garmentName, kindFor, yarnFor,
-  TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat, knitOf, knitGarment,
+  TREATS, FREE_CATS, SHOP_CATS, SHOP_ANIMALS, isAnimal, priceOf, catCoat, knitOf, knitGarment, drillKey,
 } from "./content.js";
 import { drillForStep } from "./drill/drills.js";
 
@@ -113,7 +113,7 @@ export function migrate(o, real = new Date()) {
   if (!Array.isArray(o.heard)) {
     S.heard = [];
     for (const place of Object.keys(S.months)) for (const t of TIME_IDS) for (const z of ZONE_IDS)
-      for (let k = 1; k <= Math.min(STEPS, progress(S, place, t, z)); k++) hearDrill(S, drillForStep(k, z, t).id);
+      for (let k = 1; k <= Math.min(STEPS, progress(S, place, t, z)); k++) hearDrill(S, drillKey(drillForStep(k, z, t)));
   } else S.heard = o.heard.filter((id) => typeof id === "string");
   /* 2026-11-15: treats and cats of one's own. A save from before starts with the four free cats and no treats */
   S.cats = [...new Set([...FREE_CATS, ...(Array.isArray(o.cats) ? o.cats.filter((id) => typeof id === "string") : [])])];

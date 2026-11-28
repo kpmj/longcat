@@ -196,6 +196,14 @@ button.time-chip:focus-visible { outline: 2px solid var(--brand); outline-offset
   font-family: var(--display); font-weight: 600; font-size: 64px; line-height: 1; color: #4a3222; opacity: 0;
   text-shadow: 0 2px 0 #fdf6e8, 0 0 14px #fdf6e8; }
 .countdown.go { color: #2f8a4a; font-size: 72px; }
+/* the rest between two sets (the designer's 乙, 2026-11-28): the notes dim under the count, the set to come above it */
+.lane-wrap .lane { transition: opacity .2s; }
+.lane-wrap.resting .lane { opacity: .38; }
+.set-label { position: absolute; left: 0; right: 0; top: 14px; text-align: center; pointer-events: none; font-family: var(--display); font-weight: 600;
+  font-size: 22px; color: #1d3150; text-shadow: 0 2px 0 #fdf6e8, 0 0 10px #fdf6e8; }
+.take-title b .sets { display: inline-flex; gap: 4px; margin-left: 10px; vertical-align: middle; }
+.take-title b .sets i { width: 9px; height: 9px; border-radius: 50%; border: 1.6px solid var(--brand); box-sizing: border-box; }
+.take-title b .sets i.on { background: var(--brand); }
 .countdown.pop { animation: cd-pop .62s ease-out forwards; }
 @keyframes cd-pop { 0% { opacity: 0; transform: translateY(-50%) scale(1.5); } 18% { opacity: 1; transform: translateY(-50%) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50%) scale(.92); } }
 
