@@ -53,20 +53,19 @@ const sky = (V, animate, taps = false) => V.sky.map((c, i) => `<rect y="${i * 62
   + (V === VIEW.night ? STARS.map(([x, y, r]) => `<circle${animate ? ` class="lc-twinkle"` : ""} cx="${x}" cy="${y}" r="${animate ? r * 2.4 : r}" fill="#f2ecd6"/>`).join("") : "")
   + `<circle${animate ? ` class="lc-sun"` : ""}${animate && taps ? ` data-tap="window"` : ""} cx="${V.disc[1]}" cy="${V.disc[2]}" r="${V.disc[3]}" fill="${V.disc[0]}"/>`;
 
-/* the H title: the place in big characters on the ground, the series name beside it, the time in a red seal, a small 貓 seal */
+/* The titles. the designer, 2026-11-28: 「拿掉「長貓十二景」和貓都拿掉 重新排版地點名字和時間」: the series name and the small 貓
+   seal are gone (the 貓 said twice what 長貓 said); what is left is one column: the place's name, and under it the time of day
+   (朝 / 夕 / 夜) as its red seal.
+   H: the place in big characters on the ground, the time in a red seal under it */
 export function titleH(time, name, ink) {
   const n = [...name].length, step = 31, end = 30 + n * step;
-  return column(name, 364, 30, 28, step, ink) + column("長貓十二景", 337, 36, 10.5, 12.5, ink)
-    + `<rect x="351" y="${end + 4}" width="26" height="26" fill="${RED}"/>${glyph(VIEW[time].time, 364, end + 7.5, 18, PAPER)}`
-    + `<rect x="328" y="104" width="18" height="18" fill="none" stroke="${RED}" stroke-width="1.7"/>${glyph("貓", 337, 107, 12, RED)}`;
+  return column(name, 364, 30, 28, step, ink) + `<rect x="351" y="${end + 4}" width="26" height="26" fill="${RED}"/>${glyph(VIEW[time].time, 364, end + 7.5, 18, PAPER)}`;
 }
-/* the G title block: the place reversed out of an indigo strip, time and series name in small boxes, a red seal */
+/* G: the place reversed out of an indigo strip, and right under it, as wide, the time in a red seal */
+export const sealG = (time, x, y, w) => `<rect x="${x}" y="${y}" width="${w}" height="${w}" fill="${RED}" stroke="${PAPER}" stroke-width="1.2"/>${glyph(VIEW[time].time, x + w / 2, y + w * .15, w * .66, PAPER)}`;
 export function titleG(time, name) {
-  const n = [...name].length, h = 12 + n * 27, k = `stroke="${IND[0]}" stroke-width="1.2"`;
-  return `<rect x="352" y="24" width="30" height="${h}" fill="${IND[0]}" stroke="${PAPER}" stroke-width="1.2"/>${column(name, 367, 30, 21, 27, PAPER)}`
-    + `<rect x="328" y="24" width="20" height="24" fill="${PAPER}" ${k}/>${glyph(VIEW[time].time, 338, 28, 14, IND[0])}`
-    + `<rect x="328" y="52" width="20" height="64" fill="${PAPER}" ${k}/>${column("長貓十二景", 338, 56, 10, 11.5, IND[0])}`
-    + `<rect x="357.5" y="${30 + h}" width="19" height="19" fill="${PAPER}" stroke="${RED}" stroke-width="1.8"/>${glyph("貓", 367, 33 + h, 12.5, RED)}`;
+  const n = [...name].length, h = 12 + n * 27;
+  return `<rect x="352" y="24" width="30" height="${h}" fill="${IND[0]}" stroke="${PAPER}" stroke-width="1.2"/>${column(name, 367, 30, 21, 27, PAPER)}` + sealG(time, 352, 28 + h, 30);
 }
 const paperEdge = (m, line) => `<path d="M0 0H400V500H0ZM${m} ${m}V${500 - m}H${400 - m}V${m}Z" fill="${PAPER}" fill-rule="evenodd"/><rect x="${m}" y="${m}" width="${400 - 2 * m}" height="${500 - 2 * m}" fill="none" stroke="${line}" stroke-width="1.6"/>`;
 
