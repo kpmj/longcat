@@ -8,10 +8,10 @@ import * as St from "../state.js";
 import { ZONES, timeById, garmentName, sylFor, drillEditCount, placeById } from "../content.js";
 import { DEFAULT_RANGE, planTake, chordOf, CHORD_SPLIT, HEAD_DELAY } from "../drill/drills.js";
 import { noteName } from "../audio/pitch.js";
-import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, playBuffer, pianoChord, preparePiano, setFxFiles } from "../audio/synth.js";
+import { setMuted, hum, audioContext, now, demoNote, prepareDemo, audioState, audioReport, playBuffer, pianoChord, preparePiano, setFxFiles } from "../audio/synth.js";
 import { loadFile } from "../audio/files.js";
 import { DEMO_VOICES } from "../audio/demo-voices.js";
-import { MUSIC, setTune, startMusic, stopMusic, setTapSource, prepareTaps, tapSound } from "../audio/ambient.js";
+import { MUSIC, setTune, startMusic, stopMusic, setTapSource, prepareTaps, tapSound, musicState } from "../audio/ambient.js";
 import { openMic, closeMic, readMic, micReady, MIC_MODES, setMicMode, micMode } from "../audio/mic.js";
 import { resetTips } from "./tips.js";
 
@@ -139,6 +139,9 @@ export function openDev() {
   const el = sheet(`
     <h3>Dev tools</h3>
     <p class="muted small">Today is ${St.todayKey(S, real)} (offset ${S.dev.dayOffset} days) · sound ${audioState()} · faces learned ${S.faces} / 12 · sung on ${S.journal.length} days · ${S.takes.length} takes</p>
+    <h4>Sound, live</h4>
+    <p class="muted small">If the phone goes quiet, take a screenshot of this line. The clock should keep moving.</p>
+    <p class="muted small" data-sound-live>…</p>
     <h4>Drills</h4>
     <p class="muted small">Move the twelve steps of a time of day, or change a drill’s notes and speed. ${drillEditCount(S.dev.drillEdits) ? `${drillEditCount(S.dev.drillEdits)} changed on this phone.` : "Nothing changed yet."}</p>
     <button class="btn small" data-a="drills">Open the drill editor</button>
@@ -253,8 +256,20 @@ export function openDev() {
     if (out?.garmentDone) { show("home", { noAutoPick: true }); return setTimeout(() => app.screens.home.openPicker({ after: `The ${(name || "garment").toLowerCase()} is on.` }), 300); }
     show("home");
   };
+  /* the sound as it is now, twice a second while the sheet is open (the designer, 2026-11-28: no sound on the phone at
+     times): the context's state and rate, its clock, what the phone was told the sound is, how many contexts this
+     visit has made, and the music's own state */
+  const live = el.querySelector("[data-sound-live]");
+  const paint = () => {
+    if (!live.isConnected) return clearInterval(liveTimer);
+    const a = audioReport(), m = musicState();
+    live.textContent = `context ${a.state}${a.rate ? ` at ${a.rate} Hz` : ""} · clock ${a.clock ?? "–"} s · session ${a.session} · contexts made ${a.made}` +
+      ` · music ${m.wanted ? "wanted" : "off"}, ${m.playing ? "playing" : "not playing"}, ${m.looping ? "sounding" : "no sound yet"}${m.file ? ` (${m.file.split(".").pop()})` : ""}`;
+  };
+  const liveTimer = setInterval(paint, 500);
+  paint();
   const act = (a, fn) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.onclick = fn; };
-  act("one", () => done(St.recordTake(S, St.nextTake(S, place), St.devGrade(false), real)));
+  act("one",() => done(St.recordTake(S, St.nextTake(S, place), St.devGrade(false), real)));
   act("tuft", () => done(St.recordTake(S, St.nextTake(S, place), St.devGrade(true), real)));
   act("garment", () => { const name = garmentName(nt.time, nt.zone); const out = St.devFillGarment(S, place, real, { tufts: true }); done(out, name); });
   act("time", () => {

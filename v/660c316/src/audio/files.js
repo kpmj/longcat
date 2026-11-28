@@ -8,6 +8,31 @@ import { FILES } from "./files/manifest.js";
 
 const cache = new Map(); // id -> { buf, lead, info } once loaded, or { promise } while loading
 
+/* Decoding, for every file of the game (and the recorded voice). Play-test, 2026-11-28: sound and music came and
+   went on an iPhone just after the page opened. A file was decoded on the game's sound context, and that context
+   is thrown away and closed when the sound gets stuck or the music is switched on (synth.js, rebuildAudio): a
+   decode still running on a closed context can be left unanswered, and the file was then "on its way" for ever.
+   Files are decoded on a context of their own, which is never closed and plays nothing (an offline one, at the
+   game's rate), and a decode that has not answered in `DECODE_MS` is given up, so the next ask tries again. */
+const DECODE_MS = 30000;
+let decoder = null;
+function decoderFor(ctx) {
+  const OAC = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+  if (!OAC) return ctx;
+  if (!decoder || decoder.sampleRate !== ctx.sampleRate) {
+    try { decoder = new OAC(1, 1, ctx.sampleRate); } catch { return ctx; }
+  }
+  return decoder;
+}
+export function decode(ctx, bytes) {
+  const c = decoderFor(ctx);
+  return new Promise((ok, no) => {
+    const late = setTimeout(() => no(new Error("decoding took too long")), DECODE_MS);
+    const done = (buf) => { clearTimeout(late); ok(buf); }, fail = (err) => { clearTimeout(late); no(err); };
+    try { const p = c.decodeAudioData(bytes, done, fail); if (p && p.catch) p.catch(fail); } catch (err) { fail(err); }
+  });
+}
+
 export const fileInfo = (id) => FILES[id] || null;
 /* the loaded file, or null if it is not here yet */
 export const fileReady = (id) => { const e = cache.get(id); return e && e.buf ? e : null; };
@@ -22,7 +47,7 @@ export function loadFile(ctx, id, { head = false } = {}) {
   if (e) return e.buf ? Promise.resolve(e) : e.promise;
   const promise = fetch(new URL(`./files/${info.path}`, import.meta.url))
     .then((r) => { if (!r.ok) throw new Error(`sound file ${id}: ${r.status}`); return r.arrayBuffer(); })
-    .then((a) => new Promise((ok, no) => { const p = ctx.decodeAudioData(a, ok, no); if (p && p.catch) p.catch(no); }))
+    .then((a) => decode(ctx, a))
     .then((buf) => {
       /* compressed audio can begin with some silent milliseconds, different in each browser. A sound is started
          from where it really begins, found here as recorded.js does. A loop does not need it: its file carries the

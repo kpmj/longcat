@@ -3,7 +3,7 @@
    and noise; there are no audio files. It never plays during a take: the microphone would hear it.
    Its sounds go to their own two buses and a limiter of their own, at a low level, so the game's limiter and the log
    of "sounds the game made itself" (synth.js) are left alone. */
-import { audioContext } from "./synth.js";
+import { audioContext, wakeNow } from "./synth.js";
 import { loadFile, loadFiles, fileReady, dropFile, fileInfo } from "./files.js";
 
 let ac = null, bus = null, musicBus = null, noiseBuf = null;
@@ -199,7 +199,11 @@ export function tapSound(kind, place = null) {
   const own = TAP_FILES[kind] && !TAP[kind] ? kind : null; // a file of its own and no page sound
   kind = TAP_AS[kind] || kind;
   const play = (place && TAP[`${kind}@${place}`]) || TAP[kind];
-  if (!play || !ctx() || ac.state !== "running") return;
+  if (!play || !ctx() || ac.state === "closed") return;
+  /* The first presses on a page that has just opened used to make no sound: a phone lets sound start only inside a
+     touch, and the context asked to run in it was not running yet when the press's sound was asked for. It is
+     asked again here, inside this press, and the sound is booked anyway: it plays as soon as the sound runs. */
+  if (ac.state !== "running") wakeNow();
   const key = own || (place && TAP[`${kind}@${place}`] ? `${kind}@${place}` : kind);
   const id = tapSource === "files" ? TAP_FILES[key] : null, e = id ? fileReady(id) : null;
   if (e) {

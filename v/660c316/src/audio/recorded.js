@@ -17,9 +17,10 @@
    the voice sounds more like a person. The designer chose it by ear the same day: it is the game's voice (the
    demo voice "rec2"); the first making is still here as "rec", for comparing, until it is taken out.
 
-   This file only fetches, decodes and plays. No imports, so synth.js can use it without a circle. The files are a
-   person's voice: they are in the game because that person said so. */
+   This file only fetches, decodes and plays. Its one import is files.js's decoder (files.js imports only the
+   manifest), so synth.js can use it without a circle. The files are a person's voice: they are in the game because that person said so. */
 
+import { decode } from "./files.js";
 export const REC_SYLS = ["mm", "oo", "ah", "noo", "yah"];
 export const REC_LOW = 38, REC_HIGH = 72; // MIDI notes there is a file for
 export const REC_GAIN = 1.2; // the files are a little under the other voices in level
@@ -40,7 +41,7 @@ export function loadRec(ctx, syl, midi, set) {
   if (e) return e.buf ? Promise.resolve(e) : e.promise;
   const promise = fetch(new URL(`./${k}.m4a`, import.meta.url))
     .then((r) => { if (!r.ok) throw new Error(`voice file ${k}: ${r.status}`); return r.arrayBuffer(); })
-    .then((a) => new Promise((ok, no) => { const p = ctx.decodeAudioData(a, ok, no); if (p && p.catch) p.catch(no); }))
+    .then((a) => decode(ctx, a)) // files.js: on a context that is never closed
     .then((buf) => {
       /* compressed audio can begin with some silent milliseconds, different in each browser: find where the voice
          really starts, so a note booked for a moment sounds at that moment */

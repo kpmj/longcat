@@ -26,11 +26,24 @@ export function setBoost(k = 1) {
   if (ac && master) { try { master.gain.setTargetAtTime(MASTER * boost, ac.currentTime, 0.02); } catch { master.gain.value = MASTER * boost; } }
 }
 
+/* Play-test, 2026-11-28: "sometimes I refreshed the page, toggle the music on and off, turn off the silent mode on
+   my phone, make sure the volume is up there's still no sound". On an iPhone a page that only uses Web Audio is
+   "ambient" sound until it has used the microphone: the ring/silent switch silences it, and the same page was
+   loud after a take (mic.js tells the phone "playback" when the microphone is let go). Now it is "playback" from
+   the start, as after a take: the game is heard whatever the switch says, like a video, and it pauses another
+   app's music while it plays. */
+function playbackSession() {
+  try { if (typeof navigator !== "undefined" && navigator.audioSession && navigator.audioSession.type !== "play-and-record") navigator.audioSession.type = "playback"; } catch { /* not supported: fine */ }
+}
+export let contextsMade = 0;
 export function audioContext() {
   if (!ac) {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AC) return null;
+    playbackSession();
     ac = new AC();
+    contextsMade++;
+    clock = { t: -1, at: 0 };
     master = ac.createGain();
     /* Play-test, 2026-11-14: "really low even with the volume at max". A default compressor squashed
        everything above -24 dBFS with no make-up gain (the designer's recording peaked near -10 dBFS). Now a limiter
@@ -48,6 +61,9 @@ export function audioContext() {
     fx.connect(fxTone);
     fxTone.connect(master);
     ac.onstatechange = () => kick();
+    /* a new context is asked to run at once, whatever was asked a moment ago: one made inside a touch (the music
+       switch) may start only inside that touch, and the wait between two asks used to swallow it */
+    kick(true);
   }
   if (ac.state !== "running") kick();
   return ac;
@@ -73,6 +89,14 @@ if (typeof addEventListener === "function" && typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) kick(true); });
 }
 export const audioState = () => (ac ? ac.state : "none");
+/* Ask the sound to run now, inside a touch (a tap's sound: tapSound in ambient.js). */
+export const wakeNow = () => kick(true);
+/* what the Dev panel shows of the sound, live: for a phone that has gone quiet */
+export function audioReport() {
+  const session = typeof navigator !== "undefined" && navigator.audioSession ? navigator.audioSession.type : "–";
+  if (!ac) return { state: "none", session, made: contextsMade };
+  return { state: ac.state, rate: ac.sampleRate, clock: Math.round(ac.currentTime * 10) / 10, session, made: contextsMade, delay: audioDelay() };
+}
 export const audioRunning = () => !!ac && ac.state === "running";
 /* seconds between booking a sound and hearing it, as far as the browser says: [inside the browser, the device] */
 export const audioDelay = () => (ac ? [ac.baseLatency ?? null, ac.outputLatency ?? null].map((x) => (x == null ? null : Math.round(x * 1000) / 1000)) : null);
@@ -117,13 +141,21 @@ export function rebuildAudio() {
      - when a take has just ended (the microphone was open: markAudioStale), and
      - when the context was already found not running at an earlier touch, and resuming did not help.
    Never while a take holds the sound (holdAudio): its microphone is wired to the context. */
-let stale = false, held = false, stuckAt = 0;
+let stale = false, held = false, stuckAt = 0, clock = { t: -1, at: 0 };
 export const markAudioStale = () => { stale = true; };
 export const holdAudio = (on) => { held = !!on; };
 function heal() {
   if (!ac || held) return kick(true);
   if (stale) return void rebuildAudio();
-  if (ac.state === "running" || ac.state === "closed") { stuckAt = 0; return; }
+  if (ac.state === "running") {
+    /* it says it runs: its clock must have moved since the last touch, or it is stuck and plays nothing */
+    const t = Date.now(), frozen = clock.at && t - clock.at > 400 && ac.currentTime === clock.t;
+    clock = { t: ac.currentTime, at: t };
+    stuckAt = 0;
+    if (frozen) rebuildAudio();
+    return;
+  }
+  if (ac.state === "closed") { stuckAt = 0; return; }
   if (stuckAt && Date.now() - stuckAt > 600) return void rebuildAudio();
   if (!stuckAt) stuckAt = Date.now();
   kick(true);
