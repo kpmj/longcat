@@ -72,12 +72,26 @@ export function homeArt(o, W, H, top, bottom) {
   const print = (inner) => `<svg x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(400 * L.s).toFixed(1)}" height="${(500 * L.s).toFixed(1)}" viewBox="0 0 400 500">${inner}</svg>`;
   if (P.tall && P.tall.inner) {
     const scenery = `<svg x="0" y="0" width="400" height="${L.VH.toFixed(1)}" viewBox="${P.tall.box}" preserveAspectRatio="xMidYMin slice">${P.tall.inner}</svg>${print(P.things || "")}`;
-    return { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">
-<rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
-${scenery}
-${print(`${p.special}${P.seat}${p.shelves}${smaller(p.character)}`)}
-${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}
-</svg>`, layout: L };
+    const open = (cls) => `<svg xmlns="http://www.w3.org/2000/svg"${cls ? ` class="${cls}"` : ""} viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">`;
+    const back = `<rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>
+${scenery}`;
+    const front = `${print(`${p.special}${P.seat}${p.shelves}${smaller(p.character)}`)}
+${title ? `<g transform="translate(4 ${(L.T - 16).toFixed(1)})">${title}</g>` : ""}`;
+    /* a point of the tall picture in screen px: it fills the width and is cut at the bottom, or on a long phone grown
+       to the height and cut at the sides (xMidYMin slice) */
+    const [, , bw, bh] = String(P.tall.box).split(/\s+/).map(Number), u = 400 / Math.max(1, W), ts = Math.max(400 / bw, L.VH / bh);
+    L.tallPx = (x, y) => ({ x: (200 + (x - bw / 2) * ts) / u, y: (y * ts) / u });
+    /* A place with an effects layer (P.motion, art/fx.js) is drawn in two layers as well, so the layer can go
+       between them: the scenery and the place's things behind it, the seat, the judge and the title in front */
+    return {
+      svg: `${open("")}
+${back}
+${front}
+</svg>`,
+      layers: P.motion ? { back: `${open("lc-back")}${back}</svg>`, front: `${open("lc-front")}${front}</svg>` } : null,
+      motion: P.motion || null,
+      layout: L,
+    };
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 ${L.VH.toFixed(1)}" preserveAspectRatio="xMidYMin slice">
 <rect width="400" height="${L.VH.toFixed(1)}" fill="${sky}"/>

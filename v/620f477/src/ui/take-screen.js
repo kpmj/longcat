@@ -14,6 +14,7 @@ import { createTake, stepTake, skipDemo, currentIndex, ticksIn, DEMO_LEAD, latOf
 import { takeMood } from "../drill/grade.js";
 import { steadiness, steadyLine } from "../drill/steady.js";
 import { laneCatSvg, judgeBustSvg, segmentSvg, faceIconSvg } from "../art/index.js";
+import { makeFx, paperBurst, lessMotion } from "../art/fx.js";
 import { laneShape, laneInside, onChart, sweepSeconds, sweepView, FAR_DRAW, OUTLIER_SECONDS, lagToDraw, easeLag, LAG_GUESS } from "./lane-body.js";
 import { demoNote, prepareDemo, pianoChord, preparePiano, click, tick, placeSfx, noteCue, chime, audioContext, now, heardItself, wakeAudio, rebuildAudio, audioRunning, audioState, audioDelay, holdAudio, markAudioStale, audioSettled, setBoost } from "../audio/synth.js";
 import { notesNear } from "../audio/self.js";
@@ -874,6 +875,24 @@ function wireTouch(root) {
 }
 
 /* ---------- the result ---------- */
+/* Every note landed: a handful of paper pieces and stars thrown up from the judge's head on the result, which turn
+   over as they come down over it (art/fx.js). the designer picked it on the finer-animation page (2026-11-28); where it goes
+   was left to me: the result covers the judge of the singing screen, so the paper comes from the judge's face at the
+   top of the result, once it has risen, and falls over the page for two or three seconds without catching a touch.
+   Not with less motion. */
+function goodBurst(sheetEl) {
+  if (lessMotion() || !sheetEl || !sheetEl.isConnected) return;
+  const face = sheetEl.querySelector(".rhead svg") || sheetEl;
+  const r = face.getBoundingClientRect();
+  if (!r.width) return;
+  const c = document.createElement("canvas");
+  c.className = "lc-fx-burst";
+  c.setAttribute("aria-hidden", "true");
+  document.body.append(c);
+  const fx = makeFx(c, { width: innerWidth, height: innerHeight, onIdle: () => c.remove() });
+  fx.add(paperBurst({ x: r.left + r.width / 2, y: r.top + r.height * 0.2 }));
+}
+
 function resultLine(grade, mood) {
   const n = grade.notes.length, c = grade.counts;
   if (mood === "good") return "Every note landed. The cat looks smug.";
@@ -949,6 +968,8 @@ function finish(grade) {
       : `<div class="row"><button class="btn" data-a="retake">Sing this step again</button><button class="btn primary" data-a="ok">Keep it</button></div>`}
     ${keyfix ? `<p class="keyfix" id="keyfix">Felt out of reach? <button data-a="lower" ${S.settings.nudge <= -5 ? "disabled" : ""}>Lower the key</button> · <button data-a="higher" ${S.settings.nudge >= 5 ? "disabled" : ""}>Raise the key</button></p>` : ""}`, { dismissable: false });
   el.querySelector("[data-a=ok]").onclick = () => { closeSheet(true); accept(ctx, outcome); };
+  /* once the result has risen (it covers the judge on the singing screen), the paper comes from the judge on it */
+  if (mood === "good") setTimeout(() => goodBurst(el), 380);
   const on = el.querySelector("[data-a=next]");
   if (on) on.onclick = () => { closeSheet(true); show("take", { ctx: { ...onward, ...(ctx.back ? { back: ctx.back } : {}) } }); };
   el.querySelector("[data-a=retake]").onclick = () => { closeSheet(true); show("take", { ctx, retake: true, outcome }); };

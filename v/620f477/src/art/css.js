@@ -4,6 +4,9 @@
    Home page (the designer, 2026-11-14): the judge blinks, twitches an ear, shakes its head now and then and yawns; cats twitch
    their ears, blink and stretch; steam rises, leaves fall, water drifts, yuzu bob, the lamp flickers, the sun and moon
    breathe and the stars twinkle. A class goes on a wrapper <g> that has no transform attribute of its own. */
+import { framesCss } from "./frames.js";
+import { PICTURES } from "./pictures.js";
+
 export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] element for a moment (see docs/art-style.md). A petted cat or judge
    shows its other face; the hearts are hidden until then */
 .lc-face-pet, .lc-heart { opacity: 0; }
@@ -172,4 +175,11 @@ export const ART_CSS = `/* touch: the page adds lc-tapped to a [data-tap] elemen
   .lc-yawn-on { animation: none !important; opacity: 0; }
   .lc-tapped .lc-heart { opacity: 1; }
   .lc-leave { opacity: 0; }
-}`;
+}`
+  /* a generated animal that moves inside itself: its frames (art/frames.js) */
+  + framesCss({ "bird-1": PICTURES.jungle["bird-1-frames"] })
+  /* the effects layer (art/fx.js) on Home: while it runs it draws these itself, so the picture's own are put away:
+     the sitting monkey (its tail bends there), the waterfall's drops and spray, the falling leaves */
+  + `
+.lc-fx-tail .lc-fx-sit { opacity: 0; }
+.lc-fx-on .lc-drop, .lc-fx-on .lc-spray, .lc-fx-on .lc-surge, .lc-fx-on .lc-leaf { display: none; }`;

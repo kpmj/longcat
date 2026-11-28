@@ -13,6 +13,7 @@ import { openDress, singerLabel, yarnLabel } from "./cats.js";
 import { openLetter, openPlaces } from "./places.js";
 import { wardrobeThumbSvg, placeThumbSvg, stepPoint } from "../art/index.js";
 import { homeArt, catIconSvg } from "./home-art.js";
+import { fxWanted, startHomeFx, stopHomeFx } from "./home-fx.js";
 import { placeById, timeById, TIMES, ZONES, STEPS, PATTERNS, SOUNDS, garmentName, ladderFor, ladderKey, LADDER_HOW, sylFor, yarnName } from "../content.js";
 import { tip } from "./tips.js";
 import { drillForStep } from "../drill/drills.js";
@@ -49,7 +50,9 @@ function paintArt(root = document.getElementById("screen")) {
   const top = $(".home-top", root)?.getBoundingClientRect(), tray = $(".home-tray", root)?.getBoundingClientRect();
   const art = homeArt(sceneFor(S, S.here, app.real()), W, H, top && top.height ? top.bottom - r.top : 92, tray && tray.height ? tray.top - r.top : H - 120);
   layout = art.layout;
-  el.innerHTML = art.svg;
+  /* a place with an effects layer (the jungle): the picture in two layers with the canvas between (home-fx.js) */
+  if (fxWanted(art)) { el.innerHTML = `${art.layers.back}<canvas class="lc-fx-back" aria-hidden="true"></canvas>${art.layers.front}`; startHomeFx(el, art, W, H); }
+  else { el.innerHTML = art.svg; stopHomeFx(el); }
   wireTaps(el); // pat a cat or the judge, tap the yuzu, the lamp, the sun
 }
 function onResize() { clearTimeout(resizeT); resizeT = setTimeout(() => paintArt(), 120); }

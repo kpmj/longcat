@@ -125,6 +125,9 @@ export function makePlace(spec) {
       /* spec.tall: a place whose scenery is one tall picture gives it whole for Home ({ box, inner }), which then
          fills the phone with it and lays the things, the seat and the judge over it (ui/home-art.js) */
       tall: spec.tall ? spec.tall(V, q, time, on) : null,
+      /* spec.motion: what an effects layer over the picture moves (art/fx.js; the jungle's, 2026-11-28). Home draws
+         it when the picture is animated; everywhere else the picture moves only by its own CSS */
+      motion: animate && spec.motion ? spec.motion(time) : null,
       frame: paperEdge(10, IND[0]) + titleG(time, spec.name), title: titleG(time, spec.name), up: V.sky[0], down: { fill: floor, line: V.line, water: !!spec.water }, wall: V.sky[0], ink: KEY, judge: spec.judge || null };
   }
   const stamp = () => inset(0, 0, 44, 52, spec.stampCrop || "50 30 300 355", full("morning"));
