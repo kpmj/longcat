@@ -297,8 +297,9 @@ export function onChart(midi, lo, hi) {
 /* THE SWEEP's window (take-screen.js; the designer, 2026-11-27, after the old Vocal Gym drill: a short drill drawn whole and
    still, the head moving across; a long one moving on once the head is 35 % in). As in Vocal Gym's viewWindow: the
    window is 7.5 times the median gap between two notes' starts, 3 to 16 seconds, and a drill that fits is shown
-   whole. Pure. */
-export const SWEEP_NOTES = 7.5, SWEEP_MIN = 3, SWEEP_MAX = 16, SWEEP_ANCHOR = 0.35;
+   whole. Six times since the designer, 2026-11-28: "The notes icon in drill looks too small. The vowel hint is even outside of the note icon": each second is wider, so a quick note's block is too (about 34 px instead
+   of 27). Pure. */
+export const SWEEP_NOTES = 6, SWEEP_MIN = 3, SWEEP_MAX = 16, SWEEP_ANCHOR = 0.35;
 export function sweepSeconds(plan) {
   const total = plan.total;
   if (plan.notes.length < 2) return total;

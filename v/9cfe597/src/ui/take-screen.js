@@ -69,7 +69,8 @@ const clock = () => (audioContext() ? now() : performance.now() / 1000);
 const wall = () => performance.now() / 1000;
 
 const CHART_PAD = 3; // semitones of faint lines above and below the phrase's notes
-const BLOCK_H = 24; // a note's block
+const BLOCK_H = 32; // a note's block: 24 until the designer, 2026-11-28: "The notes icon in drill looks too small. The vowel hint is even outside of the note icon"
+// (the sweep's window is shorter too, lane-body.js SWEEP_NOTES, so a quick note's block is wider)
 function geometry(plan) {
   const ms = plan.notes.map((n) => n.midi);
   const lo = Math.min(...ms), hi = Math.max(...ms);
@@ -124,8 +125,10 @@ function laneNotes(plan) {
   /* (until 2026-11-28 each later round was marked where it began, "↑ 2 / 5"; the rest's own label says it now) */
   return bars;
 }
-/* the sound written on each note, in a layer of its own above the sung line, so the line never covers it */
-const laneLabels = (plan) => plan.notes.map((n, i) => `<text class="nl" id="nl-${i}" x="${(n.s * R.pxs + 12).toFixed(1)}" y="${(yOf(n.midi) + 5).toFixed(1)}">${esc(plan.syl)}</text>`).join("");
+/* the sound written on each note, in a layer of its own above the sung line, so the line never covers it; in the
+   middle of its block (it stood 12 px in from the block's left end until the same day as BLOCK_H, and ran past the
+   end of a quick note's block) */
+const laneLabels = (plan) => plan.notes.map((n, i) => `<text class="nl" id="nl-${i}" x="${(n.s * R.pxs + Math.max(14, (n.e - n.s) * R.pxs - 3) / 2).toFixed(1)}" y="${(yOf(n.midi) + 4.5).toFixed(1)}">${esc(plan.syl)}</text>`).join("");
 
 /* ---------- rounds (a climbing drill) ----------
    The round being sung, or the one coming: it changes as the last note of a round ends. */
